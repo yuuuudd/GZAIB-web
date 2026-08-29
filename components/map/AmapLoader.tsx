@@ -1,0 +1,72 @@
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+
+export type AmapLoadState = "idle" | "loading" | "ready" | "failed";
+
+export type AmapNamespace = {
+  Map: new (container: HTMLElement, options: Record<string, unknown>) => AmapMap;
+  Marker: new (options: Record<string, unknown>) => AmapMarker;
+  MarkerCluster: new (map: AmapMap, markers: AmapMarker[], options?: Record<string, unknown>) => { setMap(map: null): void };
+};
+export type AmapMap = { destroy(): void; add(markers: AmapMarker[]): void; setFitView(markers?: AmapMarker[]): void };
+export type AmapMarker = { on(event: "click", handler: () => void): void };
+
+declare global {
+  interface Window {
+    AMap?: AmapNamespace;
+    _AMapSecurityConfig?: { serviceHost: string };
+    __builderMapAmapPromise?: Promise<AmapNamespace>;
+  }
+}
+
+function loadAmap(key: string): Promise<AmapNamespace> {
+  if (window.AMap) return Promise.resolve(window.AMap);
+  if (window.__builderMapAmapPromise) return window.__builderMapAmapPromise;
+  window._AMapSecurityConfig = { serviceHost: "/api/amap" };
+  window.__builderMapAmapPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-builder-map="amap"]');
+    const script = existing ?? document.createElement("script");
+    const timeout = window.setTimeout(() => reject(new Error("AMap load timed out")), 12_000);
+    const ready = () => {
+      window.clearTimeout(timeout);
+      if (window.AMap) resolve(window.AMap);
+      else reject(new Error("AMap namespace unavailable"));
+    };
+    const failed = () => {
+      window.clearTimeout(timeout);
+      reject(new Error("AMap failed to load"));
+    };
+    script.addEventListener("load", ready, { once: true });
+    script.addEventListener("error", failed, { once: true });
+    if (!existing) {
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}&plugin=AMap.MarkerCluster`;
+      script.async = true;
+      script.dataset.builderMap = "amap";
+      document.head.append(script);
+    }
+  });
+  return window.__builderMapAmapPromise;
+}
+
+export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (state: AmapLoadState, amap?: AmapNamespace) => ReactNode }) {
+  const [state, setState] = useState<AmapLoadState>("idle");
+  const [amap, setAmap] = useState<AmapNamespace>();
+
+  useEffect(() => {
+    let active = true;
+    if (!apiKey) {
+      queueMicrotask(() => active && setState("failed"));
+      return () => { active = false; };
+    }
+    queueMicrotask(() => active && setState("loading"));
+    loadAmap(apiKey).then((loaded) => {
+      if (!active) return;
+      setAmap(loaded);
+      setState("ready");
+    }).catch(() => active && setState("failed"));
+    return () => { active = false; };
+  }, [apiKey]);
+
+  return children(state, amap);
+}
