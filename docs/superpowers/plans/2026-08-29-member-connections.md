@@ -12,6 +12,13 @@
 
 ## Global Constraints
 
+### Binding Demo execution amendment (2026-08-30)
+
+- This execution targets the user-approved lightweight local Demo and reuses the core plan's two fixed, server-owned Demo identities. Real public authentication and official-account identity remain deferred.
+- The complete in-app connection flow is required. Real Resend/public-account delivery is optional at runtime and must fail without rolling back connection state; no real recipient messages are sent during Demo verification.
+- Task 7 Steps 5–7 are replaced for this execution by configuration-contract checks, an updated local operations guide, and a retained local Demo server with browser-based visual/interaction verification. Do not publish, create hosted resources, apply remote migrations, or invent production secrets without a separate user authorization.
+- In the Final Completion Gate, “Sites returns a deployed URL” is replaced by “the local Demo URL is healthy and the primary member/admin connection screens pass browser verification.” Public hosting remains a separately authorized handoff step.
+
 - 必须先完成并通过 `docs/superpowers/plans/2026-08-29-builder-map-core.md` 的 Phase-One Completion Gate。
 - 只有 `active` 的已审核成员可以发送连接请求；`connection_suspended`、`suspended`、`hidden` 和 `deleted` 用户不能发送。
 - 每名发送者滚动 24 小时内最多创建 5 个请求；撤销、婉拒和被拉黑取消的请求仍计入当日上限。
