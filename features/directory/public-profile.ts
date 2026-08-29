@@ -10,7 +10,7 @@ import {
 } from "./types";
 
 function canView(visibility: Visibility | undefined, viewer: Viewer): boolean {
-  if (viewer.kind === "admin") return visibility !== undefined;
+  if (viewer.kind === "admin" || viewer.kind === "owner") return visibility !== undefined;
   if (visibility === "public") return true;
   return visibility === "members" && viewer.kind === "member";
 }

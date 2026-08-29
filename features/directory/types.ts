@@ -3,6 +3,7 @@ export type Visibility = "public" | "members" | "private";
 export type Viewer =
   | { kind: "visitor" }
   | { kind: "member"; userId: string }
+  | { kind: "owner"; userId: string }
   | { kind: "admin"; userId: string };
 
 export type ProfileContribution = {

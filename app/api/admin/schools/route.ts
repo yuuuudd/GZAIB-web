@@ -1,10 +1,10 @@
 import { authorizeAdminRoute } from "../../../../features/admin/authorization";
 import { createRuntimeSchoolAdminService, parseSchoolAdminAction } from "../../../../features/admin/schools";
 import { isDemoMode } from "../../../../features/identity/demo-auth";
-import { requireSession } from "../../../../features/identity/session";
+import { requireActiveSession } from "../../../../features/identity/active-account";
 
 export async function POST(request: Request) {
-  const authorization = await authorizeAdminRoute(request, { isDemoMode, requireSession });
+  const authorization = await authorizeAdminRoute(request, { isDemoMode, requireSession: requireActiveSession });
   if (!authorization.ok) return authorization.response;
   try {
     const action = parseSchoolAdminAction(await request.json());

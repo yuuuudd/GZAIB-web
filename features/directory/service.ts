@@ -234,7 +234,6 @@ export async function createRuntimeDirectoryService() {
         .innerJoin(schema.applications, drizzle.eq(schema.applications.userId, schema.memberProfiles.userId))
         .innerJoin(schema.schools, drizzle.eq(schema.schools.id, schema.memberProfiles.schoolId))
         .where(drizzle.and(
-          drizzle.eq(schema.applications.status, "approved"),
           drizzle.eq(schema.users.status, "active"),
           drizzle.eq(schema.memberProfiles.publishStatus, "published"),
           drizzle.eq(schema.schools.coordinateStatus, "confirmed"),
@@ -298,7 +297,6 @@ export async function createRuntimeDirectoryService() {
         .where(drizzle.and(
           drizzle.eq(schema.contributions.status, "confirmed"),
           drizzle.eq(schema.contributions.visibility, "public"),
-          drizzle.eq(schema.applications.status, "approved"),
           drizzle.eq(schema.users.status, "active"),
           drizzle.eq(schema.memberProfiles.publishStatus, "published"),
           drizzle.eq(schema.schools.coordinateStatus, "confirmed"),

@@ -1,11 +1,11 @@
 import { createApplicationRepository } from "../../../lib/db/repositories/applications";
 import { getDb } from "../../../db";
 import { ApplicationServiceError, createApplicationService } from "../../../features/applications/service";
-import { requireSession } from "../../../features/identity/session";
+import { requireActiveSession } from "../../../features/identity/active-account";
 
 async function currentUserId(request: Request): Promise<string | null> {
   try {
-    return (await requireSession(request)).identity.id;
+    return (await requireActiveSession(request)).identity.id;
   } catch {
     return null;
   }
