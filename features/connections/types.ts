@@ -26,8 +26,10 @@ export type ConnectionPolicyContext = {
   senderId: string;
   recipientId: string;
   senderStatus: string;
+  senderIsMember: boolean;
   senderApproved: boolean;
   senderPublished: boolean;
+  recipientIsMember: boolean;
   recipientPublished: boolean;
   blockedEitherDirection: boolean;
   pendingEitherDirection: boolean;

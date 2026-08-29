@@ -21,6 +21,9 @@ export function createContactCardRepository(db: Db): ContactCardRepository {
         set: { encryptedPayload, updatedAt },
       });
     },
+    async clear(userId) {
+      await db.delete(contactCards).where(eq(contactCards.userId, userId));
+    },
     async get(userId) {
       const [row] = await db.select({ encryptedPayload: contactCards.encryptedPayload, updatedAt: contactCards.updatedAt })
         .from(contactCards).where(eq(contactCards.userId, userId));

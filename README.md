@@ -12,8 +12,8 @@
 npm.cmd install
 $env:WRANGLER_LOG_PATH = ".wrangler/logs"
 $env:MINIFLARE_REGISTRY_PATH = ".wrangler/registry"
-npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state
-npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state
+npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.local.jsonc --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state
+npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.local.jsonc --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state
 npm.cmd run dev
 ```
 

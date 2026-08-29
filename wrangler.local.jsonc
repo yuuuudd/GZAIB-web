@@ -1,7 +1,7 @@
 {
   "name": "builder-map-demo-local",
   "main": "./worker/index.ts",
-  "compatibility_date": "2026-08-30",
+  "compatibility_date": "2026-05-22",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {

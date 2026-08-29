@@ -7,8 +7,10 @@ const base: ConnectionPolicyContext = {
   senderId: "member-1",
   recipientId: "member-2",
   senderStatus: "active",
+  senderIsMember: true,
   senderApproved: true,
   senderPublished: true,
+  recipientIsMember: true,
   recipientPublished: true,
   blockedEitherDirection: false,
   pendingEitherDirection: false,
@@ -85,6 +87,27 @@ test("permits ordinary WeChat discussion without an explicit contact disclosure 
   ]) {
     assert.deepEqual(canCreate({ ...base, message }), { ok: true });
   }
+});
+
+test("rejects explicit contact disclosures in a topic before it can reach a notification", () => {
+  for (const topic of [
+    "Email builder@example.test",
+    "Call 138 0013 8000",
+    "WeChat ID campus_builder_2026",
+  ]) {
+    assert.deepEqual(canCreate({ ...base, topic }), { ok: false, code: "invalid_message" });
+  }
+});
+
+test("permits ordinary community discussion in a topic without an explicit contact disclosure", () => {
+  assert.deepEqual(canCreate({ ...base, topic: "WeChat campus AI community experience" }), { ok: true });
+});
+
+test("rejects an approved and published admin in either side of a new connection", () => {
+  const approvedPublishedAdminSender = { ...base, senderIsMember: false };
+  const approvedPublishedAdminRecipient = { ...base, recipientIsMember: false };
+  assert.deepEqual(canCreate(approvedPublishedAdminSender), { ok: false, code: "sender_ineligible" });
+  assert.deepEqual(canCreate(approvedPublishedAdminRecipient), { ok: false, code: "recipient_unavailable" });
 });
 
 test("permits an eligible request without a contact disclosure", () => {

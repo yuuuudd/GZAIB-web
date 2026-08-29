@@ -23,9 +23,9 @@ function fixture() {
 
   const connectionRepository: ConnectionRepository = {
     getCreateContext: async (senderId, recipientId, input) => ({
-      senderId, recipientId, senderStatus: statuses.get(senderId) ?? "missing",
+      senderId, recipientId, senderStatus: statuses.get(senderId) ?? "missing", senderIsMember: senderId === "member-a",
       senderApproved: senderId === "member-a", senderPublished: senderId === "member-a",
-      recipientPublished: recipientId === "member-b" && ["active", "connection_suspended"].includes(statuses.get(recipientId) ?? "missing"),
+      recipientIsMember: recipientId === "member-b", recipientPublished: recipientId === "member-b" && ["active", "connection_suspended"].includes(statuses.get(recipientId) ?? "missing"),
       blockedEitherDirection: blocks.has(pairKey(senderId, recipientId)),
       pendingEitherDirection: currentPairRequest(senderId, recipientId)?.status === "pending",
       requestsInLast24Hours: requests.filter((request) => request.senderId === senderId && request.createdAt >= now - 86_400_000).length,
@@ -63,6 +63,7 @@ function fixture() {
 
   const contactRepository: ContactCardRepository = {
     save: async (userId, encryptedPayload, updatedAt) => { cards.set(userId, { encryptedPayload, updatedAt }); },
+    clear: async (userId) => { cards.delete(userId); },
     get: async (userId) => cards.get(userId),
     getAccess: async (viewerId, ownerId) => ({
       accepted: currentPairRequest(viewerId, ownerId)?.status === "accepted",

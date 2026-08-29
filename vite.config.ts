@@ -14,8 +14,8 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   // Keep this in lockstep with the standalone local-D1 contract in
-  // `wrangler.jsonc`; that file is intentionally plain JSON for the CLI.
-  compatibility_date: "2026-08-30",
+  // `wrangler.local.jsonc`; that file is intentionally plain JSON for the CLI.
+  compatibility_date: "2026-05-22",
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [

@@ -16,17 +16,17 @@ export function normalizeConnectionInput(input: Pick<CreateConnectionInput, "top
   };
 }
 
-function containsContactDisclosure(message: string): boolean {
-  return EMAIL_PATTERN.test(message) || PHONE_PATTERN.test(message) || WECHAT_PATTERN.test(message);
+export function containsExplicitContactDisclosure(value: string): boolean {
+  return EMAIL_PATTERN.test(value) || PHONE_PATTERN.test(value) || WECHAT_PATTERN.test(value);
 }
 
 /** Determines the first deterministic policy failure without exposing request body contents. */
 export function canCreate(context: ConnectionPolicyContext): PolicyResult {
   if (context.senderId === context.recipientId) return { ok: false, code: "self_request" };
-  if (context.senderStatus !== "active" || !context.senderApproved || !context.senderPublished) {
+  if (context.senderStatus !== "active" || !context.senderIsMember || !context.senderApproved || !context.senderPublished) {
     return { ok: false, code: "sender_ineligible" };
   }
-  if (!context.recipientPublished) return { ok: false, code: "recipient_unavailable" };
+  if (!context.recipientIsMember || !context.recipientPublished) return { ok: false, code: "recipient_unavailable" };
   if (context.blockedEitherDirection) return { ok: false, code: "blocked" };
   if (context.pendingEitherDirection) return { ok: false, code: "duplicate_pending" };
   if (context.requestsInLast24Hours >= 5) return { ok: false, code: "daily_limit" };
@@ -34,7 +34,7 @@ export function canCreate(context: ConnectionPolicyContext): PolicyResult {
   const normalized = normalizeConnectionInput(context);
   if (normalized.topic.length < TOPIC_MIN_LENGTH || normalized.topic.length > TOPIC_MAX_LENGTH
     || normalized.message.length < MESSAGE_MIN_LENGTH || normalized.message.length > MESSAGE_MAX_LENGTH
-    || containsContactDisclosure(normalized.message)) return { ok: false, code: "invalid_message" };
+    || containsExplicitContactDisclosure(normalized.topic) || containsExplicitContactDisclosure(normalized.message)) return { ok: false, code: "invalid_message" };
 
   return { ok: true };
 }

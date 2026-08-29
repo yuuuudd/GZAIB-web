@@ -16,6 +16,7 @@ export type ContactCardAccess = {
 
 export type ContactCardRepository = {
   save(userId: string, encryptedPayload: string, updatedAt: number): Promise<void>;
+  clear(userId: string): Promise<void>;
   get(userId: string): Promise<StoredContactCard | undefined>;
   getAccess(viewerId: string, ownerId: string): Promise<ContactCardAccess>;
 };
@@ -149,6 +150,9 @@ export function createContactCardService(repository: ContactCardRepository, enco
       const encryptedPayload = await encryptContactCard(userId, input, encodedKey);
       await repository.save(userId, encryptedPayload, now);
     },
+    async clearOwnCard(userId: string): Promise<void> {
+      await repository.clear(userId);
+    },
     async getOwnCard(userId: string): Promise<ContactCard | undefined> {
       const stored = await repository.get(userId);
       return stored ? decryptContactCard(userId, stored.encryptedPayload, encodedKey) : undefined;
@@ -208,6 +212,16 @@ export function createOwnContactCardHandler(dependencies: {
         if (error instanceof ContactCardValidationError) {
           return Response.json({ error: "请填写至少一种有效联系方式" }, { status: 400, headers: privateHeaders });
         }
+        return Response.json({ error: "联系方式暂时不可用" }, { status: 503, headers: privateHeaders });
+      }
+    },
+    async DELETE(request: Request): Promise<Response> {
+      const userId = await owner(request);
+      if (!userId) return Response.json({ error: "请先登录有效账号" }, { status: 401, headers: privateHeaders });
+      try {
+        await dependencies.service.clearOwnCard(userId);
+        return Response.json({ configured: false }, { headers: privateHeaders });
+      } catch {
         return Response.json({ error: "联系方式暂时不可用" }, { status: 503, headers: privateHeaders });
       }
     },

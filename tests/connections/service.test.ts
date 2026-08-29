@@ -26,7 +26,7 @@ function request(overrides: Partial<ConnectionRequest> = {}): ConnectionRequest 
 function context(overrides: Partial<ConnectionPolicyContext> = {}): ConnectionPolicyContext {
   const current = request();
   return {
-    senderId: current.senderId, recipientId: current.recipientId, senderStatus: "active", senderApproved: true, senderPublished: true, recipientPublished: true,
+    senderId: current.senderId, recipientId: current.recipientId, senderStatus: "active", senderIsMember: true, senderApproved: true, senderPublished: true, recipientIsMember: true, recipientPublished: true,
     blockedEitherDirection: false, pendingEitherDirection: false, requestsInLast24Hours: 0,
     topic: current.topic, message: current.message,
     ...overrides,
@@ -144,6 +144,20 @@ test("creation rejects an inactive sender before a request can be persisted", as
     (error: unknown) => error instanceof ConnectionServiceError && error.code === "sender_ineligible",
   );
   assert.equal(store.current, undefined);
+});
+
+test("a contact-bearing topic is rejected before a request or notification is persisted", async () => {
+  const store = memoryRepository();
+  const service = createConnectionService(store.repository);
+
+  await assert.rejects(
+    () => service.createRequest("member-1", {
+      recipientId: "member-2", topic: "WeChat ID campus_builder_2026", message: request().message,
+    }, now),
+    (error: unknown) => error instanceof ConnectionServiceError && error.code === "invalid_message",
+  );
+  assert.equal(store.current, undefined);
+  assert.deepEqual(store.notifications, []);
 });
 
 test("creation rejects an active sender lacking approval or a published profile before persistence", async () => {
@@ -289,6 +303,8 @@ test("D1 guarded creation requires an approved, published active sender and incl
   const query = new SQLiteSyncDialect().sqlToQuery(guardedInsert as never);
   assert.match(query.sql, /sender_application\.status = 'approved'/);
   assert.match(query.sql, /sender_profile\.publish_status = 'published'/);
+  assert.match(query.sql, /"users"\."role" = 'member'/);
+  assert.match(query.sql, /recipient\.role = 'member'/);
   assert.match(query.sql, /daily_request\.created_at >= \?/);
   assert.ok(query.params.includes(now - 86_400_000));
 });

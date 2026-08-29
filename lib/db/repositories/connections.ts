@@ -104,6 +104,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
       const [senderRows, recipientRows, blockRows, pendingRows, countRows] = await Promise.all([
         db.select({
           status: users.status,
+          role: users.role,
           applicationStatus: applications.status,
           publishStatus: memberProfiles.publishStatus,
         }).from(users)
@@ -115,6 +116,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
           .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
           .where(and(
             eq(users.id, recipientId),
+            eq(users.role, "member"),
             inArray(users.status, ["active", "connection_suspended"]),
             eq(applications.status, "approved"),
             eq(memberProfiles.publishStatus, "published"),
@@ -136,8 +138,10 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         senderId,
         recipientId,
         senderStatus: senderRows[0]?.status ?? "missing",
+        senderIsMember: senderRows[0]?.role === "member",
         senderApproved: senderRows[0]?.applicationStatus === "approved",
         senderPublished: senderRows[0]?.publishStatus === "published",
+        recipientIsMember: recipientRows.length > 0,
         recipientPublished: recipientRows.length > 0,
         blockedEitherDirection: blockRows.length > 0,
         pendingEitherDirection: pendingRows.length > 0,
@@ -155,6 +159,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         from ${users}
         where ${users.id} = ${request.senderId}
           and ${users.status} = 'active'
+          and ${users.role} = 'member'
           and ${request.senderId} <> ${request.recipientId}
           and exists (
             select 1 from applications sender_application
@@ -168,6 +173,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
             inner join applications recipient_application on recipient_application.user_id = recipient.id
             inner join member_profiles recipient_profile on recipient_profile.user_id = recipient.id
             where recipient.id = ${request.recipientId}
+              and recipient.role = 'member'
               and recipient.status in ('active', 'connection_suspended')
               and recipient_application.status = 'approved'
               and recipient_profile.publish_status = 'published'

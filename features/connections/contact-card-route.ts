@@ -35,5 +35,11 @@ export function createContactCardRouteHandlers(dependencies: {
       if (route === null) return Response.json({ error: "联系方式暂时不可用" }, { status: 503, headers: privateHeaders });
       return route.PUT(request);
     },
+    async DELETE(request: Request) {
+      const route = await handler(request);
+      if (route === undefined) return Response.json({ error: "请先登录有效账号" }, { status: 401, headers: privateHeaders });
+      if (route === null) return Response.json({ error: "联系方式暂时不可用" }, { status: 503, headers: privateHeaders });
+      return route.DELETE(request);
+    },
   };
 }

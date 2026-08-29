@@ -3,8 +3,8 @@ import test from "node:test";
 import { resolveConnectionCtaState } from "../../features/connections/cta-state";
 
 const context = (overrides: Record<string, unknown> = {}) => ({
-  senderId: "demo-member", recipientId: "demo-peer", senderStatus: "active", senderApproved: true, senderPublished: true,
-  recipientPublished: true, blockedEitherDirection: false, pendingEitherDirection: false, requestsInLast24Hours: 2,
+  senderId: "demo-member", recipientId: "demo-peer", senderStatus: "active", senderIsMember: true, senderApproved: true, senderPublished: true,
+  recipientIsMember: true, recipientPublished: true, blockedEitherDirection: false, pendingEitherDirection: false, requestsInLast24Hours: 2,
   topic: "连接", message: "我想聊聊校园 AI 共建的实践与想法。", ...overrides,
 });
 

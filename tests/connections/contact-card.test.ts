@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
+import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { ContactCardEditor } from "../../components/connections/ContactCardEditor";
 import { createContactCardRouteHandlers } from "../../features/connections/contact-card-route";
+import { createContactCardRepository } from "../../lib/db/repositories/contact-cards";
+import { contactCards } from "../../db/schema";
 import {
   ContactCardCryptoError,
   ContactCardValidationError,
@@ -35,11 +38,12 @@ function memoryRepository() {
   let accepted = false;
   let blocked = false;
   const active = true;
-  const repository: ContactCardRepository = {
+  const repository = {
     save: async (_userId, payload) => { encryptedPayload = payload; },
     get: async () => encryptedPayload ? { encryptedPayload, updatedAt: 1 } : undefined,
     getAccess: async () => ({ accepted, blocked, viewerCanAccessContacts: active, ownerCanAccessContacts: active }),
-  };
+    clear: async () => { encryptedPayload = undefined; },
+  } satisfies ContactCardRepository & { clear(userId: string): Promise<void> };
   return {
     repository,
     accept() { accepted = true; },
@@ -121,6 +125,34 @@ test("contact-card visibility requires accepted consent and is revoked immediate
   assert.equal(await service.getVisibleContactCard("u2", "u1"), undefined);
 });
 
+test("clearing an owner's card immediately removes it from an accepted peer", async () => {
+  const store = memoryRepository();
+  const service = createContactCardService(store.repository, key);
+  store.accept();
+  await service.saveOwnCard("u1", { wechat: "guangzhou-ai" }, 1);
+  assert.deepEqual(await service.getVisibleContactCard("u2", "u1"), { wechat: "guangzhou-ai" });
+
+  await service.clearOwnCard("u1");
+  assert.equal(await service.getOwnCard("u1"), undefined);
+  assert.equal(await service.getVisibleContactCard("u2", "u1"), undefined);
+});
+
+test("D1 contact-card clearing deletes only the current owner's ciphertext", async () => {
+  let deletedTable: unknown;
+  let predicate: unknown;
+  const db = {
+    delete(table: unknown) {
+      deletedTable = table;
+      return { where(condition: unknown) { predicate = condition; return {}; } };
+    },
+  };
+  await createContactCardRepository(db as never).clear("u1");
+  assert.equal(deletedTable, contactCards);
+  const query = new SQLiteSyncDialect().sqlToQuery(predicate as never);
+  assert.match(query.sql, /"contact_cards"\."user_id" = \?/);
+  assert.deepEqual(query.params, ["u1"]);
+});
+
 test("an owner can read their current contact card without an accepted relationship", async () => {
   const store = memoryRepository();
   const service = createContactCardService(store.repository, key);
@@ -187,11 +219,21 @@ test("contact-card Next route delegate applies the active-session and privacy bo
     method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: "u2", wechat: "guangzhou-ai" }),
   }));
   assert.equal(rejected.status, 400);
+  const cleared = await route.DELETE(new Request("https://demo.local/api/me/contact-card", {
+    method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: "u2" }),
+  }));
+  assert.equal(cleared.status, 200);
+  assert.deepEqual(await cleared.json(), { configured: false });
+  assert.equal(cleared.headers.get("Cache-Control"), "private, no-store");
+  assert.equal(await service.getOwnCard("u1"), undefined);
 
   const anonymous = createContactCardRouteHandlers({
     requireActiveSession: async () => { throw new Error("invalid session"); }, createService: () => service,
   });
   assert.equal((await anonymous.GET(new Request("https://demo.local/api/me/contact-card"))).status, 401);
+  const anonymousDelete = await anonymous.DELETE(new Request("https://demo.local/api/me/contact-card", { method: "DELETE" }));
+  assert.equal(anonymousDelete.status, 401);
+  assert.equal(anonymousDelete.headers.get("Cache-Control"), "private, no-store");
   const unavailable = createContactCardRouteHandlers({
     requireActiveSession: async () => ({ identity: { id: "u1" } }), createService: () => { throw new Error("missing configuration"); },
   });
@@ -206,5 +248,6 @@ test("contact-card editor makes consent boundaries clear without exposing encryp
   assert.match(html, /微信/);
   assert.match(html, /仅在双方接受连接后/);
   assert.match(html, /不会出现在地图、搜索结果或连接请求正文/);
+  assert.match(html, /清除当前名片/);
   assert.doesNotMatch(html, /CONTACT_ENCRYPTION_KEY|AES-GCM|base64/);
 });

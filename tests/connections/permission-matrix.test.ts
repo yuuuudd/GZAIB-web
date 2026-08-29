@@ -54,8 +54,8 @@ function fixture(actor: Actor) {
   const connectionRepository: ConnectionRepository = {
     getCreateContext: async (senderId, recipientId, input) => ({
       senderId, recipientId, senderStatus: status.get(senderId) ?? "missing",
-      senderApproved: approved.has(senderId), senderPublished: published.has(senderId),
-      recipientPublished: published.has(recipientId), blockedEitherDirection: blocked,
+      senderIsMember: senderId !== "demo-admin", senderApproved: approved.has(senderId), senderPublished: published.has(senderId),
+      recipientIsMember: recipientId !== "demo-admin", recipientPublished: published.has(recipientId), blockedEitherDirection: blocked,
       pendingEitherDirection: requests.some((item) => item.status === "pending" && ((item.senderId === senderId && item.recipientId === recipientId) || (item.senderId === recipientId && item.recipientId === senderId))),
       requestsInLast24Hours: 0, topic: input.topic, message: input.message,
     }),
@@ -88,6 +88,7 @@ function fixture(actor: Actor) {
   const service = createConnectionService(connectionRepository, () => "created-request", { createNotificationId: () => "notification" });
   const contacts = createContactCardService({
     save: async (_owner, payload) => { cardPayload = payload; },
+    clear: async () => { cardPayload = undefined; },
     get: async () => cardPayload ? { encryptedPayload: cardPayload, updatedAt: now } : undefined,
     getAccess: async (viewerId, ownerId) => ({
       accepted: requests.some((item) => item.status === "accepted" && ((item.senderId === viewerId && item.recipientId === ownerId) || (item.senderId === ownerId && item.recipientId === viewerId))),
