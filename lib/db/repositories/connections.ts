@@ -216,5 +216,20 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
       )).limit(1);
       return Boolean(row);
     },
+
+    async getNotificationTarget(userId) {
+      const [row] = await db.select({
+        userId: users.id,
+        displayName: memberProfiles.nickname,
+        email: users.email,
+      }).from(users).innerJoin(memberProfiles, eq(memberProfiles.userId, users.id)).where(eq(users.id, userId)).limit(1);
+      if (!row) return undefined;
+      return { userId: row.userId, displayName: row.displayName, email: row.email };
+    },
+
+    async updateNotificationDelivery(dedupeKey, status) {
+      await db.update(notifications).set({ deliveryStatus: status, updatedAt: Date.now() })
+        .where(eq(notifications.dedupeKey, dedupeKey));
+    },
   };
 }

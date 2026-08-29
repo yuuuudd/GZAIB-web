@@ -53,11 +53,18 @@ function memoryRepository(initialRequest: ConnectionRequest | undefined = undefi
         || (input.action !== "withdraw" && current.recipientId !== input.actorId)) return undefined;
       const status = input.action === "accept" ? "accepted" : input.action === "decline" ? "declined" : "withdrawn";
       current = { ...current, status, resolvedAt: input.now, updatedAt: input.now };
+      notifications.push(...input.notifications);
       return current;
     },
     listRequests: async (): Promise<ConnectionPage> => ({ items: current ? [current] : [], nextCursor: undefined }),
     hasAcceptedRelationship: async (left, right) => current?.status === "accepted"
       && ((current.senderId === left && current.recipientId === right) || (current.senderId === right && current.recipientId === left)),
+    getNotificationTarget: async (userId: string) => ({
+      userId,
+      displayName: userId === "member-1" ? "林同学" : "陈同学",
+      email: `${userId}@example.test`,
+    }),
+    updateNotificationDelivery: async () => undefined,
   };
   return {
     repository,
@@ -67,9 +74,17 @@ function memoryRepository(initialRequest: ConnectionRequest | undefined = undefi
   };
 }
 
-test("creation is server-owned, normalizes input, and keeps the notification batch boundary empty until event copy is added", async () => {
+test("creation atomically persists the received notification before optional email delivery", async () => {
   const store = memoryRepository();
-  const service = createConnectionService(store.repository, () => "request-created");
+  const sent: unknown[] = [];
+  const service = createConnectionService(store.repository, () => "request-created", {
+    createNotificationId: () => "notification-1",
+    emailSender: { async send(email) {
+      assert.equal(store.notifications.length, 1, "email is attempted only after the atomic notification batch");
+      sent.push(email);
+      return { status: "sent" };
+    } },
+  });
 
   const created = await service.createRequest("member-1", {
     recipientId: "member-2", topic: "  AI collaboration ", message: "  I would like to exchange ideas about a campus AI collaboration.  ",
@@ -79,7 +94,42 @@ test("creation is server-owned, normalizes input, and keeps the notification bat
   assert.equal(store.current?.senderId, "member-1");
   assert.equal(store.current?.topic, "AI collaboration");
   assert.equal(store.current?.message, "I would like to exchange ideas about a campus AI collaboration.");
-  assert.deepEqual(store.notifications, []);
+  assert.deepEqual(store.notifications, [{
+    id: "notification-1", userId: "member-2", type: "connection_received",
+    title: "你收到一条新的连接请求", body: "林同学想和你聊聊：AI collaboration",
+    href: "/me/connections?box=received", dedupeKey: "connection:request-created:pending",
+    deliveryStatus: "pending", createdAt: now,
+  }]);
+  assert.deepEqual(sent, [{
+    to: "member-2@example.test",
+    event: {
+      type: "connection_received", userId: "member-2", requestId: "request-created",
+      peerName: "林同学", topic: "AI collaboration", createdAt: now,
+    },
+  }]);
+});
+
+test("final connection actions persist one notification atomically and keep a failed email outside the status transition", async () => {
+  const store = memoryRepository(request());
+  const deliveryStatuses: Array<{ dedupeKey: string; status: string }> = [];
+  store.repository.updateNotificationDelivery = async (dedupeKey, status) => { deliveryStatuses.push({ dedupeKey, status }); };
+  const service = createConnectionService(store.repository, () => "request-created", {
+    createNotificationId: () => "notification-accepted",
+    emailSender: { async send() { throw new Error("simulated adapter failure"); } },
+  });
+
+  const resolved = await service.resolveRequest("member-2", "request-1", "accept", now);
+  const retried = await service.resolveRequest("member-2", "request-1", "accept", now + 1);
+
+  assert.equal(resolved.status, "accepted");
+  assert.equal(retried.status, "accepted");
+  assert.deepEqual(store.notifications, [{
+    id: "notification-accepted", userId: "member-1", type: "connection_accepted",
+    title: "你的连接请求已被接受", body: "陈同学接受了你的连接请求：AI collaboration",
+    href: "/me/connections?box=accepted", dedupeKey: "connection:request-1:accepted",
+    deliveryStatus: "pending", createdAt: now,
+  }]);
+  assert.deepEqual(deliveryStatuses, [{ dedupeKey: "connection:request-1:accepted", status: "failed" }]);
 });
 
 test("creation rejects an inactive sender before a request can be persisted", async () => {

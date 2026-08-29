@@ -86,4 +86,8 @@ export type ConnectionRepository = {
   }): Promise<ConnectionRequest | undefined>;
   listRequests(userId: string, box: ConnectionBox, cursor?: ConnectionCursor): Promise<ConnectionPage>;
   hasAcceptedRelationship(leftUserId: string, rightUserId: string): Promise<boolean>;
+  /** Server-owned display/email lookup; only the display name reaches in-app copy. */
+  getNotificationTarget(userId: string): Promise<{ userId: string; displayName: string; email?: string } | undefined>;
+  /** Email is committed separately from the request, so a delivery failure cannot alter consent state. */
+  updateNotificationDelivery(dedupeKey: string, status: "sent" | "failed"): Promise<void>;
 };

@@ -17,7 +17,17 @@ export type ContributionNotificationEvent = {
   createdAt: number;
 };
 
-export type NotificationEvent = ApplicationNotificationEvent | ContributionNotificationEvent;
+/** Contains only the recipient and the safe summary allowed in connection notices. */
+export type ConnectionNotificationEvent = {
+  type: "connection_received" | "connection_accepted" | "connection_declined" | "connection_withdrawn";
+  userId: string;
+  requestId: string;
+  peerName: string;
+  topic: string;
+  createdAt: number;
+};
+
+export type NotificationEvent = ApplicationNotificationEvent | ContributionNotificationEvent | ConnectionNotificationEvent;
 
 /** Transport-neutral member copy. D1 maps these fields to title/body/href columns. */
 export type NotificationMessage = {
@@ -39,8 +49,8 @@ export interface NotificationStore {
 }
 
 /** Transport-neutral port; phase two can replace the in-app adapter with a public-account adapter. */
-export interface NotificationSender {
-  send(message: NotificationEvent): Promise<DeliveryResult>;
+export interface NotificationSender<TMessage = NotificationEvent> {
+  send(message: TMessage): Promise<DeliveryResult>;
 }
 
 /** Notification delivery is deliberately outside the business transaction and can never roll it back. */

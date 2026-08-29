@@ -7,6 +7,7 @@ import type {
   NotificationSender,
   NotificationStore,
 } from "./types";
+import { toConnectionNotification } from "./connection-events";
 
 type MessageCopy = Pick<NotificationMessage, "subject" | "text" | "link" | "dedupeKey">;
 
@@ -47,6 +48,13 @@ function eventCopy(event: NotificationEvent): MessageCopy {
         link: "/me",
         dedupeKey: `contribution:${event.contributionId}:confirmed`,
       };
+    case "connection_received":
+    case "connection_accepted":
+    case "connection_declined":
+    case "connection_withdrawn": {
+      const copy = toConnectionNotification(event);
+      return { subject: copy.title, text: copy.body, link: copy.href, dedupeKey: copy.dedupeKey };
+    }
   }
 }
 
