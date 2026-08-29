@@ -51,10 +51,12 @@ function base64Url(bytes: Uint8Array): string {
 }
 
 function fromBase64Url(value: string): Uint8Array {
-  if (!BASE64URL.test(value)) throw new ContactCardCryptoError();
+  if (!BASE64URL.test(value) || value.length % 4 === 1) throw new ContactCardCryptoError();
   try {
     const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
-    return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+    const decoded = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+    if (base64Url(decoded) !== value) throw new ContactCardCryptoError();
+    return decoded;
   } catch {
     throw new ContactCardCryptoError();
   }

@@ -27,3 +27,17 @@
 - Key configuration is not read at module import, so unrelated routes remain bootable without it.
 - Current cards are decrypted only after a live authorization check; blocked relationships are unavailable immediately.
 - The normal contact endpoint response and all contact endpoint errors use `Cache-Control: private, no-store`.
+
+## Fix round: canonical payload parsing and route seam
+
+### RED → GREEN
+
+1. Added a ciphertext mutation that changes only unused final base64url pad bits. Before the fix it decrypted successfully because it decoded to identical bytes.
+2. Added malformed length, alphabet, version, and segment-count cases; every malformed payload must still fail with the generic contact-card error.
+3. Added a route-boundary test for anonymous sessions, forged `userId`, ordinary configuration reads, explicit reveal, private cache headers, and missing contact-key configuration.
+
+The focused suite first failed on the pad-bit alias and on the new route-boundary assertion. It is green after enforcing canonical base64url re-encoding and adding the delegate used by the Next route.
+
+### Route-test caveat
+
+The raw Next route module imports the D1 runtime, which resolves a `cloudflare:` binding unsupported by the Node unit-test loader. Instead of mocking framework/runtime internals, the route now delegates to `createContactCardRouteHandlers`; the actual Next exports call that delegate with `requireActiveSession` and the real D1-backed service. The focused test exercises this production delegate with real contact-card validation/encryption and controlled session/configuration dependencies.
