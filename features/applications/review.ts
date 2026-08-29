@@ -2,6 +2,8 @@ import type { AuditRecord } from "../admin/authorization";
 import type { Visibility } from "../directory/types";
 import type { ApplicationRecord, ApplicationStatus } from "./types";
 import { completeApplicationVisibility, getMapEligibility } from "./validation";
+import type { NotificationSender } from "../notifications/types";
+import { sendNotificationWithoutRollback } from "../notifications/types";
 
 export type ReviewDecision =
   | { decision: "approved" }
@@ -74,6 +76,7 @@ export function createApplicationReviewService(
   repository: ApplicationReviewRepository,
   createProfileId: () => string = () => crypto.randomUUID(),
   createAuditId: () => string = () => crypto.randomUUID(),
+  notificationSender?: NotificationSender,
 ) {
   return {
     async reviewApplication(adminId: string, applicationId: string, decision: ReviewDecision, now: number) {
@@ -99,6 +102,12 @@ export function createApplicationReviewService(
           },
         });
         if (!transition.transitioned) throw new Error("Application review state changed before commit");
+        await sendNotificationWithoutRollback(notificationSender, {
+          type: status === "rejected" ? "application_rejected" : "application_changes_requested",
+          userId: context.application.userId,
+          applicationId,
+          createdAt: now,
+        });
         return { application: { ...context.application, status, updatedAt: now }, profile: undefined };
       }
 
@@ -143,6 +152,12 @@ export function createApplicationReviewService(
         },
       });
       if (!transition.transitioned) throw new Error("Application review state changed before commit");
+      await sendNotificationWithoutRollback(notificationSender, {
+        type: "application_approved",
+        userId: context.application.userId,
+        applicationId,
+        createdAt: now,
+      });
       return { application: { ...context.application, status: "approved" as ApplicationStatus, updatedAt: now }, profile };
     },
   };
@@ -153,8 +168,9 @@ export async function reviewApplication(adminId: string, applicationId: string, 
 }
 
 export async function createRuntimeApplicationReviewService() {
-  const [{ getDb }, schema, drizzle, applicationRepository] = await Promise.all([
+  const [{ getDb }, schema, drizzle, applicationRepository, { createInAppNotificationSender }] = await Promise.all([
     import("../../db"), import("../../db/schema"), import("drizzle-orm"), import("../../lib/db/repositories/applications"),
+    import("../notifications/in-app"),
   ]);
   const db = getDb();
   const repository: ApplicationReviewRepository = {
@@ -240,5 +256,5 @@ export async function createRuntimeApplicationReviewService() {
       return { transitioned: (gateResult.meta?.changes ?? 0) === 1 };
     },
   };
-  return createApplicationReviewService(repository);
+  return createApplicationReviewService(repository, undefined, undefined, createInAppNotificationSender(db));
 }

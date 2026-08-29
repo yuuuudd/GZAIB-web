@@ -1,4 +1,6 @@
 import type { AuditRecord } from "../admin/authorization";
+import type { NotificationSender } from "../notifications/types";
+import { sendNotificationWithoutRollback } from "../notifications/types";
 
 export type ContributionStatus = "pending" | "confirmed" | "rejected";
 export type ContributionVisibility = "public" | "members" | "private";
@@ -33,7 +35,7 @@ export type ContributionRepository = {
     audit: AuditRecord;
   }): Promise<
     | { transitioned: false }
-    | { transitioned: true; contribution: ContributionRecord; verifiedBuilder: boolean }
+    | { transitioned: true; contribution: ContributionRecord; verifiedBuilder: boolean; recipientUserId: string }
   >;
 };
 
@@ -50,6 +52,7 @@ export function parseContributionInput(value: unknown): ContributionConfirmation
 export function createContributionService(
   repository: ContributionRepository,
   createAuditId: () => string = () => crypto.randomUUID(),
+  notificationSender?: NotificationSender,
 ) {
   return {
     async confirmContribution(adminId: string, rawInput: ContributionConfirmationInput, now: number) {
@@ -65,6 +68,13 @@ export function createContributionService(
         },
       });
       if (!result.transitioned) throw new Error("Pending contribution state changed before commit");
+      await sendNotificationWithoutRollback(notificationSender, {
+        type: "contribution_confirmed",
+        userId: result.recipientUserId,
+        contributionId: result.contribution.id,
+        contributionTitle: result.contribution.title,
+        createdAt: now,
+      });
       return { contribution: result.contribution, verifiedBuilder: result.verifiedBuilder };
     },
   };
@@ -75,7 +85,9 @@ export async function confirmContribution(adminId: string, input: ContributionCo
 }
 
 export async function createRuntimeContributionService() {
-  const [{ getDb }, schema, drizzle] = await Promise.all([import("../../db"), import("../../db/schema"), import("drizzle-orm")]);
+  const [{ getDb }, schema, drizzle, { createInAppNotificationSender }] = await Promise.all([
+    import("../../db"), import("../../db/schema"), import("drizzle-orm"), import("../notifications/in-app"),
+  ]);
   const db = getDb();
   return createContributionService({
     async confirmPendingAtomic(input) {
@@ -134,7 +146,12 @@ export async function createRuntimeContributionService() {
         ...(row.contribution.confirmedBy ? { confirmedBy: row.contribution.confirmedBy } : {}),
         ...(row.contribution.confirmedAt ? { confirmedAt: row.contribution.confirmedAt } : {}),
       };
-      return { transitioned: true, contribution, verifiedBuilder: row.profile.verifiedBuilder };
+      return {
+        transitioned: true,
+        contribution,
+        verifiedBuilder: row.profile.verifiedBuilder,
+        recipientUserId: row.profile.userId,
+      };
     },
-  });
+  }, undefined, createInAppNotificationSender(db));
 }

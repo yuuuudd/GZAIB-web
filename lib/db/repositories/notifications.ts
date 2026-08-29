@@ -1,13 +1,43 @@
 import { notifications } from "../../../db/schema";
 import type { getDb } from "../../../db";
-import type { NotificationMessage } from "../../../features/notifications/types";
+import type {
+  NotificationDeliveryStatus,
+  NotificationMessage,
+  NotificationStore,
+} from "../../../features/notifications/types";
 
 type Db = ReturnType<typeof getDb>;
 
-export async function saveInAppNotification(db: Db, message: NotificationMessage): Promise<void> {
+export async function saveInAppNotification(
+  db: Db,
+  message: NotificationMessage,
+  deliveryStatus: NotificationDeliveryStatus,
+): Promise<void> {
   await db.insert(notifications).values({
-    ...message,
-    deliveryStatus: "sent",
+    id: message.id,
+    userId: message.userId,
+    type: message.type,
+    title: message.subject,
+    body: message.text,
+    href: message.link,
+    dedupeKey: message.dedupeKey,
+    deliveryStatus,
+    createdAt: message.createdAt,
     updatedAt: message.createdAt,
-  }).onConflictDoNothing({ target: notifications.dedupeKey });
+  }).onConflictDoUpdate({
+    target: notifications.dedupeKey,
+    set: {
+      title: message.subject,
+      body: message.text,
+      href: message.link,
+      deliveryStatus,
+      updatedAt: message.createdAt,
+    },
+  });
+}
+
+export function createNotificationStore(db: Db): NotificationStore {
+  return {
+    save: (message, deliveryStatus) => saveInAppNotification(db, message, deliveryStatus),
+  };
 }

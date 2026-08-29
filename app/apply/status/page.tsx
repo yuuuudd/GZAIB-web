@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 type Application = { status: string; submittedAt?: number; updatedAt?: number; reviewReason?: string };
 
@@ -24,10 +26,10 @@ export default function ApplicationStatusPage() {
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "暂时无法读取申请状态。"));
   }, []);
 
-  const shell = (content: React.ReactNode) => <main className="brand-shell"><header className="brand-header"><a className="brand-mark" href="/" aria-label="广州AI共创社首页"><img src="/logo.png" alt="广州AI共创社" width="44" height="44" /><span>广州AI共创社</span></a><nav className="brand-nav" aria-label="主导航"><a href="/">共建地图</a><a href="/apply">申请点亮</a></nav><a className="brand-header-action" href="/apply">编辑申请资料</a></header><div className="application-shell">{content}</div></main>;
-  if (error) return shell(<section className="status-card"><p className="section-kicker">演示申请</p><h1>请先选择演示身份</h1><p>{error}</p><a className="brand-primary-action" href="/apply">返回申请页</a></section>);
+  const shell = (content: React.ReactNode) => <main className="brand-shell"><header className="brand-header"><Link className="brand-mark" href="/" aria-label="广州AI共创社首页"><Image src="/logo.png" alt="广州AI共创社" width={44} height={44} /><span>广州AI共创社</span></Link><nav className="brand-nav" aria-label="主导航"><Link href="/">共建地图</Link><Link href="/apply">申请点亮</Link></nav><Link className="brand-header-action" href="/apply">编辑申请资料</Link></header><div className="application-shell">{content}</div></main>;
+  if (error) return shell(<section className="status-card"><p className="section-kicker">演示申请</p><h1>请先选择演示身份</h1><p>{error}</p><Link className="brand-primary-action" href="/apply">返回申请页</Link></section>);
   if (application === undefined) return shell(<section className="status-card"><p>正在读取申请状态…</p></section>);
-  if (application === null) return shell(<section className="status-card"><p className="section-kicker">申请状态</p><h1>还没有提交申请</h1><p>填写你的公开资料与隐私设置，提交后可在这里查看审核进度。</p><a className="brand-primary-action" href="/apply">去申请点亮</a></section>);
+  if (application === null) return shell(<section className="status-card"><p className="section-kicker">申请状态</p><h1>还没有提交申请</h1><p>填写你的公开资料与隐私设置，提交后可在这里查看审核进度。</p><Link className="brand-primary-action" href="/apply">去申请点亮</Link></section>);
   const copy = statusCopy[application.status] ?? { title: "申请状态更新中", detail: "请稍后再试。" };
-  return shell(<section className="status-card"><p className="section-kicker">申请状态 / {application.status}</p><h1>{copy.title}</h1><p>{copy.detail}</p>{application.submittedAt ? <p className="status-time">提交时间：{new Date(application.submittedAt).toLocaleString("zh-CN")}</p> : null}{application.reviewReason ? <p className="review-reason">运营反馈：{application.reviewReason}</p> : null}<a className="brand-secondary-action" href="/apply">返回申请资料</a></section>);
+  return shell(<section className="status-card"><p className="section-kicker">申请状态 / {application.status}</p><h1>{copy.title}</h1><p>{copy.detail}</p>{application.submittedAt ? <p className="status-time">提交时间：{new Date(application.submittedAt).toLocaleString("zh-CN")}</p> : null}{application.reviewReason ? <p className="review-reason">运营反馈：{application.reviewReason}</p> : null}<Link className="brand-secondary-action" href="/apply">返回申请资料</Link></section>);
 }

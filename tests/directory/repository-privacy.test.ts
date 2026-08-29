@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
-import { applications, contributions, memberProfiles, schools, users } from "../../db/schema";
+import { applications, memberProfiles, users } from "../../db/schema";
 import { getPublishedProfileBySlug, listPublishedDirectory } from "../../lib/db/repositories/directory";
 import { listApprovedContributions } from "../../lib/db/repositories/contributions";
 

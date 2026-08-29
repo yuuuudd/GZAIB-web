@@ -2,6 +2,8 @@ import type { ApplicationRepository } from "../../lib/db/repositories/applicatio
 import type { ApplicationInput, ApplicationRecord } from "./types";
 import { completeApplicationVisibility, CONSENT_VERSION, getMapEligibility, validateApplication } from "./validation";
 import { isOwnedAvatarKey } from "../directory/avatar";
+import type { NotificationSender } from "../notifications/types";
+import { sendNotificationWithoutRollback } from "../notifications/types";
 
 export class ApplicationServiceError extends Error {
   constructor(message: string) {
@@ -20,6 +22,7 @@ export type ApplicationService = {
 export function createApplicationService(
   repository: ApplicationRepository,
   createId: () => string = () => crypto.randomUUID(),
+  notificationSender?: NotificationSender,
 ): ApplicationService {
   async function submitApplication(userId: string, rawInput: unknown, now: number): Promise<ApplicationRecord> {
     const validated = validateApplication(rawInput);
@@ -36,7 +39,8 @@ export function createApplicationService(
       throw new ApplicationServiceError("当前申请暂不能再次提交");
     }
 
-    const { consentAccepted: _consentAccepted, ...applicationInput } = validated.value;
+    const { consentAccepted, ...applicationInput } = validated.value;
+    void consentAccepted;
     const visibility = completeApplicationVisibility(applicationInput.visibility);
     const record: ApplicationRecord = {
       ...applicationInput,
@@ -52,6 +56,12 @@ export function createApplicationService(
       mapEligibility: getMapEligibility(visibility),
     };
     await repository.saveApplication(record);
+    await sendNotificationWithoutRollback(notificationSender, {
+      type: "application_submitted",
+      userId,
+      applicationId: record.id,
+      createdAt: now,
+    });
     return record;
   }
 
@@ -80,10 +90,11 @@ export async function getApplicationStatus(userId: string): Promise<ApplicationR
 }
 
 async function runtimeService(): Promise<ApplicationService> {
-  const [{ getDb }, { createApplicationRepository }] = await Promise.all([
-    import("../../db"), import("../../lib/db/repositories/applications"),
+  const [{ getDb }, { createApplicationRepository }, { createInAppNotificationSender }] = await Promise.all([
+    import("../../db"), import("../../lib/db/repositories/applications"), import("../notifications/in-app"),
   ]);
-  return createApplicationService(createApplicationRepository(getDb()));
+  const db = getDb();
+  return createApplicationService(createApplicationRepository(db), undefined, createInAppNotificationSender(db));
 }
 
 /** Re-exports the request shape at the feature boundary for form and route callers. */

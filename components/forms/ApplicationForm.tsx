@@ -119,6 +119,8 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
           <div className="form-grid identity-copy-fields"><label>昵称 <input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label><label>真实姓名（仅审核所需）<input name="realName" maxLength={60} /></label></div>
           <div className="avatar-upload-card">
             <div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>
+              {/* A newly uploaded owner-scoped URL must render immediately and is already normalized by Cloudflare Images. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               {avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}
             </div>
             <div className="avatar-upload-copy"><strong>上传头像（可选）</strong><small>JPEG、PNG 或 WebP，最大 5 MB；会自动裁成清晰方形头像。</small>

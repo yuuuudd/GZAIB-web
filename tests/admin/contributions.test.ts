@@ -25,7 +25,12 @@ function contributionRepository(initial: ContributionRecord[] = [storedPending])
       const contribution = { ...current, status: "confirmed" as const, confirmedBy: input.confirmedBy, confirmedAt: input.confirmedAt, updatedAt: input.confirmedAt };
       rows.set(current.id, contribution);
       audits.push(input.audit.action);
-      return { transitioned: true, contribution, verifiedBuilder: [...rows.values()].some((row) => row.profileId === current.profileId && row.status === "confirmed") };
+      return {
+        transitioned: true,
+        contribution,
+        verifiedBuilder: [...rows.values()].some((row) => row.profileId === current.profileId && row.status === "confirmed"),
+        recipientUserId: "demo-member",
+      };
     },
   };
   return { repository, rows, audits };

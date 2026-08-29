@@ -86,15 +86,17 @@ test("allows admins to review every allowlisted profile field", () => {
   });
 });
 
-test("never serializes login, review, or private contact fields", () => {
+test("never serializes private or operational fields in any public profile DTO", () => {
   for (const viewer of [
     { kind: "visitor" as const },
     { kind: "member" as const, userId: "user-2" },
     { kind: "admin" as const, userId: "admin-1" },
   ]) {
     const projected = projectProfile(profile, rules, viewer);
-    for (const forbidden of ["loginEmail", "reviewNotes", "wechat", "contactCard"]) {
-      assert.equal(JSON.stringify(projected).includes(`\"${forbidden}\"`), false);
+    for (const forbidden of [
+      "email", "loginEmail", "contactCard", "reviewNotes", "reportHistory", "sessionId", "wechat",
+    ]) {
+      assert.equal(JSON.stringify(projected).includes(`"${forbidden}"`), false);
     }
   }
 });
