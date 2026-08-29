@@ -15,6 +15,7 @@
 ### Binding Demo execution amendment (2026-08-30)
 
 - This execution targets the user-approved lightweight local Demo and reuses the core plan's two fixed, server-owned Demo identities. Real public authentication and official-account identity remain deferred.
+- Task 4 may extend the server-owned Demo identity allowlist with one additional fictional approved member persona so the sender and recipient sides can both be demonstrated without granting connection actions to the operator identity. The identity remains fixed server-side and is not a general sign-up path.
 - The complete in-app connection flow is required. Real Resend/public-account delivery is optional at runtime and must fail without rolling back connection state; no real recipient messages are sent during Demo verification.
 - Task 7 Steps 5–7 are replaced for this execution by configuration-contract checks, an updated local operations guide, and a retained local Demo server with browser-based visual/interaction verification. Do not publish, create hosted resources, apply remote migrations, or invent production secrets without a separate user authorization.
 - In the Final Completion Gate, “Sites returns a deployed URL” is replaced by “the local Demo URL is healthy and the primary member/admin connection screens pass browser verification.” Public hosting remains a separately authorized handoff step.
