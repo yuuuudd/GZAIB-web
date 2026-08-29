@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CONSENT_VERSION, validateApplication } from "../../features/applications/validation";
+import {
+  DEFAULT_APPLICATION_VISIBILITY,
+  CONSENT_VERSION,
+  getMapEligibility,
+  validateApplication,
+} from "../../features/applications/validation";
 
 const validInput = {
   nickname: "林同学",
@@ -35,4 +40,20 @@ test("rejects invalid public data instead of accepting a client-controlled profi
   assert.equal(validateApplication({ ...validInput, skills: ["不存在的技能"] }).ok, false);
   assert.equal(validateApplication({ ...validInput, roles: ["管理员"] }).ok, false);
   assert.equal(validateApplication({ ...validInput, visibility: { currentFocus: "team" } }).ok, false);
+});
+
+test("defaults every map-required output to public and every optional field to private", () => {
+  assert.deepEqual(DEFAULT_APPLICATION_VISIBILITY, {
+    nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public", skills: "public", roles: "public",
+    verifiedBuilder: "public", contributions: "public",
+    currentFocus: "private", canOffer: "private", wantsToMeet: "private", workLinks: "private", major: "private", grade: "private",
+  });
+});
+
+test("reports exactly which map-required fields keep an approved profile off-map", () => {
+  assert.deepEqual(getMapEligibility(DEFAULT_APPLICATION_VISIBILITY), { eligible: true, blockedBy: [] });
+  assert.deepEqual(getMapEligibility({ ...DEFAULT_APPLICATION_VISIBILITY, skills: "members", city: "private" }), {
+    eligible: false,
+    blockedBy: ["city", "skills"],
+  });
 });

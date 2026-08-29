@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplicationService } from "../../features/applications/service";
-import { CONSENT_VERSION } from "../../features/applications/validation";
+import { CONSENT_VERSION, DEFAULT_APPLICATION_VISIBILITY } from "../../features/applications/validation";
 import type { ApplicationRecord } from "../../features/applications/types";
+import { createApplicationRepository } from "../../lib/db/repositories/applications";
 
 const input = {
   nickname: "林同学",
@@ -52,6 +53,7 @@ test("only lets an applicant resubmit draft or changes-requested records", async
   const existing: ApplicationRecord = {
     id: "application-1", userId: "demo-member", status: "changes_requested", ...input,
     consentVersion: CONSENT_VERSION, consentAcceptedAt: 1, submittedAt: 1, createdAt: 1, updatedAt: 1,
+    mapEligibility: { eligible: true, blockedBy: [] },
   };
   const store = repository(existing);
   const service = createApplicationService(store, () => "new-id");
@@ -66,6 +68,7 @@ test("withdraws only a pending application", async () => {
   const existing: ApplicationRecord = {
     id: "application-1", userId: "demo-member", status: "pending", ...input,
     consentVersion: CONSENT_VERSION, consentAcceptedAt: 1, submittedAt: 1, createdAt: 1, updatedAt: 1,
+    mapEligibility: { eligible: true, blockedBy: [] },
   };
   const store = repository(existing);
   const service = createApplicationService(store, () => "new-id");
@@ -73,4 +76,31 @@ test("withdraws only a pending application", async () => {
   const withdrawn = await service.withdrawApplication("demo-member", 2_000);
   assert.equal(withdrawn.status, "withdrawn");
   assert.equal(store.saved?.updatedAt, 2_000);
+});
+
+test("submits complete visibility rules and retains a map-ineligible result", async () => {
+  const store = repository();
+  const service = createApplicationService(store, () => "application-1");
+  const submitted = await service.submitApplication("demo-member", { ...input, visibility: { skills: "private" } }, 1_000);
+
+  assert.deepEqual(store.saved?.visibility, { ...DEFAULT_APPLICATION_VISIBILITY, skills: "private" });
+  assert.deepEqual(submitted.mapEligibility, { eligible: false, blockedBy: ["skills"] });
+});
+
+test("repository serializes complete visibility rules for a submitted application", async () => {
+  let savedValues: Record<string, unknown> | undefined;
+  let updatedValues: Record<string, unknown> | undefined;
+  const db = {
+    insert: () => ({ values: (values: Record<string, unknown>) => {
+      savedValues = values;
+      return { onConflictDoUpdate: async ({ set }: { set: Record<string, unknown> }) => { updatedValues = set; } };
+    } }),
+  };
+  const service = createApplicationService(repository(), () => "application-1");
+  const record = await service.submitApplication("demo-member", { ...input, visibility: { roles: "members" } }, 1_000);
+  const incompleteRecord = { ...record, visibility: { roles: "members" as const } };
+
+  await createApplicationRepository(db as never).saveApplication(incompleteRecord);
+  assert.deepEqual(JSON.parse(savedValues?.visibilityJson as string), { ...DEFAULT_APPLICATION_VISIBILITY, roles: "members" });
+  assert.deepEqual(JSON.parse(updatedValues?.visibilityJson as string), { ...DEFAULT_APPLICATION_VISIBILITY, roles: "members" });
 });

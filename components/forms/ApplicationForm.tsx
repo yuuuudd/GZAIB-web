@@ -1,30 +1,39 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ROLE_OPTIONS, SKILL_OPTIONS, CONSENT_VERSION } from "../../features/applications/validation";
+import {
+  CONSENT_VERSION,
+  DEFAULT_APPLICATION_VISIBILITY,
+  getMapEligibility,
+  MAP_REQUIRED_VISIBILITY_FIELDS,
+  OPTIONAL_VISIBILITY_FIELDS,
+  ROLE_OPTIONS,
+  SKILL_OPTIONS,
+} from "../../features/applications/validation";
 import type { Visibility } from "../../features/directory/types";
 import { VisibilityField } from "./VisibilityField";
 
 type SchoolOption = { id: string; name: string; campus: string; city: string };
-type PrivacyField = "currentFocus" | "canOffer" | "wantsToMeet" | "workLinks" | "major" | "grade";
-
-const privateDefaults: Record<PrivacyField, Visibility> = {
-  currentFocus: "private", canOffer: "private", wantsToMeet: "private", workLinks: "private", major: "private", grade: "private",
-};
+type PrivacyField = keyof typeof DEFAULT_APPLICATION_VISIBILITY;
+const privacyFields = [...MAP_REQUIRED_VISIBILITY_FIELDS, ...OPTIONAL_VISIBILITY_FIELDS] as PrivacyField[];
 
 const privacyLabels: Record<PrivacyField, string> = {
+  nickname: "昵称", avatarUrl: "头像", school: "学校", city: "城市", intro: "一句话介绍", skills: "技能", roles: "参与角色",
+  verifiedBuilder: "共建者状态", contributions: "已确认贡献",
   currentFocus: "我正在做什么", canOffer: "我能提供什么", wantsToMeet: "我希望认识谁",
   workLinks: "作品链接", major: "专业", grade: "年级",
 };
 
 export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
-  const [visibility, setVisibility] = useState(privateDefaults);
+  const [visibility, setVisibility] = useState(() => ({ ...DEFAULT_APPLICATION_VISIBILITY }));
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function setFieldVisibility(field: PrivacyField, value: Visibility) {
     setVisibility((current) => ({ ...current, [field]: value }));
   }
+
+  const mapEligibility = getMapEligibility(visibility);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,8 +94,13 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       </section>
       <section className="application-section application-privacy">
         <p className="section-kicker">06 / 公开范围</p><h2>资料由你逐项决定谁能看见</h2>
-        <p className="section-intro">新的可选资料默认仅自己和必要管理员可见。昵称、学校、城市、头像、介绍、技能、角色、共建者状态和已确认贡献必须公开，资料才会被点亮到地图；隐藏其中任一必需公开资料时，资料不会显示在地图。</p>
-        <div className="privacy-grid">{(Object.keys(privacyLabels) as PrivacyField[]).map((field) => <VisibilityField key={field} label={privacyLabels[field]} value={visibility[field]} onChange={(value) => setFieldVisibility(field, value)} />)}</div>
+        <p className="section-intro">地图所需资料默认所有访客可见；新的可选资料默认仅自己和必要管理员可见。你可以逐项调整，但只有全部地图所需资料公开时，审核通过的资料才会出现在地图。</p>
+        <div className="privacy-grid">{privacyFields.map((field) => <VisibilityField key={field} label={privacyLabels[field]} value={visibility[field]} onChange={(value) => setFieldVisibility(field, value)} />)}</div>
+        <p className={`map-eligibility ${mapEligibility.eligible ? "map-eligible" : "map-ineligible"}`} role="status">
+          {mapEligibility.eligible
+            ? "当前公开设置已满足地图展示条件。"
+            : `当前公开设置会让地图展示暂不可用：${mapEligibility.blockedBy.map((field) => privacyLabels[field as PrivacyField]).join("、")}。即使审核通过，资料也会保持在地图外，直到这些字段改为“所有访客可见”。`}
+        </p>
       </section>
       <label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label>
       {message ? <p className="form-error" role="alert">{message}</p> : null}

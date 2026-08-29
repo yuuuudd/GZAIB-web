@@ -3,6 +3,7 @@ import { applications, schools } from "../../../db/schema";
 import type { getDb } from "../../../db";
 import type { ApplicationRecord, ApplicationReviewInput } from "../../../features/applications/types";
 import type { VisibilityRules } from "../../../features/directory/types";
+import { completeApplicationVisibility, getMapEligibility } from "../../../features/applications/validation";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -32,6 +33,7 @@ function readVisibility(value: string): VisibilityRules {
 }
 
 function toApplicationRecord(row: typeof applications.$inferSelect): ApplicationRecord {
+  const visibility = completeApplicationVisibility(readVisibility(row.visibilityJson));
   return {
     id: row.id, userId: row.userId, status: row.status as ApplicationRecord["status"],
     nickname: row.nickname, realName: row.realName ?? undefined, avatarKey: row.avatarKey ?? undefined,
@@ -39,9 +41,10 @@ function toApplicationRecord(row: typeof applications.$inferSelect): Application
     intro: row.intro, currentFocus: row.currentFocus ?? undefined, canOffer: row.canOffer ?? undefined,
     wantsToMeet: row.wantsToMeet ?? undefined, skills: readStringArray(row.skillsJson),
     interests: readStringArray(row.interestsJson), roles: readStringArray(row.rolesJson),
-    workLinks: readStringArray(row.workLinksJson), visibility: readVisibility(row.visibilityJson),
+    workLinks: readStringArray(row.workLinksJson), visibility,
     consentVersion: row.consentVersion, consentAcceptedAt: row.consentAcceptedAt,
     submittedAt: row.submittedAt ?? undefined, createdAt: row.createdAt, updatedAt: row.updatedAt,
+    mapEligibility: getMapEligibility(visibility),
   };
 }
 
@@ -77,7 +80,7 @@ export function createApplicationRepository(db: Db): ApplicationRepository {
         interestsJson: JSON.stringify(input.interests),
         rolesJson: JSON.stringify(input.roles),
         workLinksJson: JSON.stringify(input.workLinks),
-        visibilityJson: JSON.stringify(input.visibility),
+        visibilityJson: JSON.stringify(completeApplicationVisibility(input.visibility)),
         consentVersion: input.consentVersion,
         consentAcceptedAt: input.consentAcceptedAt,
         submittedAt: input.submittedAt,
@@ -101,7 +104,7 @@ export function createApplicationRepository(db: Db): ApplicationRepository {
           interestsJson: JSON.stringify(input.interests),
           rolesJson: JSON.stringify(input.roles),
           workLinksJson: JSON.stringify(input.workLinks),
-          visibilityJson: JSON.stringify(input.visibility),
+          visibilityJson: JSON.stringify(completeApplicationVisibility(input.visibility)),
           consentVersion: input.consentVersion,
           consentAcceptedAt: input.consentAcceptedAt,
           submittedAt: input.submittedAt,

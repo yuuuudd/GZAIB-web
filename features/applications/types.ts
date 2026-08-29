@@ -1,4 +1,4 @@
-import type { VisibilityRules } from "../directory/types";
+import type { ProjectableProfileField, VisibilityRules } from "../directory/types";
 
 export type ApplicationStatus =
   | "draft"
@@ -38,6 +38,13 @@ export type ApplicationRecord = Omit<ApplicationInput, "consentAccepted"> & {
   submittedAt?: number;
   createdAt: number;
   updatedAt: number;
+  /** Derived from submitted visibility and retained with the application for status/UI consumers. */
+  mapEligibility: ApplicationMapEligibility;
+};
+
+export type ApplicationMapEligibility = {
+  eligible: boolean;
+  blockedBy: ProjectableProfileField[];
 };
 
 export type ApplicationReviewInput = {

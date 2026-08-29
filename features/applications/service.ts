@@ -1,6 +1,6 @@
 import type { ApplicationRepository } from "../../lib/db/repositories/applications";
 import type { ApplicationInput, ApplicationRecord } from "./types";
-import { CONSENT_VERSION, validateApplication } from "./validation";
+import { completeApplicationVisibility, CONSENT_VERSION, getMapEligibility, validateApplication } from "./validation";
 
 export class ApplicationServiceError extends Error {
   constructor(message: string) {
@@ -33,8 +33,10 @@ export function createApplicationService(
     }
 
     const { consentAccepted: _consentAccepted, ...applicationInput } = validated.value;
+    const visibility = completeApplicationVisibility(applicationInput.visibility);
     const record: ApplicationRecord = {
       ...applicationInput,
+      visibility,
       id: existing?.id ?? createId(),
       userId,
       status: "pending",
@@ -43,6 +45,7 @@ export function createApplicationService(
       submittedAt: now,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
+      mapEligibility: getMapEligibility(visibility),
     };
     await repository.saveApplication(record);
     return record;

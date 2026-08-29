@@ -1,4 +1,5 @@
-import type { Visibility, VisibilityRules } from "../directory/types";
+import type { ProjectableProfileField, Visibility, VisibilityRules } from "../directory/types";
+import type { ApplicationMapEligibility } from "./types";
 import type { ApplicationInput } from "./types";
 
 export const CONSENT_VERSION = "builder-map-2026-08-29";
@@ -12,8 +13,29 @@ export const ROLE_OPTIONS = [
   "活动共建者", "项目发起人", "内容共建者", "技术共建者", "校园连接者", "资源支持者",
 ] as const;
 
-const OPTIONAL_VISIBILITY_FIELDS = ["currentFocus", "canOffer", "wantsToMeet", "workLinks", "major", "grade"] as const;
+export const MAP_REQUIRED_VISIBILITY_FIELDS = [
+  "nickname", "avatarUrl", "school", "city", "intro", "skills", "roles", "verifiedBuilder", "contributions",
+] as const;
+export const OPTIONAL_VISIBILITY_FIELDS = ["currentFocus", "canOffer", "wantsToMeet", "workLinks", "major", "grade"] as const;
+const ALL_VISIBILITY_FIELDS = [...MAP_REQUIRED_VISIBILITY_FIELDS, ...OPTIONAL_VISIBILITY_FIELDS] as const;
 const VISIBILITY_VALUES: readonly Visibility[] = ["public", "members", "private"];
+
+/** The application captures all profile visibility choices before any approval transfer occurs. */
+export const DEFAULT_APPLICATION_VISIBILITY: Required<VisibilityRules> = {
+  nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public", skills: "public", roles: "public",
+  verifiedBuilder: "public", contributions: "public",
+  currentFocus: "private", canOffer: "private", wantsToMeet: "private", workLinks: "private", major: "private", grade: "private",
+};
+
+export function completeApplicationVisibility(visibility: VisibilityRules): Required<VisibilityRules> {
+  return { ...DEFAULT_APPLICATION_VISIBILITY, ...visibility };
+}
+
+export function getMapEligibility(visibility: VisibilityRules): ApplicationMapEligibility {
+  const complete = completeApplicationVisibility(visibility);
+  const blockedBy = MAP_REQUIRED_VISIBILITY_FIELDS.filter((field) => complete[field] !== "public") as ProjectableProfileField[];
+  return { eligible: blockedBy.length === 0, blockedBy };
+}
 
 export type ApplicationValidation =
   | { ok: true; value: ApplicationInput }
@@ -45,7 +67,7 @@ function isVisibilityRules(value: unknown): value is VisibilityRules {
   const rules = asObject(value);
   if (!rules) return false;
   return Object.entries(rules).every(([field, visibility]) =>
-    OPTIONAL_VISIBILITY_FIELDS.includes(field as (typeof OPTIONAL_VISIBILITY_FIELDS)[number])
+    ALL_VISIBILITY_FIELDS.includes(field as (typeof ALL_VISIBILITY_FIELDS)[number])
       && typeof visibility === "string" && VISIBILITY_VALUES.includes(visibility as Visibility),
   );
 }
