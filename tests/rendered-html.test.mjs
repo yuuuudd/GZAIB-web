@@ -1,17 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-async function renderHomePage(extraHeaders = {}) {
+async function renderRoute(pathname, extraHeaders = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html", ...extraHeaders } }),
+    new Request(`http://localhost${pathname}`, { headers: { accept: "text/html", ...extraHeaders } }),
     { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
     { waitUntil() {}, passThroughOnException() {} },
   );
 }
+
+const renderHomePage = (extraHeaders = {}) => renderRoute("/", extraHeaders);
 
 test("home page renders finished Chinese metadata, CTA, and privacy copy", async () => {
   const response = await renderHomePage({ host: "localhost" });
@@ -62,4 +64,24 @@ test("home page ignores a syntactically valid hostile forwarded host and keeps d
 
   assert.match(html, /property="og:image"[^>]+content="http:\/\/localhost\/og\.png"/);
   assert.doesNotMatch(html, /attacker\.test/);
+});
+
+test("connections inbox page renders its consent UI without server-rendering contact plaintext", async () => {
+  const response = await renderRoute("/me/connections?box=accepted", { host: "localhost" });
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /已连接|已连接/);
+  assert.match(html, /收到的|发出的/);
+  assert.doesNotMatch(html, /member-a-v[12]|member-b@example\.test|CONTACT_ENCRYPTION_KEY|encryptedPayload/i);
+  assert.doesNotMatch(html, /reviewNotes|reporterId|sessionId/i);
+});
+
+test("unauthenticated connection API responses remain private and reveal no contact or account data", async () => {
+  const response = await renderRoute("/api/connections?box=accepted", { host: "localhost" });
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+  const body = await response.text();
+
+  assert.doesNotMatch(body, /wechat|email|contactCard|encryptedPayload|demo-admin|demo-member/i);
 });

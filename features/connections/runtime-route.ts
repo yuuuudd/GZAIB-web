@@ -30,16 +30,21 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
 
 /** Defers platform/D1 imports until an API request is handled, keeping route-module import safe in non-Worker tooling. */
 export async function createDefaultRuntimeConnectionRouteAdapter() {
-  const [identity, service, resolver, cards, repository, database] = await Promise.all([
-    import("../identity/active-account"), import("./service"), import("./recipient-resolver"), import("./contact-card"),
-    import("../../lib/db/repositories/contact-cards"), import("../../db"),
-  ]);
+  const identity = await import("../identity/active-account");
   return createRuntimeConnectionRouteAdapter({
     requireActiveSession: identity.requireActiveSession,
-    createRuntimeService: service.createRuntimeConnectionService,
-    resolveRecipientId: resolver.resolvePublicConnectionRecipientId,
-    resolvePublicSlug: resolver.resolvePublicConnectionSlug,
-    createLiveContactService: () => cards.createContactCardService(repository.createContactCardRepository(database.getDb())),
+    createRuntimeService: async () => (await import("./service")).createRuntimeConnectionService(),
+    resolveRecipientId: async (slug) => (await import("./recipient-resolver")).resolvePublicConnectionRecipientId(slug),
+    resolvePublicSlug: async (userId) => (await import("./recipient-resolver")).resolvePublicConnectionSlug(userId),
+    createLiveContactService: () => ({
+      getVisibleContactCard: async (viewerId, ownerId) => {
+        const [cards, repository, database] = await Promise.all([
+          import("./contact-card"), import("../../lib/db/repositories/contact-cards"), import("../../db"),
+        ]);
+        return cards.createContactCardService(repository.createContactCardRepository(database.getDb()))
+          .getVisibleContactCard(viewerId, ownerId);
+      },
+    }),
     now: Date.now,
   });
 }

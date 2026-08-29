@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
+import { connectionRequests, notifications } from "../../db/schema";
 import { createConnectionRepository } from "../../lib/db/repositories/connections";
 import { ConnectionServiceError, createConnectionService } from "../../features/connections/service";
 import type {
@@ -302,4 +303,70 @@ test("repository derives a transition status from the action instead of a caller
     requestId: "request-1", actorId: "member-2", action: "accept", now, notifications: [], status: "withdrawn",
   } as never);
   assert.equal(set?.status, "accepted");
+});
+
+type AtomicOperation = { table: unknown; query: unknown };
+
+function atomicBatchCapture(firstChanges = 0) {
+  let batch: AtomicOperation[] = [];
+  const db = {
+    insert(table: unknown) {
+      return {
+        select(query: unknown) {
+          const operation = { table, query } satisfies AtomicOperation;
+          return {
+            ...operation,
+            onConflictDoNothing: () => operation,
+          };
+        },
+      };
+    },
+    update(table: unknown) {
+      return {
+        set: () => ({ where: (query: unknown) => ({ table, query } satisfies AtomicOperation) }),
+      };
+    },
+    async batch(operations: AtomicOperation[]) {
+      batch = operations;
+      return operations.map((_, index) => ({ meta: { changes: index === 0 ? firstChanges : 0 } }));
+    },
+  };
+  return { db, batch: () => batch };
+}
+
+const notification = {
+  id: "notification-1", userId: "member-2", type: "connection_received", title: "收到新连接",
+  body: "成员想和你聊聊：AI collaboration", href: "/me/connections?box=received",
+  dedupeKey: "connection:request-1:pending", deliveryStatus: "pending" as const, createdAt: now,
+};
+
+test("D1 creation batches a non-empty guarded notification insert after the guarded request insert", async () => {
+  const capture = atomicBatchCapture();
+  await createConnectionRepository(capture.db as never).createRequestAtomic({ request: request(), notifications: [notification] });
+  const operations = capture.batch();
+  assert.equal(operations.length, 2);
+  assert.equal(operations[0]?.table, connectionRequests);
+  assert.equal(operations[1]?.table, notifications);
+  const notificationQuery = new SQLiteSyncDialect().sqlToQuery(operations[1]?.query as never);
+  assert.match(notificationQuery.sql, /where exists \(select 1 from connection_requests where id = \?\)/i);
+  assert.ok(notificationQuery.params.includes("request-1"));
+});
+
+test("D1 resolution batches a non-empty notification only after its guarded transition", async () => {
+  const capture = atomicBatchCapture();
+  await createConnectionRepository(capture.db as never).resolveRequestAtomic({
+    requestId: "request-1", actorId: "member-2", action: "accept", now, notifications: [{
+      ...notification, id: "notification-accepted", userId: "member-1", type: "connection_accepted",
+      dedupeKey: "connection:request-1:accepted",
+    }],
+  });
+  const operations = capture.batch();
+  assert.equal(operations.length, 2);
+  assert.equal(operations[0]?.table, connectionRequests);
+  assert.equal(operations[1]?.table, notifications);
+  const notificationQuery = new SQLiteSyncDialect().sqlToQuery(operations[1]?.query as never);
+  assert.match(notificationQuery.sql, /where exists \(\s*select 1 from connection_requests/i);
+  assert.ok(notificationQuery.params.includes("request-1"));
+  assert.ok(notificationQuery.params.includes("accepted"));
+  assert.ok(notificationQuery.params.includes(now));
 });
