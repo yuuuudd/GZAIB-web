@@ -42,6 +42,30 @@ test("owner can update allowlisted fields while identity, slug, status, and unkn
   await assert.rejects(() => service.updateOwnProfile("owner-1", "owner-1", { userId: "other-user" } as never, 1_003), /forbidden/i);
 });
 
+test("owner can select a normalized avatar key created for their own account", async () => {
+  const store = memoryRepository();
+  const service = createProfileUpdateService(store.repository);
+  const avatarKey = "avatars/owner-1/123e4567-e89b-42d3-a456-426614174000.webp";
+
+  await service.updateOwnProfile("owner-1", "owner-1", { avatarKey }, 1_010);
+
+  assert.equal(store.writes[0]?.profilePatch.avatarKey, avatarKey);
+  assert.equal(store.writes[0]?.applicationPatch.avatarKey, avatarKey);
+});
+
+test("profile update rejects an otherwise valid avatar key owned by another account", async () => {
+  const store = memoryRepository();
+  const service = createProfileUpdateService(store.repository);
+
+  await assert.rejects(
+    () => service.updateOwnProfile("owner-1", "owner-1", {
+      avatarKey: "avatars/other-owner/123e4567-e89b-42d3-a456-426614174000.webp",
+    }, 1_011),
+    /avatar owner/i,
+  );
+  assert.equal(store.writes.length, 0);
+});
+
 test("published map-required fields cannot become private until the profile is explicitly hidden", async () => {
   const store = memoryRepository();
   const service = createProfileUpdateService(store.repository);

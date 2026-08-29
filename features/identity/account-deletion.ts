@@ -1,10 +1,13 @@
+import type { AuditRecord } from "../admin/authorization";
+import { clearSession } from "./session";
+import type { Session } from "./types";
+
 export const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 
-export type MinimalAccountDeletionAudit = {
-  targetId: string;
-  createdAt: number;
+export type MinimalAccountDeletionAudit = Pick<AuditRecord, "targetId" | "createdAt"> & {
+  targetType: "member";
+  action: "member.self_deleted";
   diffJson: "{}";
-  actorUserId?: undefined;
 };
 
 export type AccountDeletionRepository = {
@@ -27,15 +30,18 @@ export function createAccountDeletionService(
         userId,
         deletedAt: now,
         auditId: createAuditId(),
-        audit: { targetId: userId, createdAt: now, diffJson: "{}" },
+        audit: {
+          targetType: "member",
+          targetId: userId,
+          action: "member.self_deleted",
+          createdAt: now,
+          diffJson: "{}",
+        },
       });
       if (!result.deleted) throw new Error("Account deletion state changed before commit");
     },
   };
 }
-
-import { clearSession } from "./session";
-import type { Session } from "./types";
 
 export type AccountDeletionRequestDependencies = {
   requireActiveSession(request: Request): Promise<Session>;
@@ -80,7 +86,8 @@ export async function createRuntimeAccountDeletionService() {
   const repository: AccountDeletionRepository = {
     async deleteAccountAtomic(input) {
       const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
-        select ${input.auditId}, null, 'user', ${input.userId}, 'account.self_deleted', '{}', ${input.deletedAt}
+        select ${input.auditId}, null, ${input.audit.targetType}, ${input.audit.targetId},
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
         from ${schema.users}
         where ${schema.users.id} = ${input.userId}
           and ${schema.users.status} <> 'deleted'

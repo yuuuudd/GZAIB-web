@@ -46,6 +46,17 @@ test("excludes unapproved, inactive, unpublished, private and unconfirmed candid
   assert.equal(result[0]?.previewMembers[0]?.slug, "lin");
 });
 
+test("connection-suspended members remain in the public school directory", async () => {
+  const service = createDirectoryService({
+    listCandidates: async () => [candidate({ accountStatus: "connection_suspended" })],
+  });
+
+  const result = await service.list({});
+
+  assert.equal(result[0]?.memberCount, 1);
+  assert.equal(result[0]?.previewMembers[0]?.slug, "lin");
+});
+
 test("combines city, skill, role, verified and normalized search filters with AND semantics", async () => {
   const repository = {
     listCandidates: async () => [

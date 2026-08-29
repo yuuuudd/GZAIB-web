@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { applications, contributions, memberProfiles, profileVisibility, schools, users } from "../../../db/schema";
 import type { getDb } from "../../../db";
 import { projectProfile } from "../../../features/directory/public-profile";
@@ -137,7 +137,7 @@ export function createProfileAccessRepository(db: Db): ProfileAccessRepository {
 
 function publicConditions(filters: DirectoryFilters) {
   const conditions = [
-    eq(users.status, "active"),
+    inArray(users.status, ["active", "connection_suspended"]),
     eq(memberProfiles.publishStatus, "published"),
   ];
   if (filters.city) conditions.push(eq(schools.city, filters.city));

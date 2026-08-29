@@ -5,6 +5,7 @@ import {
   createAccountDeletionService,
   handleAccountDeletionRequest,
   type AccountDeletionRepository,
+  type MinimalAccountDeletionAudit,
 } from "../../features/identity/account-deletion";
 import { createActiveAccountBoundary, InactiveAccountError } from "../../features/identity/active-account";
 import type { Session } from "../../features/identity/types";
@@ -12,7 +13,7 @@ import type { Session } from "../../features/identity/types";
 function memoryDeletionRepository() {
   const state = {
     userStatus: "active", publishStatus: "published", applicationStatus: "pending", sessionsRevokedAt: null as number | null,
-    audits: [] as { targetId: string; createdAt: number; diffJson: string; actorUserId?: string }[], batches: 0,
+    audits: [] as MinimalAccountDeletionAudit[], batches: 0,
   };
   const repository: AccountDeletionRepository = {
     deleteAccountAtomic: async (input) => {
@@ -46,7 +47,13 @@ test("account deletion atomically deletes, unpublishes, withdraws pending review
   assert.equal(store.state.publishStatus, "unpublished");
   assert.equal(store.state.applicationStatus, "withdrawn");
   assert.equal(store.state.sessionsRevokedAt, 1_700_000_000_000);
-  assert.deepEqual(store.state.audits, [{ targetId: "owner-1", createdAt: 1_700_000_000_000, diffJson: "{}" }]);
+  assert.deepEqual(store.state.audits, [{
+    targetType: "member",
+    targetId: "owner-1",
+    action: "member.self_deleted",
+    createdAt: 1_700_000_000_000,
+    diffJson: "{}",
+  }]);
 });
 
 test("active-account boundary blocks old stateless cookies after suspension or deletion", async () => {

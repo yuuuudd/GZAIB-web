@@ -1,4 +1,5 @@
 import { MAP_REQUIRED_VISIBILITY_FIELDS } from "../applications/validation";
+import { isOwnedAvatarKey } from "./avatar";
 import type { Visibility, VisibilityRules } from "./types";
 
 export type ProfilePublishStatus = "published" | "unpublished";
@@ -113,6 +114,9 @@ export function createProfileUpdateService(repository: ProfileUpdateRepository) 
       if (!context || context.userId !== actorUserId) throw new Error("Forbidden profile update");
       const patch = asPatch(value);
       validateProfileValues(patch);
+      if (typeof patch.avatarKey === "string" && !isOwnedAvatarKey(patch.avatarKey, actorUserId)) {
+        throw new Error("Invalid avatar owner");
+      }
       const visibilityPatch = validatedVisibility(patch.visibility);
       const visibility = { ...context.visibility, ...visibilityPatch };
       const publishStatus: ProfilePublishStatus = patch.mapVisibility === "hidden"

@@ -28,7 +28,7 @@ export async function deriveProfileViewer(
 }
 
 function isPubliclyAvailable(candidate: ProfileAccessCandidate): boolean {
-  return candidate.accountStatus === "active"
+  return (candidate.accountStatus === "active" || candidate.accountStatus === "connection_suspended")
     && candidate.publishStatus === "published";
 }
 

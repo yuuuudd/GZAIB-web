@@ -33,3 +33,16 @@ Implemented the public/member profile surface, owner-only member center, immedia
 - `git diff --check` — PASS (only Git line-ending notices on existing Windows checkout policy).
 
 Note: repository-wide `npm.cmd run lint` and `npx.cmd tsc --noEmit` still report pre-existing errors outside Task 9 (legacy apply pages/tests and missing standalone Cloudflare ambient types). Task 9-targeted lint is clean and the required production build succeeds.
+
+## Fix round 1 — 2026-08-30
+
+- Hardened `PATCH /api/me/profile` avatar changes by reusing `isOwnedAvatarKey`. A normalized key under the authenticated owner is accepted; a syntactically valid key under another owner is rejected before any write.
+- Corrected public account-state semantics: `connection_suspended` now remains visible in slug projection, legacy profile lookup, directory aggregation, runtime D1 candidate queries, and public collaboration queries. `hidden`, `suspended`, and `deleted` remain excluded.
+- Aligned self-deletion auditing with the central registered vocabulary. The typed audit payload and D1 insert now use `targetType: "member"` and `action: "member.self_deleted"`.
+- Added red/green regressions for valid/cross-owner avatar keys, connection-suspended slug and directory visibility, suspended exclusion, and exact deletion audit target/action.
+
+Fix verification:
+
+- Focused tests — PASS, 28 tests, 0 failures.
+- `npm.cmd run build` — PASS.
+- Task 9-targeted ESLint — PASS, 0 errors/warnings.

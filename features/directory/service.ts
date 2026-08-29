@@ -92,7 +92,7 @@ function hasRequiredPublicFields(profile: ProjectedProfile): profile is PublicCa
 
 function isPublishedCandidate(candidate: DirectoryCandidate): boolean {
   return candidate.approvalStatus === "approved"
-    && candidate.accountStatus === "active"
+    && (candidate.accountStatus === "active" || candidate.accountStatus === "connection_suspended")
     && candidate.publishStatus === "published"
     && candidate.school.coordinateStatus === "confirmed";
 }
@@ -228,13 +228,13 @@ export async function createRuntimeDirectoryService() {
   const repository: DirectoryRepository = {
     async listCandidates(limit) {
       const rows = await db
-        .select({ profile: schema.memberProfiles, school: schema.schools })
+        .select({ profile: schema.memberProfiles, school: schema.schools, accountStatus: schema.users.status })
         .from(schema.memberProfiles)
         .innerJoin(schema.users, drizzle.eq(schema.users.id, schema.memberProfiles.userId))
         .innerJoin(schema.applications, drizzle.eq(schema.applications.userId, schema.memberProfiles.userId))
         .innerJoin(schema.schools, drizzle.eq(schema.schools.id, schema.memberProfiles.schoolId))
         .where(drizzle.and(
-          drizzle.eq(schema.users.status, "active"),
+          drizzle.inArray(schema.users.status, ["active", "connection_suspended"]),
           drizzle.eq(schema.memberProfiles.publishStatus, "published"),
           drizzle.eq(schema.schools.coordinateStatus, "confirmed"),
         ))
@@ -249,11 +249,11 @@ export async function createRuntimeDirectoryService() {
         .from(schema.profileVisibility)
         .where(drizzle.inArray(schema.profileVisibility.profileId, profileIds)));
 
-      return rows.map(({ profile, school }) => {
+      return rows.map(({ profile, school, accountStatus }) => {
         const visibility = rulesByProfile.get(profile.id) ?? {};
         return {
           approvalStatus: "approved",
-          accountStatus: "active",
+          accountStatus,
           publishStatus: "published",
           school,
           profile: {
@@ -297,7 +297,7 @@ export async function createRuntimeDirectoryService() {
         .where(drizzle.and(
           drizzle.eq(schema.contributions.status, "confirmed"),
           drizzle.eq(schema.contributions.visibility, "public"),
-          drizzle.eq(schema.users.status, "active"),
+          drizzle.inArray(schema.users.status, ["active", "connection_suspended"]),
           drizzle.eq(schema.memberProfiles.publishStatus, "published"),
           drizzle.eq(schema.schools.coordinateStatus, "confirmed"),
         ));

@@ -73,11 +73,21 @@ test("hidden, unpublished, and inactive profiles are absent from public slug loo
   for (const hidden of [
     candidate({ publishStatus: "unpublished" }),
     candidate({ accountStatus: "hidden" }),
+    candidate({ accountStatus: "suspended" }),
     candidate({ accountStatus: "deleted" }),
   ]) {
     const service = createProfileAccessService(memoryRepository(hidden).repository);
     assert.equal(await service.getProfile("lin", { kind: "visitor" }), undefined);
   }
+});
+
+test("connection suspension does not hide an otherwise published slug profile", async () => {
+  const service = createProfileAccessService(memoryRepository(candidate({ accountStatus: "connection_suspended" })).repository);
+
+  const profile = await service.getProfile("lin", { kind: "visitor" });
+
+  assert.equal(profile?.slug, "lin");
+  assert.equal(profile?.nickname, "林同学");
 });
 
 test("a pending school-change review keeps the previously approved profile public at its prior school", async () => {
