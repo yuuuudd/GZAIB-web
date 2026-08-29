@@ -108,7 +108,7 @@ export function createConnectionService(
       if (current.status !== "pending") throw new ConnectionServiceError("state_conflict");
 
       const resolved = await repository.resolveRequestAtomic({
-        requestId, actorId, action, status: targetStatus, now, notifications: [],
+        requestId, actorId, action, now, notifications: [],
       });
       if (resolved) return resolved;
 

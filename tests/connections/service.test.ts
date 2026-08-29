@@ -25,7 +25,7 @@ function request(overrides: Partial<ConnectionRequest> = {}): ConnectionRequest 
 function context(overrides: Partial<ConnectionPolicyContext> = {}): ConnectionPolicyContext {
   const current = request();
   return {
-    senderId: current.senderId, recipientId: current.recipientId, senderStatus: "active", recipientPublished: true,
+    senderId: current.senderId, recipientId: current.recipientId, senderStatus: "active", senderApproved: true, senderPublished: true, recipientPublished: true,
     blockedEitherDirection: false, pendingEitherDirection: false, requestsInLast24Hours: 0,
     topic: current.topic, message: current.message,
     ...overrides,
@@ -51,7 +51,8 @@ function memoryRepository(initialRequest: ConnectionRequest | undefined = undefi
       if (!current || current.id !== input.requestId || current.status !== "pending") return undefined;
       if ((input.action === "withdraw" && current.senderId !== input.actorId)
         || (input.action !== "withdraw" && current.recipientId !== input.actorId)) return undefined;
-      current = { ...current, status: input.status, resolvedAt: input.now, updatedAt: input.now };
+      const status = input.action === "accept" ? "accepted" : input.action === "decline" ? "declined" : "withdrawn";
+      current = { ...current, status, resolvedAt: input.now, updatedAt: input.now };
       return current;
     },
     listRequests: async (): Promise<ConnectionPage> => ({ items: current ? [current] : [], nextCursor: undefined }),
@@ -93,6 +94,19 @@ test("creation rejects an inactive sender before a request can be persisted", as
   assert.equal(store.current, undefined);
 });
 
+test("creation rejects an active sender lacking approval or a published profile before persistence", async () => {
+  for (const senderContext of [context({ senderApproved: false }), context({ senderPublished: false })]) {
+    const store = memoryRepository();
+    store.setContext(senderContext);
+    const service = createConnectionService(store.repository);
+    await assert.rejects(
+      () => service.createRequest("member-1", { recipientId: "member-2", topic: "AI collaboration", message: request().message }, now),
+      (error: unknown) => error instanceof ConnectionServiceError && error.code === "sender_ineligible",
+    );
+    assert.equal(store.current, undefined);
+  }
+});
+
 test("withdrawn requests remain in the rolling count and prevent a sixth request", async () => {
   const store = memoryRepository();
   store.setContext(context({ requestsInLast24Hours: 5 }));
@@ -106,14 +120,22 @@ test("withdrawn requests remain in the rolling count and prevent a sixth request
 });
 
 test("an atomic create loss rechecks policy and returns the typed concurrent duplicate result", async () => {
-  const store = memoryRepository(request({ id: "concurrent", senderId: "member-2", recipientId: "member-1" }));
-  store.setContext(context({ pendingEitherDirection: true }));
-  const service = createConnectionService(store.repository);
+  let reads = 0;
+  const store = memoryRepository();
+  const repository: ConnectionRepository = {
+    ...store.repository,
+    getCreateContext: async (senderId, recipientId, input) => context({
+      senderId, recipientId, topic: input.topic, message: input.message, pendingEitherDirection: reads++ > 0,
+    }),
+    createRequestAtomic: async () => ({ created: false }),
+  };
+  const service = createConnectionService(repository);
 
   await assert.rejects(
     () => service.createRequest("member-1", { recipientId: "member-2", topic: "AI collaboration", message: request().message }, now),
     (error: unknown) => error instanceof ConnectionServiceError && error.code === "duplicate_pending",
   );
+  assert.equal(reads, 2);
 });
 
 test("only the recipient accepts or declines while only the sender withdraws", async () => {
@@ -171,4 +193,63 @@ test("D1 inbox pagination has a stable createdAt/id cursor and never returns mor
   assert.match(predicate.sql, /"connection_requests"\."created_at" = \? and "connection_requests"\."id" < \?/);
   assert.ok(predicate.params.includes("accepted"));
   assert.equal(order.length, 2);
+});
+
+test("D1 received, sent, and accepted inboxes apply their distinct ownership filters", async () => {
+  const predicates = new Map<string, unknown>();
+  for (const box of ["received", "sent", "accepted"] as const) {
+    let where: unknown;
+    const builder = {
+      where: (condition: unknown) => { where = condition; return builder; },
+      orderBy: () => builder,
+      limit: () => Promise.resolve([]),
+    };
+    const db = { select: () => ({ from: () => builder }) };
+    await createConnectionRepository(db as never).listRequests("member-1", box, { createdAt: now, id: "request-1" });
+    predicates.set(box, where);
+  }
+
+  const dialect = new SQLiteSyncDialect();
+  const received = dialect.sqlToQuery(predicates.get("received") as never);
+  const sent = dialect.sqlToQuery(predicates.get("sent") as never);
+  const accepted = dialect.sqlToQuery(predicates.get("accepted") as never);
+  assert.ok(received.params.includes("member-1"));
+  assert.equal(received.params.includes("accepted"), false);
+  assert.ok(sent.params.includes("member-1"));
+  assert.equal(sent.params.includes("accepted"), false);
+  assert.ok(accepted.params.includes("accepted"));
+  assert.equal(accepted.params.filter((value) => value === "member-1").length, 2);
+  for (const query of [received, sent, accepted]) {
+    assert.match(query.sql, /"connection_requests"\."created_at" < \?/);
+    assert.match(query.sql, /"connection_requests"\."created_at" = \? and "connection_requests"\."id" < \?/);
+  }
+});
+
+test("D1 guarded creation requires an approved, published active sender and includes the 24-hour boundary", async () => {
+  let guardedInsert: unknown;
+  const db = {
+    insert: () => ({ select: (query: unknown) => { guardedInsert = query; return {}; } }),
+    batch: async () => [{ meta: { changes: 0 } }],
+  };
+  const repository = createConnectionRepository(db as never);
+  await repository.createRequestAtomic({ request: request({ createdAt: now }), notifications: [] });
+
+  const query = new SQLiteSyncDialect().sqlToQuery(guardedInsert as never);
+  assert.match(query.sql, /sender_application\.status = 'approved'/);
+  assert.match(query.sql, /sender_profile\.publish_status = 'published'/);
+  assert.match(query.sql, /daily_request\.created_at >= \?/);
+  assert.ok(query.params.includes(now - 86_400_000));
+});
+
+test("repository derives a transition status from the action instead of a caller-supplied target", async () => {
+  let set: Record<string, unknown> | undefined;
+  const db = {
+    update: () => ({ set: (value: Record<string, unknown>) => { set = value; return { where: () => ({}) }; } }),
+    batch: async () => [{ meta: { changes: 0 } }],
+  };
+  const repository = createConnectionRepository(db as never);
+  await repository.resolveRequestAtomic({
+    requestId: "request-1", actorId: "member-2", action: "accept", now, notifications: [], status: "withdrawn",
+  } as never);
+  assert.equal(set?.status, "accepted");
 });

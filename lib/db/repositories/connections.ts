@@ -14,6 +14,12 @@ type Db = ReturnType<typeof getDb>;
 const DAY_MS = 86_400_000;
 const PAGE_SIZE = 30;
 
+function transitionStatus(action: "accept" | "decline" | "withdraw"): Extract<ConnectionStatus, "accepted" | "declined" | "withdrawn"> {
+  if (action === "accept") return "accepted";
+  if (action === "decline") return "declined";
+  return "withdrawn";
+}
+
 function toRequest(row: typeof connectionRequests.$inferSelect): ConnectionRequest {
   return {
     id: row.id,
@@ -60,7 +66,14 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
     async getCreateContext(senderId, recipientId, input, now) {
       const since = now - DAY_MS;
       const [senderRows, recipientRows, blockRows, pendingRows, countRows] = await Promise.all([
-        db.select({ status: users.status }).from(users).where(eq(users.id, senderId)),
+        db.select({
+          status: users.status,
+          applicationStatus: applications.status,
+          publishStatus: memberProfiles.publishStatus,
+        }).from(users)
+          .leftJoin(applications, eq(applications.userId, users.id))
+          .leftJoin(memberProfiles, eq(memberProfiles.userId, users.id))
+          .where(eq(users.id, senderId)),
         db.select({ id: users.id }).from(users)
           .innerJoin(applications, eq(applications.userId, users.id))
           .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
@@ -87,6 +100,8 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         senderId,
         recipientId,
         senderStatus: senderRows[0]?.status ?? "missing",
+        senderApproved: senderRows[0]?.applicationStatus === "approved",
+        senderPublished: senderRows[0]?.publishStatus === "published",
         recipientPublished: recipientRows.length > 0,
         blockedEitherDirection: blockRows.length > 0,
         pendingEitherDirection: pendingRows.length > 0,
@@ -105,6 +120,13 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         where ${users.id} = ${request.senderId}
           and ${users.status} = 'active'
           and ${request.senderId} <> ${request.recipientId}
+          and exists (
+            select 1 from applications sender_application
+            inner join member_profiles sender_profile on sender_profile.user_id = sender_application.user_id
+            where sender_application.user_id = ${users.id}
+              and sender_application.status = 'approved'
+              and sender_profile.publish_status = 'published'
+          )
           and exists (
             select 1 from users recipient
             inner join applications recipient_application on recipient_application.user_id = recipient.id
@@ -142,11 +164,12 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
     },
 
     async resolveRequestAtomic(input) {
+      const status = transitionStatus(input.action);
       const actorCondition = input.action === "withdraw"
         ? eq(connectionRequests.senderId, input.actorId)
         : eq(connectionRequests.recipientId, input.actorId);
       const update = db.update(connectionRequests).set({
-        status: input.status,
+        status,
         resolvedAt: input.now,
         updatedAt: input.now,
       }).where(and(
@@ -159,7 +182,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
           ${notification.href}, ${notification.dedupeKey}, ${notification.deliveryStatus}, null, ${notification.createdAt}, ${notification.createdAt}
         where exists (
           select 1 from connection_requests
-          where id = ${input.requestId} and status = ${input.status} and resolved_at = ${input.now}
+          where id = ${input.requestId} and status = ${status} and resolved_at = ${input.now}
         )
       `).onConflictDoNothing());
       const results = await db.batch([update, ...notificationInserts] as never) as Array<{ meta?: { changes?: number } }>;

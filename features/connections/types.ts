@@ -26,6 +26,8 @@ export type ConnectionPolicyContext = {
   senderId: string;
   recipientId: string;
   senderStatus: string;
+  senderApproved: boolean;
+  senderPublished: boolean;
   recipientPublished: boolean;
   blockedEitherDirection: boolean;
   pendingEitherDirection: boolean;
@@ -79,7 +81,6 @@ export type ConnectionRepository = {
     requestId: string;
     actorId: string;
     action: ConnectionAction;
-    status: Extract<ConnectionStatus, "accepted" | "declined" | "withdrawn">;
     now: number;
     notifications: ConnectionNotificationPersistence[];
   }): Promise<ConnectionRequest | undefined>;
