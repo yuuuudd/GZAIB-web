@@ -160,6 +160,7 @@ export function createDirectoryService(repository: DirectoryRepository) {
 }
 
 type VisibilityRow = { profileId: string; fieldName: string; visibility: string };
+const D1_VISIBILITY_BATCH_SIZE = 100;
 
 /** Keeps D1 queries well below SQLite's bind-parameter limit while eliminating per-profile lookups. */
 export async function loadVisibilityRulesInBatches(
@@ -167,8 +168,8 @@ export async function loadVisibilityRulesInBatches(
   loadBatch: (profileIds: string[]) => Promise<VisibilityRow[]>,
 ): Promise<Map<string, VisibilityRules>> {
   const rulesByProfile = new Map<string, VisibilityRules>();
-  for (let start = 0; start < profileIds.length; start += 400) {
-    const rows = await loadBatch(profileIds.slice(start, start + 400));
+  for (let start = 0; start < profileIds.length; start += D1_VISIBILITY_BATCH_SIZE) {
+    const rows = await loadBatch(profileIds.slice(start, start + D1_VISIBILITY_BATCH_SIZE));
     for (const row of rows) {
       if (!isProjectableField(row.fieldName) || !isVisibility(row.visibility)) continue;
       const rules = rulesByProfile.get(row.profileId) ?? {};

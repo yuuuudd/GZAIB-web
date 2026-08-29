@@ -114,7 +114,7 @@ test("cursor pagination resumes after the exact mixed-case and non-ASCII slug", 
   assert.deepEqual(new Set(seen), new Set(slugs));
 });
 
-test("loads visibility rules in SQLite-safe batches instead of one query per profile", async () => {
+test("loads visibility rules in D1-safe batches of at most 100 parameters", async () => {
   const profileIds = Array.from({ length: 901 }, (_, index) => `p-${index}`);
   const batchSizes: number[] = [];
   const rules = await loadVisibilityRulesInBatches(profileIds, async (batch) => {
@@ -122,6 +122,9 @@ test("loads visibility rules in SQLite-safe batches instead of one query per pro
     return batch.map((profileId) => ({ profileId, fieldName: "nickname", visibility: "public" }));
   });
 
-  assert.deepEqual(batchSizes, [400, 400, 101]);
+  assert.equal(batchSizes.length, 10);
+  assert.equal(batchSizes.every((size) => size <= 100), true);
+  assert.equal(rules.size, 901);
+  assert.deepEqual(rules.get("p-0"), { nickname: "public" });
   assert.deepEqual(rules.get("p-900"), { nickname: "public" });
 });
