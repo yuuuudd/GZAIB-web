@@ -29,7 +29,11 @@ export async function GET(request: Request) {
         ...(url.searchParams.get("cursor") ? { cursor: url.searchParams.get("cursor")!.slice(0, 160) } : {}),
       }));
     }
-    return Response.json({ schools: await service.list(directoryQuery(url)) });
+    const [schools, collaborationLinks] = await Promise.all([
+      service.list(directoryQuery(url)),
+      service.listCollaborationLinks(),
+    ]);
+    return Response.json({ schools, collaborationLinks });
   } catch (error) {
     console.error("Unable to load public directory", error);
     return Response.json({ error: "学校目录暂时无法读取" }, { status: 503 });

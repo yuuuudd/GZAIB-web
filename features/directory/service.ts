@@ -51,6 +51,23 @@ export type DirectoryCandidate = {
 
 export type DirectoryRepository = {
   listCandidates(limit: number): Promise<DirectoryCandidate[]>;
+  listPublicCollaborations?(): Promise<DirectoryCollaborationRecord[]>;
+};
+
+export type DirectoryCollaborationRecord = {
+  activityKey: string;
+  title: string;
+  activityDate: number;
+  schoolId: string;
+  status: string;
+  visibility: string;
+};
+
+export type DirectoryCollaborationLink = {
+  activityKey: string;
+  title: string;
+  activityDate: number;
+  schoolIds: string[];
 };
 
 type PublicCandidate = {
@@ -156,6 +173,25 @@ export function createDirectoryService(repository: DirectoryRepository) {
         nextCursor: safeStart + limit < sorted.length ? page.at(-1)?.projected.slug : undefined,
       };
     },
+
+    async listCollaborationLinks(): Promise<DirectoryCollaborationLink[]> {
+      if (!repository.listPublicCollaborations) return [];
+      const grouped = new Map<string, DirectoryCollaborationLink>();
+      for (const row of await repository.listPublicCollaborations()) {
+        if (row.status !== "confirmed" || row.visibility !== "public") continue;
+        const existing = grouped.get(row.activityKey);
+        if (existing) {
+          if (!existing.schoolIds.includes(row.schoolId)) existing.schoolIds.push(row.schoolId);
+          existing.activityDate = Math.max(existing.activityDate, row.activityDate);
+        } else {
+          grouped.set(row.activityKey, { activityKey: row.activityKey, title: row.title, activityDate: row.activityDate, schoolIds: [row.schoolId] });
+        }
+      }
+      return [...grouped.values()]
+        .filter((link) => link.schoolIds.length >= 2)
+        .map((link) => ({ ...link, schoolIds: [...link.schoolIds].sort() }))
+        .sort((left, right) => right.activityDate - left.activityDate || left.activityKey.localeCompare(right.activityKey));
+    },
   };
 }
 
@@ -244,6 +280,29 @@ export async function createRuntimeDirectoryService() {
           visibility,
         } satisfies DirectoryCandidate;
       });
+    },
+    async listPublicCollaborations() {
+      return db.select({
+        activityKey: schema.contributions.activityKey,
+        title: schema.contributions.title,
+        activityDate: schema.contributions.activityDate,
+        schoolId: schema.memberProfiles.schoolId,
+        status: schema.contributions.status,
+        visibility: schema.contributions.visibility,
+      })
+        .from(schema.contributions)
+        .innerJoin(schema.memberProfiles, drizzle.eq(schema.memberProfiles.id, schema.contributions.profileId))
+        .innerJoin(schema.users, drizzle.eq(schema.users.id, schema.memberProfiles.userId))
+        .innerJoin(schema.applications, drizzle.eq(schema.applications.userId, schema.memberProfiles.userId))
+        .innerJoin(schema.schools, drizzle.eq(schema.schools.id, schema.memberProfiles.schoolId))
+        .where(drizzle.and(
+          drizzle.eq(schema.contributions.status, "confirmed"),
+          drizzle.eq(schema.contributions.visibility, "public"),
+          drizzle.eq(schema.applications.status, "approved"),
+          drizzle.eq(schema.users.status, "active"),
+          drizzle.eq(schema.memberProfiles.publishStatus, "published"),
+          drizzle.eq(schema.schools.coordinateStatus, "confirmed"),
+        ));
     },
   };
   return createDirectoryService(repository);

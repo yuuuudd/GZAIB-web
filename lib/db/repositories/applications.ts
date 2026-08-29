@@ -32,7 +32,7 @@ function readVisibility(value: string): VisibilityRules {
   }
 }
 
-function toApplicationRecord(row: typeof applications.$inferSelect): ApplicationRecord {
+export function toApplicationRecord(row: typeof applications.$inferSelect): ApplicationRecord {
   const visibility = completeApplicationVisibility(readVisibility(row.visibilityJson));
   return {
     id: row.id, userId: row.userId, status: row.status as ApplicationRecord["status"],
