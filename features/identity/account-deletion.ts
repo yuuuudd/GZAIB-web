@@ -113,6 +113,15 @@ export async function createRuntimeAccountDeletionService() {
           drizzle.isNull(schema.sessions.revokedAt),
           auditExists,
         )),
+        // These connection-era records are private capability state, not moderation history.
+        db.delete(schema.contactCards).where(drizzle.and(drizzle.eq(schema.contactCards.userId, input.userId), auditExists)),
+        db.update(schema.connectionRequests).set({ status: "cancelled_by_block", resolvedAt: input.deletedAt, updatedAt: input.deletedAt }).where(drizzle.and(
+          drizzle.eq(schema.connectionRequests.status, "pending"),
+          drizzle.or(drizzle.eq(schema.connectionRequests.senderId, input.userId), drizzle.eq(schema.connectionRequests.recipientId, input.userId)),
+          auditExists,
+        )),
+        // A deleted account must not keep controlling another member's access; reports/audits remain retained.
+        db.delete(schema.blocks).where(drizzle.and(drizzle.eq(schema.blocks.blockerId, input.userId), auditExists)),
       ]);
       return { deleted: ((gateResult as { meta?: { changes?: number } }).meta?.changes ?? 0) === 1 };
     },

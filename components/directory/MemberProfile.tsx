@@ -1,5 +1,7 @@
 import type { ProjectedProfile } from "../../features/directory/types";
 import { ConnectButton, type ConnectionCtaState } from "../connections/ConnectButton";
+import { BlockButton } from "../safety/BlockButton";
+import { ReportDialog } from "../safety/ReportDialog";
 
 function initial(value?: string): string {
   return Array.from(value?.trim() ?? "")[0] ?? "共";
@@ -40,6 +42,7 @@ export function MemberProfile({ profile, connection = { state: "visitor", dailyR
       <h2 id="connect-heading">想认识 {profile.nickname ?? "TA"}？</h2>
       <p>先介绍你是谁，以及为什么想连接。</p>
       <ConnectButton state={connection.state} recipientSlug={profile.slug} recipientName={profile.nickname ?? "TA"} dailyRemaining={connection.dailyRemaining} />
+      {connection.state !== "visitor" && connection.state !== "own" ? <details className="member-safety-menu"><summary>更多安全操作</summary><BlockButton memberSlug={profile.slug} name={profile.nickname ?? "该成员"} /><ReportDialog targetMemberSlug={profile.slug} /></details> : null}
       <p id="connect-explanation" className="member-connect-note"><span aria-hidden="true">◇</span> 仅审核通过的成员可以发起连接；请求由对方自行决定是否接受。</p>
       <p className="member-contact-lock"><span aria-hidden="true">▣</span> 联系方式仅在双方同意后交换</p>
     </aside>
