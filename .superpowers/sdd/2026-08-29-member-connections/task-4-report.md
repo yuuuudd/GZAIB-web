@@ -55,3 +55,8 @@
 - `npm.cmd run lint` — pass
 - `npm.cmd run build` — pass
 - `git diff --check` — pass
+## Scoped re-review residual — successful-submit focus
+
+- Added a failing test proving the pending state needed a stable focusable status target.
+- Successful request creation now records the pending status as the focus destination; after React commits the replacement state, focus moves to that `role="status"`, `tabIndex={-1}` node instead of disappearing with the trigger button.
+- Focus/dialog tests: 4/4; lint, Vinext build, and `git diff --check`: pass.
