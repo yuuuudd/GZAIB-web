@@ -1,11 +1,15 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { dailyMetrics } from "../../../db/schema";
+import { dailyMetrics, schools } from "../../../db/schema";
 import { createMetricsService, type MetricsRepository } from "../../../features/directory/service";
 
 function metricsRepository(): MetricsRepository {
   const db = getDb();
   return {
+    async isKnownSchool(schoolId) {
+      const [school] = await db.select({ id: schools.id }).from(schools).where(sql`${schools.id} = ${schoolId}`).limit(1);
+      return Boolean(school);
+    },
     async increment(counter) {
       const [row] = await db.insert(dailyMetrics).values({ ...counter, count: 1 })
         .onConflictDoUpdate({

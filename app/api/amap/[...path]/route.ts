@@ -22,6 +22,7 @@ export async function handleAmapRequest(request: Request, path: string[], option
   if (request.method !== "GET" && request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405, headers: { Allow: "GET, POST" } });
   }
+  if (!ALLOWED_PROXY_PATHS.has(path.join("/"))) return Response.json({ error: "Not found" }, { status: 404 });
   const securityCode = options.securityCode ?? process.env.AMAP_SECURITY_JS_CODE;
   if (!securityCode) return Response.json({ error: "AMap proxy is not configured" }, { status: 503 });
   const upstream = fixedUpstream(path, new URL(request.url), securityCode);

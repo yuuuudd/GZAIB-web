@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createDirectoryService, type DirectoryCandidate } from "../../features/directory/service";
+import { createDirectoryService, loadVisibilityRulesInBatches, type DirectoryCandidate } from "../../features/directory/service";
 
 const publicVisibility = {
   nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public",
@@ -93,4 +93,35 @@ test("list mode paginates projected profiles with an opaque stable cursor", asyn
   assert.deepEqual(first.items.map((item) => item.slug), ["a", "b"]);
   assert.deepEqual(second.items.map((item) => item.slug), ["c"]);
   assert.equal(second.nextCursor, undefined);
+});
+
+test("cursor pagination resumes after the exact mixed-case and non-ASCII slug", async () => {
+  const slugs = ["a", "B", "á", "中", "Z"];
+  const service = createDirectoryService({
+    listCandidates: async () => slugs.map((slug) => candidate({
+      profile: { ...candidate().profile, id: `p-${slug}`, slug, nickname: `成员${slug}` },
+    })),
+  });
+  const seen: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await service.listMembers({}, { limit: 2, cursor });
+    seen.push(...page.items.map((item) => item.slug));
+    cursor = page.nextCursor;
+  } while (cursor && seen.length < 20);
+
+  assert.equal(seen.length, slugs.length);
+  assert.deepEqual(new Set(seen), new Set(slugs));
+});
+
+test("loads visibility rules in SQLite-safe batches instead of one query per profile", async () => {
+  const profileIds = Array.from({ length: 901 }, (_, index) => `p-${index}`);
+  const batchSizes: number[] = [];
+  const rules = await loadVisibilityRulesInBatches(profileIds, async (batch) => {
+    batchSizes.push(batch.length);
+    return batch.map((profileId) => ({ profileId, fieldName: "nickname", visibility: "public" }));
+  });
+
+  assert.deepEqual(batchSizes, [400, 400, 101]);
+  assert.deepEqual(rules.get("p-900"), { nickname: "public" });
 });

@@ -147,8 +147,8 @@ export function createDirectoryService(repository: DirectoryRepository) {
     async listMembers(query: DirectoryQuery = {}, options: { limit?: number; cursor?: string } = {}) {
       const candidates = await publicCandidates(repository, query);
       const sorted = candidates.sort((a, b) => a.projected.slug.localeCompare(b.projected.slug));
-      const start = options.cursor ? sorted.findIndex(({ projected }) => projected.slug > options.cursor!) : 0;
-      const safeStart = start < 0 ? sorted.length : start;
+      const cursorIndex = options.cursor ? sorted.findIndex(({ projected }) => projected.slug === options.cursor) : -1;
+      const safeStart = options.cursor ? (cursorIndex < 0 ? sorted.length : cursorIndex + 1) : 0;
       const limit = Math.max(1, Math.min(options.limit ?? 24, DIRECTORY_PAGE_CAP));
       const page = sorted.slice(safeStart, safeStart + limit);
       return {
@@ -157,6 +157,26 @@ export function createDirectoryService(repository: DirectoryRepository) {
       };
     },
   };
+}
+
+type VisibilityRow = { profileId: string; fieldName: string; visibility: string };
+
+/** Keeps D1 queries well below SQLite's bind-parameter limit while eliminating per-profile lookups. */
+export async function loadVisibilityRulesInBatches(
+  profileIds: string[],
+  loadBatch: (profileIds: string[]) => Promise<VisibilityRow[]>,
+): Promise<Map<string, VisibilityRules>> {
+  const rulesByProfile = new Map<string, VisibilityRules>();
+  for (let start = 0; start < profileIds.length; start += 400) {
+    const rows = await loadBatch(profileIds.slice(start, start + 400));
+    for (const row of rows) {
+      if (!isProjectableField(row.fieldName) || !isVisibility(row.visibility)) continue;
+      const rules = rulesByProfile.get(row.profileId) ?? {};
+      rules[row.fieldName] = row.visibility;
+      rulesByProfile.set(row.profileId, rules);
+    }
+  }
+  return rulesByProfile;
 }
 
 /** Builds the D1-backed directory at the server boundary; client code imports only DTO types. */
@@ -184,15 +204,17 @@ export async function createRuntimeDirectoryService() {
         ))
         .limit(Math.min(limit, DIRECTORY_PROFILE_CAP));
 
-      return Promise.all(rows.map(async ({ profile, school }) => {
-        const visibilityRows = await db
-          .select({ fieldName: schema.profileVisibility.fieldName, visibility: schema.profileVisibility.visibility })
-          .from(schema.profileVisibility)
-          .where(drizzle.eq(schema.profileVisibility.profileId, profile.id));
-        const visibility: VisibilityRules = {};
-        for (const row of visibilityRows) {
-          if (isProjectableField(row.fieldName) && isVisibility(row.visibility)) visibility[row.fieldName] = row.visibility;
-        }
+      const rulesByProfile = await loadVisibilityRulesInBatches(rows.map(({ profile }) => profile.id), async (profileIds) => db
+        .select({
+          profileId: schema.profileVisibility.profileId,
+          fieldName: schema.profileVisibility.fieldName,
+          visibility: schema.profileVisibility.visibility,
+        })
+        .from(schema.profileVisibility)
+        .where(drizzle.inArray(schema.profileVisibility.profileId, profileIds)));
+
+      return rows.map(({ profile, school }) => {
+        const visibility = rulesByProfile.get(profile.id) ?? {};
         return {
           approvalStatus: "approved",
           accountStatus: "active",
@@ -220,7 +242,7 @@ export async function createRuntimeDirectoryService() {
           },
           visibility,
         } satisfies DirectoryCandidate;
-      }));
+      });
     },
   };
   return createDirectoryService(repository);
@@ -245,7 +267,10 @@ export type MetricCounter = {
   dimensionKey: string;
   updatedAt: number;
 };
-export type MetricsRepository = { increment(counter: MetricCounter): Promise<number> };
+export type MetricsRepository = {
+  increment(counter: MetricCounter): Promise<number>;
+  isKnownSchool(schoolId: string): Promise<boolean>;
+};
 
 function isMetricPayload(value: unknown): value is { eventType: MetricEventType; dimensionKey: string } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -260,6 +285,10 @@ export function createMetricsService(repository: MetricsRepository) {
   return {
     async record(payload: unknown, now: number): Promise<number> {
       if (!isMetricPayload(payload) || !Number.isFinite(now)) throw new Error("Invalid aggregate metric");
+      if (payload.dimensionKey.startsWith("school:")) {
+        const schoolId = payload.dimensionKey.slice("school:".length);
+        if (!await repository.isKnownSchool(schoolId)) throw new Error("Invalid aggregate metric");
+      }
       return repository.increment({
         metricDate: new Date(now).toISOString().slice(0, 10),
         eventType: payload.eventType,

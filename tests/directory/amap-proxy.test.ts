@@ -11,6 +11,15 @@ test("refuses client-supplied destinations and unknown proxy paths", async () =>
   assert.equal(response.status, 404);
 });
 
+test("returns 404 for an unknown path even when the proxy is unconfigured", async () => {
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/not-supported"),
+    ["not-supported"],
+    { securityCode: "", fetchImpl: fetch },
+  );
+  assert.equal(response.status, 404);
+});
+
 test("refuses unsupported methods before contacting upstream", async () => {
   let contacted = false;
   const response = await handleAmapRequest(
