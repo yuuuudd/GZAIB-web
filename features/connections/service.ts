@@ -161,6 +161,11 @@ export function createConnectionService(
       const targetStatus = transitions[action].to;
       if (current.status === targetStatus) return current;
       if (current.status !== "pending") throw new ConnectionServiceError("state_conflict");
+      if (action === "accept") {
+        const policy = await repository.getAcceptancePolicy(requestId, actorId);
+        if (policy === "blocked") throw new ConnectionServiceError("blocked");
+        if (policy !== "allowed") throw new ConnectionServiceError("forbidden");
+      }
 
       const [actor, target] = await Promise.all([
         repository.getNotificationTarget(actorId),

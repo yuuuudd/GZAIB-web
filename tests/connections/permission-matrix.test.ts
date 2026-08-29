@@ -16,13 +16,13 @@ type Expected = { create: number; inbox: number; accept: number; contact: number
 
 const cases: Array<{ actor: Actor; expected: Expected }> = [
   { actor: "visitor", expected: { create: 401, inbox: 401, accept: 401, contact: 401, report: 401, admin: 403 } },
-  { actor: "pending", expected: { create: 403, inbox: 200, accept: 404, contact: 403, report: 201, admin: 403 } },
+  { actor: "pending", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 403 } },
   { actor: "active", expected: { create: 201, inbox: 200, accept: 200, contact: 200, report: 201, admin: 403 } },
   { actor: "connection_suspended", expected: { create: 403, inbox: 200, accept: 200, contact: 403, report: 201, admin: 403 } },
-  { actor: "hidden", expected: { create: 403, inbox: 200, accept: 404, contact: 403, report: 201, admin: 403 } },
+  { actor: "hidden", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 403 } },
   { actor: "suspended", expected: { create: 401, inbox: 401, accept: 401, contact: 401, report: 401, admin: 403 } },
-  { actor: "admin", expected: { create: 403, inbox: 200, accept: 404, contact: 403, report: 201, admin: 200 } },
-  { actor: "blocked", expected: { create: 403, inbox: 200, accept: 404, contact: 403, report: 201, admin: 403 } },
+  { actor: "admin", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 200 } },
+  { actor: "blocked", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 403 } },
 ];
 
 function accountStatus(actor: Actor) {
@@ -61,6 +61,16 @@ function fixture(actor: Actor) {
     }),
     createRequestAtomic: async (input) => { requests.push(input.request); notifications.push(...input.notifications); return { created: true }; },
     getRequest: async (id) => requests.find((item) => item.id === id),
+    getAcceptancePolicy: async (id, acceptingUserId) => {
+      const incoming = requests.find((item) => item.id === id);
+      if (!incoming || incoming.recipientId !== acceptingUserId) return "ineligible";
+      if (blocked) return "blocked";
+      const acceptingStatus = status.get(acceptingUserId);
+      const acceptingMember = actor !== "admin" && (acceptingStatus === "active" || acceptingStatus === "connection_suspended")
+        && approved.has(acceptingUserId) && published.has(acceptingUserId);
+      const senderEligible = status.get(incoming.senderId) === "active" && approved.has(incoming.senderId) && published.has(incoming.senderId);
+      return acceptingMember && senderEligible ? "allowed" : "ineligible";
+    },
     resolveRequestAtomic: async (input) => {
       const current = requests.find((item) => item.id === input.requestId);
       if (!current || current.status !== "pending") return undefined;
@@ -119,7 +129,7 @@ test("permission matrix calls production route and service boundaries, including
     const create = await statusOf(() => store.route.POST(request("/api/connections", { recipientId: "recipient", topic: "校园 AI 共创", message })));
     const inbox = await statusOf(() => store.route.GET(request("/api/connections?box=received")));
 
-    if (item.actor === "active" || item.actor === "connection_suspended") {
+    if (item.actor !== "visitor" && item.actor !== "suspended") {
       store.requests.push({ id: "incoming", senderId: "sender", recipientId: store.actorId, topic: "校园 AI 共创", message, status: "pending", createdAt: now, updatedAt: now });
     }
     const accept = await statusOf(() => store.route.PATCH(new Request("https://demo.local/api/connections/incoming", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "accept" }) })));

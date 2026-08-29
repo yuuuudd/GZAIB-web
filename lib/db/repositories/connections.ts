@@ -41,6 +41,42 @@ function pairCondition(leftUserId: string, rightUserId: string) {
   );
 }
 
+function acceptanceEligibility(actorId: string) {
+  return sql`
+    exists (
+      select 1 from users accepting_member
+      inner join applications accepting_application on accepting_application.user_id = accepting_member.id
+      inner join member_profiles accepting_profile on accepting_profile.user_id = accepting_member.id
+      where accepting_member.id = ${actorId}
+        and accepting_member.id = ${connectionRequests.recipientId}
+        and accepting_member.role = 'member'
+        and accepting_member.status in ('active', 'connection_suspended')
+        and accepting_application.status = 'approved'
+        and accepting_profile.publish_status = 'published'
+    )
+    and exists (
+      select 1 from users request_sender
+      inner join applications sender_application on sender_application.user_id = request_sender.id
+      inner join member_profiles sender_profile on sender_profile.user_id = request_sender.id
+      where request_sender.id = ${connectionRequests.senderId}
+        and request_sender.role = 'member'
+        and request_sender.status in ('active', 'connection_suspended')
+        and sender_application.status = 'approved'
+        and sender_profile.publish_status = 'published'
+    )
+  `;
+}
+
+function noBlockForCurrentRequest() {
+  return sql`
+    not exists (
+      select 1 from blocks current_block
+      where (current_block.blocker_id = ${connectionRequests.senderId} and current_block.blocked_id = ${connectionRequests.recipientId})
+         or (current_block.blocker_id = ${connectionRequests.recipientId} and current_block.blocked_id = ${connectionRequests.senderId})
+    )
+  `;
+}
+
 function cursorCondition(cursor: ConnectionCursor | undefined) {
   if (!cursor) return undefined;
   return or(
@@ -163,6 +199,30 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
       return row ? toRequest(row) : undefined;
     },
 
+    async getAcceptancePolicy(requestId, actorId) {
+      const [current] = await db.select({
+        senderId: connectionRequests.senderId,
+        recipientId: connectionRequests.recipientId,
+      }).from(connectionRequests).where(and(
+        eq(connectionRequests.id, requestId),
+        eq(connectionRequests.recipientId, actorId),
+      )).limit(1);
+      if (!current) return "ineligible";
+
+      const [blockedRow] = await db.select({ blockerId: blocks.blockerId }).from(blocks).where(or(
+        and(eq(blocks.blockerId, current.senderId), eq(blocks.blockedId, current.recipientId)),
+        and(eq(blocks.blockerId, current.recipientId), eq(blocks.blockedId, current.senderId)),
+      )).limit(1);
+      if (blockedRow) return "blocked";
+
+      const [eligible] = await db.select({ id: connectionRequests.id }).from(connectionRequests).where(and(
+        eq(connectionRequests.id, requestId),
+        eq(connectionRequests.status, "pending"),
+        acceptanceEligibility(actorId),
+      )).limit(1);
+      return eligible ? "allowed" : "ineligible";
+    },
+
     async resolveRequestAtomic(input) {
       const status = transitionStatus(input.action);
       const actorCondition = input.action === "withdraw"
@@ -176,6 +236,8 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         eq(connectionRequests.id, input.requestId),
         eq(connectionRequests.status, "pending"),
         actorCondition,
+        input.action === "accept" ? acceptanceEligibility(input.actorId) : undefined,
+        input.action === "accept" ? noBlockForCurrentRequest() : undefined,
       ));
       const notificationInserts = input.notifications.map((notification) => db.insert(notifications).select(sql`
         select ${notification.id}, ${notification.userId}, ${notification.type}, ${notification.title}, ${notification.body},

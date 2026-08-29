@@ -48,6 +48,7 @@ function memoryRepository(initialRequest: ConnectionRequest | undefined = undefi
       return { created: true };
     },
     getRequest: async (id) => current?.id === id ? current : undefined,
+    getAcceptancePolicy: async () => "allowed",
     resolveRequestAtomic: async (input) => {
       if (!current || current.id !== input.requestId || current.status !== "pending") return undefined;
       if ((input.action === "withdraw" && current.senderId !== input.actorId)
@@ -364,6 +365,12 @@ test("D1 resolution batches a non-empty notification only after its guarded tran
   assert.equal(operations.length, 2);
   assert.equal(operations[0]?.table, connectionRequests);
   assert.equal(operations[1]?.table, notifications);
+  const transitionGuard = new SQLiteSyncDialect().sqlToQuery(operations[0]?.query as never);
+  assert.match(transitionGuard.sql, /accepting_member\.role = 'member'/i);
+  assert.match(transitionGuard.sql, /accepting_application\.status = 'approved'/i);
+  assert.match(transitionGuard.sql, /accepting_profile\.publish_status = 'published'/i);
+  assert.match(transitionGuard.sql, /request_sender\.status in \('active', 'connection_suspended'\)/i);
+  assert.match(transitionGuard.sql, /not exists \(\s*select 1 from blocks current_block/i);
   const notificationQuery = new SQLiteSyncDialect().sqlToQuery(operations[1]?.query as never);
   assert.match(notificationQuery.sql, /where exists \(\s*select 1 from connection_requests/i);
   assert.ok(notificationQuery.params.includes("request-1"));

@@ -28,11 +28,12 @@ test("local Demo migrations use a project-local Wrangler config with no remote r
 });
 
 test("README gives the exact local-only config-backed migration commands in order", () => {
-  const core = "npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state/local-demo";
-  const connections = "npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state/local-demo";
+  const core = "npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state";
+  const connections = "npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state";
   assert.ok(readme.indexOf(core) >= 0, "core migration command must be documented exactly");
   assert.ok(readme.indexOf(connections) > readme.indexOf(core), "connection migration must follow core migration");
   assert.match(readme, /\$env:WRANGLER_LOG_PATH\s*=\s*"\.wrangler\/logs"/);
   assert.match(readme, /\$env:MINIFLARE_REGISTRY_PATH\s*=\s*"\.wrangler\/registry"/);
   assert.doesNotMatch(readme, /wrangler d1 execute[^\n]*--remote/i);
+  assert.doesNotMatch(readme, /--persist-to=\.wrangler\/state\/local-demo/);
 });

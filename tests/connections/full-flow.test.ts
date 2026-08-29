@@ -38,6 +38,12 @@ function fixture() {
       return { created: true };
     },
     getRequest: async (requestId) => requests.find((request) => request.id === requestId),
+    getAcceptancePolicy: async (requestId, actorId) => {
+      const request = requests.find((entry) => entry.id === requestId);
+      if (!request || request.recipientId !== actorId) return "ineligible";
+      if (blocks.has(pairKey(request.senderId, request.recipientId))) return "blocked";
+      return canContact(request.senderId) && canContact(request.recipientId) ? "allowed" : "ineligible";
+    },
     resolveRequestAtomic: async (input) => {
       const request = requests.find((entry) => entry.id === input.requestId);
       const expectedActor = input.action === "withdraw" ? request?.senderId : request?.recipientId;

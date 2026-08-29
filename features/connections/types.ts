@@ -77,6 +77,8 @@ export type ConnectionRepository = {
   getCreateContext(senderId: string, recipientId: string, input: Pick<CreateConnectionInput, "topic" | "message">, now: number): Promise<ConnectionPolicyContext>;
   createRequestAtomic(input: CreateConnectionAtomicInput): Promise<{ created: boolean }>;
   getRequest(requestId: string): Promise<ConnectionRequest | undefined>;
+  /** Re-checks live member/profile/block state before consent can be granted. */
+  getAcceptancePolicy(requestId: string, actorId: string): Promise<"allowed" | "blocked" | "ineligible">;
   resolveRequestAtomic(input: {
     requestId: string;
     actorId: string;
