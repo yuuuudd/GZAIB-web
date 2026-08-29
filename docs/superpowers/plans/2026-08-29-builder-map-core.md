@@ -812,10 +812,13 @@ git commit -m "feat: add secure member avatar uploads"
 - Create: `tests/admin/review.test.ts`
 - Create: `tests/admin/contributions.test.ts`
 - Create: `tests/admin/member-status.test.ts`
+- Create: `db/demo-seed.ts`
+- Create: `app/api/admin/demo-seed/route.ts`
+- Create: `tests/admin/demo-seed.test.ts`
 
 **Interfaces:**
 - Produces: `requireAdmin(session)`; `reviewApplication(adminId, applicationId, decision, now)`; `confirmContribution(adminId, input, now)`
-- Consumes: core repositories and `ADMIN_EMAILS`
+- Consumes: core repositories and the signed fixed `demo-admin` session while `DEMO_MODE=true`
 
 - [ ] **Step 1: Write failing authorization and transition tests**
 
@@ -836,9 +839,9 @@ npm run test:unit -- tests/admin/*.test.ts
 
 Expected: FAIL because admin services do not exist.
 
-- [ ] **Step 3: Implement admin authorization and audit writes**
+- [ ] **Step 3: Implement Demo admin authorization and audit writes**
 
-Require both `users.role === "admin"` and a normalized email in `ADMIN_EMAILS`. Use an explicit audit action union: `application.approved`, `application.changes_requested`, `application.rejected`, `school.coordinate_confirmed`, `contribution.confirmed`, `member.hidden`, `member.restored`, `member.connections_suspended`, `member.account_suspended`, `member.self_deleted`.
+Require the verified session to contain both `identity.id === "demo-admin"` and `identity.role === "admin"`, and require `DEMO_MODE=true` at the route boundary. Do not accept email, user ID, or role claims from the request. Keep the authorization interface transport-neutral for future公众号 auth. Use an explicit audit action union: `application.approved`, `application.changes_requested`, `application.rejected`, `school.coordinate_confirmed`, `contribution.confirmed`, `member.hidden`, `member.restored`, `member.connections_suspended`, `member.account_suspended`, `member.self_deleted`, `demo.seeded`.
 
 - [ ] **Step 4: Implement application review atomically**
 
@@ -852,6 +855,8 @@ Use fields `activityKey`, `title`, `activityDate`, `role`, `outcome`, `publicSum
 
 The review screen shows private application data only after server-side admin authorization. Buttons post exact decisions and show state-specific confirmation. School management geocodes a school name through the server and requires an administrator to confirm the proposed coordinate before publication. Member management allows `hide`, `restore`, `suspend_connections`, and `suspend_account` through the shared member-status service, with one audit row per action. The admin landing page derives totals for approved members, confirmed builders, schools, cities, pending applications, profile views and map-to-profile visits without exposing individual social rankings.
 
+Add an idempotent Demo dataset initializer available only to the verified `demo-admin` while `DEMO_MODE=true`. It creates at least six Guangdong university/campus records across multiple cities, twelve clearly fictional members with public required fields, one pending application, and several confirmed public contributions/collaboration links. Use `.invalid` placeholder emails, no real names or contact details, no avatar object keys, and confirmed school coordinates. Expose a clearly labeled “初始化演示数据” admin action; repeated calls must not duplicate rows. Do not run or expose this initializer outside Demo mode.
+
 - [ ] **Step 7: Run tests and build**
 
 ```bash
@@ -864,7 +869,7 @@ Expected: PASS; direct requests by non-admin sessions return `403`.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add features/admin features/applications/review.ts features/contributions app/admin app/api/admin components/admin tests/admin
+git add features/admin features/applications/review.ts features/contributions app/admin app/api/admin components/admin tests/admin db/demo-seed.ts
 git commit -m "feat: add application and contribution review"
 ```
 
