@@ -7,4 +7,7 @@ test("core schema exports every required table", () => {
     "users", "magicLinkTokens", "sessions", "schools", "applications",
     "memberProfiles", "profileVisibility", "contributions", "notifications", "dailyMetrics", "auditLogs",
   ]) assert.ok(name in schema, `missing ${name}`);
+  for (const name of ["contactCards", "connectionRequests", "blocks", "reports"]) {
+    assert.ok(name in schema, `missing ${name}`);
+  }
 });

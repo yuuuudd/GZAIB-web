@@ -134,6 +134,51 @@ export const notifications = sqliteTable("notifications", {
   updatedAt: integer("updated_at").notNull(),
 }, (t) => [uniqueIndex("ux_notifications_dedupe").on(t.dedupeKey), index("idx_notifications_user_read_created").on(t.userId, t.readAt, t.createdAt)]);
 
+export const contactCards = sqliteTable("contact_cards", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  encryptedPayload: text("encrypted_payload").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const connectionRequests = sqliteTable("connection_requests", {
+  id: text("id").primaryKey(),
+  senderId: text("sender_id").notNull().references(() => users.id),
+  recipientId: text("recipient_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  topic: text("topic").notNull(),
+  status: text("status", { enum: ["pending", "accepted", "declined", "withdrawn", "cancelled_by_block"] }).notNull(),
+  createdAt: integer("created_at").notNull(),
+  resolvedAt: integer("resolved_at"),
+  updatedAt: integer("updated_at").notNull(),
+}, (t) => [
+  index("idx_connection_sender_created").on(t.senderId, t.createdAt),
+  index("idx_connection_recipient_status_created").on(t.recipientId, t.status, t.createdAt),
+  index("idx_connection_pair_status").on(t.senderId, t.recipientId, t.status),
+]);
+
+export const blocks = sqliteTable("blocks", {
+  blockerId: text("blocker_id").notNull().references(() => users.id),
+  blockedId: text("blocked_id").notNull().references(() => users.id),
+  createdAt: integer("created_at").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.blockerId, t.blockedId] }),
+  index("idx_blocks_blocked").on(t.blockedId),
+]);
+
+export const reports = sqliteTable("reports", {
+  id: text("id").primaryKey(),
+  reporterId: text("reporter_id").notNull().references(() => users.id),
+  targetUserId: text("target_user_id").notNull().references(() => users.id),
+  connectionRequestId: text("connection_request_id").references(() => connectionRequests.id),
+  category: text("category", { enum: ["harassment", "spam", "false_identity", "privacy", "other"] }).notNull(),
+  description: text("description").notNull(),
+  status: text("status", { enum: ["open", "resolved", "dismissed"] }).notNull().default("open"),
+  resolution: text("resolution"),
+  createdAt: integer("created_at").notNull(),
+  resolvedAt: integer("resolved_at"),
+  resolvedBy: text("resolved_by").references(() => users.id),
+}, (t) => [index("idx_reports_status_created").on(t.status, t.createdAt)]);
+
 export const dailyMetrics = sqliteTable("daily_metrics", {
   metricDate: text("metric_date").notNull(),
   eventType: text("event_type", { enum: ["map_view", "profile_view", "map_to_profile"] }).notNull(),
