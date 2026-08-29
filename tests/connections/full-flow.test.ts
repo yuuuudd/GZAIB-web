@@ -139,4 +139,10 @@ test("approved members exchange only live encrypted cards, and block/report/susp
   assert.equal(resolved.status, "resolved");
   assert.equal(store.statuses.get("member-a"), "connection_suspended");
   assert.deepEqual(store.audits, [{ auditId: "audit-or-report-2", action: "suspend_connections", targetUserId: "member-a" }]);
+  await safety.unblockUser("member-b", "member-a");
+  await assert.rejects(
+    () => connections.createRequest("member-a", { recipientId: "member-b", topic: "校园 AI 共创", message: "我想交流校园 AI 共创活动的组织经验和实践想法。" }, now + 7),
+    (error: unknown) => error instanceof ConnectionServiceError && error.code === "sender_ineligible",
+    "the post-resolution refusal must be caused by the connection suspension, not the earlier block",
+  );
 });

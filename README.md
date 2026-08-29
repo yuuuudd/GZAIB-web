@@ -10,12 +10,14 @@
 
 ```powershell
 npm.cmd install
-npx.cmd wrangler d1 execute site-creator-d1 --local --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state/v3
-npx.cmd wrangler d1 execute site-creator-d1 --local --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state/v3
+$env:WRANGLER_LOG_PATH = ".wrangler/logs"
+$env:MINIFLARE_REGISTRY_PATH = ".wrangler/registry"
+npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0000_builder_map_core.sql --persist-to=.wrangler/state/local-demo
+npx.cmd wrangler d1 execute site-creator-d1 --local --config wrangler.jsonc --file=drizzle/0001_member_connections.sql --persist-to=.wrangler/state/local-demo
 npm.cmd run dev
 ```
 
-打开本地地址后，选择「以运营员体验」并前往 `/admin` 点击「初始化 Demo 数据」。该操作可重复执行，不会重复创建固定数据。随后可在身份切换器中使用：
+打开本地地址后，在身份切换器选择「运营员」并前往 `/admin` 点击「初始化 Demo 数据」。该操作可重复执行，不会重复创建固定数据。随后可在身份切换器中使用：
 
 - `demo-admin`：审核申请、确认学校坐标与贡献、处理举报和成员状态。
 - `demo-member`：共建者 A，可保存联系名片并给共建者 B 发起请求。
