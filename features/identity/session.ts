@@ -111,7 +111,7 @@ export async function verifyDemoSession(
   if (v !== 1 || (sub !== "demo-member" && sub !== "demo-admin") || !Number.isSafeInteger(exp)) {
     throw new Error("Invalid demo session");
   }
-  if (now > exp) throw new Error("Demo session expired");
+  if (now >= exp) throw new Error("Demo session expired");
 
   return { identity: resolveDemoIdentity(identityInputFromSubject(sub)), expiresAt: exp };
 }

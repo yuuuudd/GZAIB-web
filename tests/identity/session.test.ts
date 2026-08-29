@@ -16,6 +16,11 @@ test("demo session rejects tampering and expires after eight hours", async () =>
   await assert.rejects(() => verifyDemoSession(cookie, 28_801_001, secret), /expired/i);
 });
 
+test("demo session expires at the exact eight-hour boundary", async () => {
+  const cookie = await createDemoSession("member", 1_000, secret);
+  await assert.rejects(() => verifyDemoSession(cookie, 28_801_000, secret), /expired/i);
+});
+
 test("session verification derives the fixed identity instead of trusting a role claim", async () => {
   const cookie = await createDemoSession("admin", 1_000, secret);
   assert.deepEqual(await verifyDemoSession(cookie, 2_000, secret), {
