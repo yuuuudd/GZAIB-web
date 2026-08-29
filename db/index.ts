@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
+/** Returns the D1-backed database with the core member-directory schema. */
 export function getDb() {
   if (!env.DB) {
     throw new Error(
