@@ -1,4 +1,7 @@
 import type { AuditRecord } from "../admin/authorization";
+import type { getDb } from "../../db";
+import * as schema from "../../db/schema";
+import * as drizzle from "drizzle-orm";
 import { clearSession } from "./session";
 import type { Session } from "./types";
 
@@ -78,12 +81,8 @@ export async function handleAccountDeletionRequest(
   return clearSession(new Response(null, { status: 204 }));
 }
 
-export async function createRuntimeAccountDeletionService() {
-  const [{ getDb }, schema, drizzle] = await Promise.all([
-    import("../../db"), import("../../db/schema"), import("drizzle-orm"),
-  ]);
-  const db = getDb();
-  const repository: AccountDeletionRepository = {
+export function createAccountDeletionRepository(db: ReturnType<typeof getDb>): AccountDeletionRepository {
+  return {
     async deleteAccountAtomic(input) {
       const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
         select ${input.auditId}, null, ${input.audit.targetType}, ${input.audit.targetId},
@@ -126,7 +125,11 @@ export async function createRuntimeAccountDeletionService() {
       return { deleted: ((gateResult as { meta?: { changes?: number } }).meta?.changes ?? 0) === 1 };
     },
   };
-  return createAccountDeletionService(repository);
+}
+
+export async function createRuntimeAccountDeletionService() {
+  const { getDb } = await import("../../db");
+  return createAccountDeletionService(createAccountDeletionRepository(getDb()));
 }
 
 export async function deleteOwnAccount(userId: string, confirmation: unknown, now: number): Promise<void> {

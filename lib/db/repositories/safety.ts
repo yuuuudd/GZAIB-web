@@ -1,4 +1,4 @@
-import { and, asc, eq, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { auditLogs, blocks, connectionRequests, memberProfiles, reports, users } from "../../../db/schema";
 import type { getDb } from "../../../db";
 import type { SafetyRepository } from "../../../features/safety/service";
@@ -20,8 +20,8 @@ export function createSafetyRepository(db: Db): SafetyRepository {
       const rows = await db.select({ blockedId: blocks.blockedId, displayName: memberProfiles.nickname, status: users.status }).from(blocks).innerJoin(users, eq(users.id, blocks.blockedId)).leftJoin(memberProfiles, eq(memberProfiles.userId, users.id)).where(eq(blocks.blockerId, blockerId)).orderBy(asc(blocks.createdAt));
       return rows.map((row) => ({ blockedId: row.blockedId, displayName: row.status === "deleted" ? "已注销成员" : row.displayName ?? "成员" }));
     },
-    async resolvePublicMemberId(slug) { const [row] = await db.select({ id: users.id }).from(memberProfiles).innerJoin(users, eq(users.id, memberProfiles.userId)).where(and(eq(memberProfiles.slug, slug), eq(memberProfiles.publishStatus, "published"), eq(users.status, "active"))).limit(1); return row?.id; },
-    async targetExists(id) { const [row] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, id), eq(users.status, "active"))).limit(1); return Boolean(row); },
+    async resolvePublicMemberId(slug) { const [row] = await db.select({ id: users.id }).from(memberProfiles).innerJoin(users, eq(users.id, memberProfiles.userId)).where(and(eq(memberProfiles.slug, slug), eq(memberProfiles.publishStatus, "published"), inArray(users.status, ["active", "connection_suspended"]))).limit(1); return row?.id; },
+    async targetExists(id) { const [row] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, id), inArray(users.status, ["active", "connection_suspended"]))).limit(1); return Boolean(row); },
     async requestBelongsToPair(requestId, reporterId, targetUserId) { const [row] = await db.select({ id: connectionRequests.id }).from(connectionRequests).where(and(eq(connectionRequests.id, requestId), pair(reporterId, targetUserId))).limit(1); return Boolean(row); },
     async createReport(input) { await db.insert(reports).values({ id: input.id, reporterId: input.reporterId, targetUserId: input.targetUserId, connectionRequestId: input.requestId, category: input.category, description: input.description, status: "open", createdAt: input.createdAt }); return { id: input.id, reporterId: input.reporterId, targetUserId: input.targetUserId, category: input.category, description: input.description, requestId: input.requestId, status: "open" }; },
     async getReportForReporter(id, reporterId) { const [row] = await db.select().from(reports).where(and(eq(reports.id, id), eq(reports.reporterId, reporterId))).limit(1); return row ? { id: row.id, reporterId: row.reporterId, targetUserId: row.targetUserId, category: row.category as never, description: row.description, requestId: row.connectionRequestId ?? undefined, status: row.status as never, resolution: row.resolution as never } : undefined; },
