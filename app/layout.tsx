@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { DemoIdentitySwitcher } from "../components/auth/DemoIdentitySwitcher";
+import { isDemoMode } from "../features/identity/demo-auth";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {isDemoMode() ? <DemoIdentitySwitcher /> : null}
         {children}
       </body>
     </html>
