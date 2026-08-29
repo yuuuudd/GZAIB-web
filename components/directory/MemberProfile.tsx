@@ -1,4 +1,5 @@
 import type { ProjectedProfile } from "../../features/directory/types";
+import { ConnectButton, type ConnectionCtaState } from "../connections/ConnectButton";
 
 function initial(value?: string): string {
   return Array.from(value?.trim() ?? "")[0] ?? "共";
@@ -9,7 +10,7 @@ function textSection(icon: string, title: string, value?: string) {
   return <section className="member-detail-row"><span className="member-detail-icon" aria-hidden="true">{icon}</span><h2>{title}</h2><p>{value}</p></section>;
 }
 
-export function MemberProfile({ profile }: { profile: ProjectedProfile }) {
+export function MemberProfile({ profile, connection = { state: "visitor", dailyRemaining: 0 } }: { profile: ProjectedProfile; connection?: { state: ConnectionCtaState; dailyRemaining: number } }) {
   return <div className="member-profile-layout">
     <div className="member-profile-main">
       <section className="member-profile-hero">
@@ -38,8 +39,8 @@ export function MemberProfile({ profile }: { profile: ProjectedProfile }) {
       <p className="section-kicker">连接 / 下一阶段</p>
       <h2 id="connect-heading">想认识 {profile.nickname ?? "TA"}？</h2>
       <p>先介绍你是谁，以及为什么想连接。</p>
-      <button type="button" disabled aria-describedby="connect-explanation">想认识 TA <span aria-hidden="true">→</span></button>
-      <p id="connect-explanation" className="member-connect-note"><span aria-hidden="true">◇</span> 仅审核通过的成员可以使用；连接请求将在下一阶段开放。</p>
+      <ConnectButton state={connection.state} recipientSlug={profile.slug} recipientName={profile.nickname ?? "TA"} dailyRemaining={connection.dailyRemaining} />
+      <p id="connect-explanation" className="member-connect-note"><span aria-hidden="true">◇</span> 仅审核通过的成员可以发起连接；请求由对方自行决定是否接受。</p>
       <p className="member-contact-lock"><span aria-hidden="true">▣</span> 联系方式仅在双方同意后交换</p>
     </aside>
   </div>;

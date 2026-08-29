@@ -87,6 +87,11 @@ const pendingUser: DemoSeed["users"][number] = {
   updatedAt: seedTime,
 };
 
+const connectionDemoUsers: DemoSeed["users"] = [
+  { id: "demo-member", email: "demo-member@builder-map.invalid", role: "member", status: "active", createdAt: seedTime, updatedAt: seedTime },
+  { id: "demo-peer", email: "demo-peer@builder-map.invalid", role: "member", status: "active", createdAt: seedTime + 1, updatedAt: seedTime + 1 },
+];
+
 const allPublicVisibility = Object.fromEntries(requiredVisibility.map((field) => [field, "public"]));
 const applicationVisibility = { ...allPublicVisibility, ...Object.fromEntries(optionalVisibility.map((field) => [field, "private"])) };
 
@@ -148,6 +153,35 @@ const pendingApplication: DemoSeed["applications"][number] = {
   updatedAt: seedTime,
 };
 
+const connectionDemoApplications: DemoSeed["applications"] = connectionDemoUsers.map((user, index) => ({
+  id: `demo-connection-application-${index + 1}`,
+  userId: user.id,
+  status: "approved",
+  nickname: index === 0 ? "共建者 A（演示虚构）" : "共建者 B（演示虚构）",
+  realName: null,
+  avatarKey: null,
+  schoolId: demoSchools[index]!.id,
+  major: null,
+  grade: null,
+  intro: index === 0 ? "用于完整演示连接申请与同意流程的虚构共建者 A。" : "用于完整演示连接申请与同意流程的虚构共建者 B。",
+  currentFocus: null,
+  canOffer: null,
+  wantsToMeet: null,
+  skillsJson: JSON.stringify(index === 0 ? ["AI应用", "产品设计"] : ["活动策划", "内容创作"]),
+  interestsJson: JSON.stringify(["校园共建", "人工智能"]),
+  rolesJson: JSON.stringify(["活动共建者"]),
+  workLinksJson: "[]",
+  visibilityJson: JSON.stringify(applicationVisibility),
+  consentVersion: "builder-map-2026-08-29",
+  consentAcceptedAt: seedTime,
+  submittedAt: seedTime,
+  reviewedAt: seedTime,
+  reviewedBy: "demo-admin",
+  reviewReason: null,
+  createdAt: seedTime + index,
+  updatedAt: seedTime + index,
+}));
+
 const confirmedProfileIndexes = new Set([0, 1, 2, 3, 4, 5]);
 const demoProfiles: DemoSeed["profiles"] = memberUsers.map((user, index) => ({
   id: `demo-seed-profile-${String(index + 1).padStart(2, "0")}`,
@@ -174,7 +208,32 @@ const demoProfiles: DemoSeed["profiles"] = memberUsers.map((user, index) => ({
   updatedAt: seedTime + index,
 }));
 
-const demoVisibility: DemoSeed["visibility"] = demoProfiles.flatMap((profile) => [
+const connectionDemoProfiles: DemoSeed["profiles"] = connectionDemoUsers.map((user, index) => ({
+  id: `demo-connection-profile-${index + 1}`,
+  userId: user.id,
+  slug: index === 0 ? "demo-member" : "peer",
+  nickname: connectionDemoApplications[index]!.nickname,
+  realName: null,
+  avatarKey: null,
+  schoolId: connectionDemoApplications[index]!.schoolId,
+  major: null,
+  grade: null,
+  intro: connectionDemoApplications[index]!.intro,
+  currentFocus: null,
+  canOffer: null,
+  wantsToMeet: null,
+  skillsJson: connectionDemoApplications[index]!.skillsJson,
+  interestsJson: connectionDemoApplications[index]!.interestsJson,
+  rolesJson: connectionDemoApplications[index]!.rolesJson,
+  workLinksJson: "[]",
+  publishStatus: "published",
+  verifiedBuilder: true,
+  publishedAt: seedTime,
+  createdAt: seedTime + index,
+  updatedAt: seedTime + index,
+}));
+
+const demoVisibility: DemoSeed["visibility"] = [...demoProfiles, ...connectionDemoProfiles].flatMap((profile) => [
   ...requiredVisibility.map((fieldName) => ({
     id: `${profile.id}:${fieldName}`, profileId: profile.id, fieldName, visibility: "public" as const, updatedAt: seedTime,
   })),
@@ -210,9 +269,9 @@ export const DEMO_SEED: DemoSeed = {
   users: [{
     id: "demo-admin", email: "demo-admin@builder-map.invalid", role: "admin", status: "active",
     createdAt: seedTime, updatedAt: seedTime,
-  }, ...memberUsers, pendingUser],
-  applications: [...approvedApplications, pendingApplication],
-  profiles: demoProfiles,
+  }, ...connectionDemoUsers, ...memberUsers, pendingUser],
+  applications: [...connectionDemoApplications, ...approvedApplications, pendingApplication],
+  profiles: [...connectionDemoProfiles, ...demoProfiles],
   visibility: demoVisibility,
   contributions: demoContributions,
   audit: {

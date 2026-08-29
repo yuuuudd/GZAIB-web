@@ -5,11 +5,15 @@ export function DemoIdentitySwitcher() {
       <div className="demo-switcher-actions">
         <form action="/api/auth/demo-login" method="post">
           <input type="hidden" name="identity" value="member" />
-          <button className="demo-switcher-member" type="submit">以共建者体验</button>
+          <button className="demo-switcher-member" type="submit">共建者 A</button>
+        </form>
+        <form action="/api/auth/demo-login" method="post">
+          <input type="hidden" name="identity" value="peer" />
+          <button className="demo-switcher-member" type="submit">共建者 B</button>
         </form>
         <form action="/api/auth/demo-login" method="post">
           <input type="hidden" name="identity" value="admin" />
-          <button className="demo-switcher-admin" type="submit">以运营员体验</button>
+          <button className="demo-switcher-admin" type="submit">运营员</button>
         </form>
         <form action="/api/auth/logout" method="post">
           <button className="demo-switcher-logout" type="submit">退出演示</button>

@@ -31,8 +31,21 @@ test("defines a safe, clearly fictional Guangdong demo dataset", () => {
   assert.equal(DEMO_SEED.users.every((user) => user.email.endsWith(".invalid")), true);
   assert.equal(DEMO_SEED.applications.every((application) => application.avatarKey === null && application.realName === null), true);
   assert.equal(DEMO_SEED.profiles.every((profile) => profile.avatarKey === null && profile.realName === null), true);
-  assert.ok(DEMO_SEED.users.every((user) => user.id.startsWith("demo-seed-") || user.id === "demo-admin"));
+  assert.ok(DEMO_SEED.users.every((user) => user.id.startsWith("demo-seed-") || ["demo-admin", "demo-member", "demo-peer"].includes(user.id)));
   assert.ok(DEMO_SEED.contributions.filter((row) => row.status === "confirmed" && row.visibility === "public").length >= 4);
+});
+
+test("seeds the two fixed connection-demo members as active, approved, published fictional profiles", () => {
+  for (const userId of ["demo-member", "demo-peer"]) {
+    const user = DEMO_SEED.users.find((candidate) => candidate.id === userId);
+    const application = DEMO_SEED.applications.find((candidate) => candidate.userId === userId);
+    const profile = DEMO_SEED.profiles.find((candidate) => candidate.userId === userId);
+    assert.equal(user?.status, "active");
+    assert.equal(user?.role, "member");
+    assert.equal(application?.status, "approved");
+    assert.equal(profile?.publishStatus, "published");
+    assert.equal(profile?.verifiedBuilder, true);
+  }
 });
 
 test("is demo-admin-only and repeated initialization does not duplicate deterministic rows", async () => {

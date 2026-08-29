@@ -8,12 +8,13 @@ export class DemoLoginValidationError extends Error {
 }
 
 const identities: Record<DemoIdentityInput, DemoIdentity> = {
-  member: { id: "demo-member", role: "member", displayName: "演示共建者" },
-  admin: { id: "demo-admin", role: "admin", displayName: "演示运营员" },
+  member: { id: "demo-member", role: "member", displayName: "共建者 A" },
+  peer: { id: "demo-peer", role: "member", displayName: "共建者 B" },
+  admin: { id: "demo-admin", role: "admin", displayName: "运营员" },
 };
 
 export function resolveDemoIdentity(input: unknown): DemoIdentity {
-  if (input !== "member" && input !== "admin") {
+  if (input !== "member" && input !== "peer" && input !== "admin") {
     throw new DemoLoginValidationError("Invalid demo identity");
   }
 
@@ -51,7 +52,7 @@ export function parseDemoLoginRequest(value: unknown): DemoLoginRequest {
   }
 
   const identity = request.identity;
-  if (identity !== "member" && identity !== "admin") {
+  if (identity !== "member" && identity !== "peer" && identity !== "admin") {
     throw new DemoLoginValidationError("Invalid demo identity");
   }
 

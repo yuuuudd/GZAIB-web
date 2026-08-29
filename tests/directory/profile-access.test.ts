@@ -124,7 +124,7 @@ test("server viewer derivation grants member projection only to approved members
   assert.deepEqual(await deriveProfileViewer(adminSession, async () => false), { kind: "admin", userId: "demo-admin" });
 });
 
-test("member profile renders verification, approved contributions, and a disabled next-plan connection teaser", () => {
+test("member profile renders a visitor-safe connection CTA without exposing a contact card", () => {
   const profile = candidate().profile;
   const projected = {
     slug: profile.slug, nickname: profile.nickname, school: profile.school, city: profile.city, intro: profile.intro,
@@ -134,7 +134,8 @@ test("member profile renders verification, approved contributions, and a disable
   const html = renderToStaticMarkup(createElement(MemberProfile, { profile: projected }));
   assert.match(html, /认证共建者/);
   assert.match(html, /校园 AI 共创夜/);
-  assert.match(html, /想认识 TA/);
-  assert.match(html, /disabled/);
-  assert.match(html, /审核通过的成员.*下一阶段/);
+  assert.match(html, /审核成员可发起连接/);
+  assert.match(html, /href="\/apply"/);
+  assert.match(html, /审核通过的成员可以发起连接/);
+  assert.doesNotMatch(html, /微信号|@example\.com/);
 });

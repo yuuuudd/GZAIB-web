@@ -24,7 +24,15 @@ test("demo session expires at the exact eight-hour boundary", async () => {
 test("session verification derives the fixed identity instead of trusting a role claim", async () => {
   const cookie = await createDemoSession("admin", 1_000, secret);
   assert.deepEqual(await verifyDemoSession(cookie, 2_000, secret), {
-    identity: { id: "demo-admin", role: "admin", displayName: "演示运营员" },
+    identity: { id: "demo-admin", role: "admin", displayName: "运营员" },
+    expiresAt: 28_801_000,
+  });
+});
+
+test("a signed peer session is a fixed member identity rather than an admin-capable claim", async () => {
+  const cookie = await createDemoSession("peer", 1_000, secret);
+  assert.deepEqual(await verifyDemoSession(cookie, 2_000, secret), {
+    identity: { id: "demo-peer", role: "member", displayName: "共建者 B" },
     expiresAt: 28_801_000,
   });
 });

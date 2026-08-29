@@ -7,16 +7,21 @@ import {
   resolveDemoIdentity,
 } from "../../features/identity/demo-auth";
 
-test("maps the only two allowed demo choices to server-owned identities", () => {
+test("maps the only fixed demo choices to server-owned identities", () => {
   assert.deepEqual(resolveDemoIdentity("member"), {
     id: "demo-member",
     role: "member",
-    displayName: "演示共建者",
+    displayName: "共建者 A",
   });
   assert.deepEqual(resolveDemoIdentity("admin"), {
     id: "demo-admin",
     role: "admin",
-    displayName: "演示运营员",
+    displayName: "运营员",
+  });
+  assert.deepEqual(resolveDemoIdentity("peer"), {
+    id: "demo-peer",
+    role: "member",
+    displayName: "共建者 B",
   });
   assert.throws(() => resolveDemoIdentity("demo-admin"), /identity/i);
 });

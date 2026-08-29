@@ -7,7 +7,7 @@ export const DEMO_SESSION_TTL_MS = 8 * 60 * 60 * 1_000;
 
 type SessionPayload = {
   v: 1;
-  sub: "demo-member" | "demo-admin";
+  sub: "demo-member" | "demo-peer" | "demo-admin";
   exp: number;
 };
 
@@ -58,6 +58,7 @@ function sessionTokenFromCookie(cookie: string): string {
 
 function identityInputFromSubject(subject: SessionPayload["sub"]): DemoIdentityInput {
   if (subject === "demo-member") return "member";
+  if (subject === "demo-peer") return "peer";
   if (subject === "demo-admin") return "admin";
   throw new Error("Invalid demo session");
 }
@@ -108,7 +109,7 @@ export async function verifyDemoSession(
 
   if (!payload || typeof payload !== "object") throw new Error("Invalid demo session");
   const { v, sub, exp } = payload as Partial<SessionPayload>;
-  if (v !== 1 || (sub !== "demo-member" && sub !== "demo-admin") || !Number.isSafeInteger(exp)) {
+  if (v !== 1 || (sub !== "demo-member" && sub !== "demo-peer" && sub !== "demo-admin") || !Number.isSafeInteger(exp)) {
     throw new Error("Invalid demo session");
   }
   if (now >= exp) throw new Error("Demo session expired");
