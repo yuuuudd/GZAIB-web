@@ -20,6 +20,17 @@ function dependencies(overrides: Partial<Parameters<typeof resolveConnectionCtaS
   };
 }
 
+test("uses a policy-valid probe when projecting an eligible member CTA", async () => {
+  const result = await resolveConnectionCtaState({ kind: "member", userId: "demo-member" }, "peer", dependencies({
+    repository: {
+      hasAcceptedRelationship: async () => false,
+      getCreateContext: async (_senderId, _recipientId, input) => context(input),
+    },
+  }));
+
+  assert.deepEqual(result, { state: "eligible", dailyRemaining: 3 });
+});
+
 test("blocked state takes precedence over an older accepted connection", async () => {
   const result = await resolveConnectionCtaState({ kind: "member", userId: "demo-member" }, "peer", dependencies({
     repository: { hasAcceptedRelationship: async () => true, getCreateContext: async () => context({ blockedEitherDirection: true }) },
