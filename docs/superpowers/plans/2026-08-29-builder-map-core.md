@@ -1025,9 +1025,9 @@ git commit -m "feat: complete reviewed builder map core"
 Phase one is complete only when:
 
 - The public directory contains no pending, hidden, suspended, rejected, or private records.
-- A real application can be submitted, reviewed and published without manual database edits.
+- A Demo application can be submitted, reviewed and published without manual database edits.
 - A member can change visibility and hide their profile.
 - A confirmed contribution changes the badge deterministically.
 - Map failure renders the school list with equivalent filters.
 - Unit, lint, build and rendered HTML tests pass.
-- Production uses D1 `DB`, R2 `AVATARS`, server-protected AMap security configuration and a configured email sender.
+- The Demo uses D1 `DB`, R2 `AVATARS`, server-protected AMap security configuration and the D1 in-app notification adapter; real authentication and公众号 delivery remain explicitly deferred adapters.
