@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { contributions } from "../../../db/schema";
+import { applications, contributions, memberProfiles, users } from "../../../db/schema";
 import type { getDb } from "../../../db";
 import type { ProfileContribution } from "../../../features/directory/types";
 
@@ -17,10 +17,16 @@ export async function listApprovedContributions(db: Db, profileId: string): Prom
       publicSummary: contributions.publicSummary,
     })
     .from(contributions)
+    .innerJoin(memberProfiles, eq(memberProfiles.id, contributions.profileId))
+    .innerJoin(users, eq(users.id, memberProfiles.userId))
+    .innerJoin(applications, eq(applications.userId, memberProfiles.userId))
     .where(and(
       eq(contributions.profileId, profileId),
       eq(contributions.status, "confirmed"),
       eq(contributions.visibility, "public"),
+      eq(applications.status, "approved"),
+      eq(users.status, "active"),
+      eq(memberProfiles.publishStatus, "published"),
     ));
 
   return rows;

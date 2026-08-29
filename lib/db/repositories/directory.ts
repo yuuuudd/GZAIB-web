@@ -1,9 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { applications, memberProfiles, profileVisibility, schools, users } from "../../../db/schema";
 import type { getDb } from "../../../db";
+import { projectProfile } from "../../../features/directory/public-profile";
 import type {
   DirectoryFilters,
   MemberProfileRecord,
+  ProjectedProfile,
+  Viewer,
   Visibility,
   VisibilityRules,
 } from "../../../features/directory/types";
@@ -74,12 +77,6 @@ function toMemberProfileRecord(row: PublishedProfileRow): MemberProfileRecord {
   };
 }
 
-export type PublishedDirectoryProfile = {
-  profile: MemberProfileRecord;
-  visibility: VisibilityRules;
-  schoolId: string;
-};
-
 function publicConditions(filters: DirectoryFilters) {
   const conditions = [
     eq(applications.status, "approved"),
@@ -107,21 +104,23 @@ async function queryPublishedRows(db: Db, filters: DirectoryFilters, slug?: stri
 export async function listPublishedDirectory(
   db: Db,
   filters: DirectoryFilters = {},
-): Promise<PublishedDirectoryProfile[]> {
+  viewer: Viewer,
+): Promise<ProjectedProfile[]> {
   const rows = await queryPublishedRows(db, filters);
   return Promise.all(rows.map(async (row) => {
     const visibility = await loadVisibilityRules(db, row.profile.id);
-    return { profile: toMemberProfileRecord(row), visibility, schoolId: row.profile.schoolId };
+    return projectProfile(toMemberProfileRecord(row), visibility, viewer);
   }));
 }
 
 export async function getPublishedProfileBySlug(
   db: Db,
   slug: string,
-): Promise<PublishedDirectoryProfile | undefined> {
+  viewer: Viewer,
+): Promise<ProjectedProfile | undefined> {
   const [row] = await queryPublishedRows(db, {}, slug);
   if (!row) return undefined;
 
   const visibility = await loadVisibilityRules(db, row.profile.id);
-  return { profile: toMemberProfileRecord(row), visibility, schoolId: row.profile.schoolId };
+  return projectProfile(toMemberProfileRecord(row), visibility, viewer);
 }
