@@ -2,6 +2,7 @@
 .superpowers/
 node_modules/
 .next/
+.vinext/
 dist/
 .wrangler/
 .env
