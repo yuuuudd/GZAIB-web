@@ -16,3 +16,10 @@ export async function resolvePublicConnectionRecipientId(slug: string): Promise<
     ));
   return row?.id;
 }
+
+/** Converts an already-authorized inbox participant to its public reference. */
+export async function resolvePublicConnectionSlug(userId: string): Promise<string | undefined> {
+  const [row] = await getDb().select({ slug: memberProfiles.slug }).from(memberProfiles).innerJoin(users, eq(users.id, memberProfiles.userId))
+    .where(and(eq(users.id, userId), eq(memberProfiles.publishStatus, "published"), inArray(users.status, ["active", "connection_suspended"]))).limit(1);
+  return row?.slug;
+}

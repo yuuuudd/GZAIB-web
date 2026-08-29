@@ -15,6 +15,14 @@ const transitions: Record<MemberStatusAction, { status: MemberAccountStatus; aud
   suspend_account: { status: "suspended", audit: "member.account_suspended" },
 };
 
+/** Canonical status/audit mapping shared by direct admin actions and safety sanctions. */
+export function memberTransitionForSafetyResolution(resolution: "hide_profile" | "suspend_connections" | "suspend_account" | "warn" | "dismiss") {
+  if (resolution === "hide_profile") return transitions.hide;
+  if (resolution === "suspend_connections") return transitions.suspend_connections;
+  if (resolution === "suspend_account") return transitions.suspend_account;
+  return undefined;
+}
+
 export function parseMemberStatusAction(value: unknown): MemberStatusAction {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid member action");
   const record = value as Record<string, unknown>;

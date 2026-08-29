@@ -12,6 +12,8 @@ export const AUDIT_ACTIONS = [
   "member.connections_suspended",
   "member.account_suspended",
   "member.self_deleted",
+  "report.dismissed",
+  "report.warned",
   "demo.seeded",
 ] as const;
 

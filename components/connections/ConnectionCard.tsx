@@ -1,5 +1,9 @@
+import { BlockButton } from "../safety/BlockButton";
+import { ReportDialog } from "../safety/ReportDialog";
+
 export type ConnectionView = {
   request: { id: string; topic: string; message: string; status: string; createdAt: number; updatedAt: number; resolvedAt?: number };
+  counterpartSlug?: string;
   unlockedContactCard?: { wechat?: string; email?: string; otherLabel?: string; otherValue?: string };
 };
 
@@ -9,5 +13,6 @@ export function ConnectionCard({ item, box, busy, onAction }: { item: Connection
     {box === "received" && item.request.status === "pending" ? <div className="connection-card-actions"><button type="button" disabled={busy} onClick={() => onAction("decline")}>婉拒</button><button type="button" disabled={busy} onClick={() => onAction("accept")}>接受连接</button></div> : null}
     {box === "sent" && item.request.status === "pending" ? <div className="connection-card-actions"><button type="button" disabled={busy} onClick={() => onAction("withdraw")}>撤回请求</button></div> : null}
     {box === "accepted" ? <section className="connection-contact-card" aria-label="已授权的当前联系方式"><h3>对方当前联系方式</h3>{item.unlockedContactCard ? <dl>{item.unlockedContactCard.wechat ? <><dt>微信</dt><dd>{item.unlockedContactCard.wechat}</dd></> : null}{item.unlockedContactCard.email ? <><dt>邮箱</dt><dd>{item.unlockedContactCard.email}</dd></> : null}{item.unlockedContactCard.otherValue ? <><dt>{item.unlockedContactCard.otherLabel ?? "其他"}</dt><dd>{item.unlockedContactCard.otherValue}</dd></> : null}</dl> : <p>对方暂未设置可交换的联系方式。</p>}</section> : null}
+    {item.counterpartSlug ? <details className="connection-safety-menu"><summary>更多安全操作</summary><BlockButton memberSlug={item.counterpartSlug} /><ReportDialog targetMemberSlug={item.counterpartSlug} requestId={item.request.id} /></details> : null}
   </article>;
 }

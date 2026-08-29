@@ -81,6 +81,7 @@ export function createConnectionRouteHandlers(dependencies: {
   requireActiveSession(request: Request): Promise<ActiveSession>;
   createService(): ConnectionService | Promise<ConnectionService>;
   resolveRecipientId(publicSlug: string): Promise<string | undefined>;
+  resolvePublicSlug?(userId: string): Promise<string | undefined>;
   getVisibleContactCard(viewerId: string, ownerId: string): Promise<ContactCard | undefined>;
   now(): number;
 }) {
@@ -93,7 +94,8 @@ export function createConnectionRouteHandlers(dependencies: {
     const unlockedContactCard = request.status === "accepted"
       ? await dependencies.getVisibleContactCard(actorId, counterpartId(request, actorId))
       : undefined;
-    return { request: publicRequest(request), ...(unlockedContactCard ? { unlockedContactCard } : {}) };
+    const counterpartSlug = await dependencies.resolvePublicSlug?.(counterpartId(request, actorId));
+    return { request: publicRequest(request), ...(counterpartSlug ? { counterpartSlug } : {}), ...(unlockedContactCard ? { unlockedContactCard } : {}) };
   }
 
   return {

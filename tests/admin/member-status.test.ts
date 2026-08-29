@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createMemberStatusService, parseMemberStatusAction, type MemberStatusRepository } from "../../features/admin/member-status";
+import { createMemberStatusService, memberTransitionForSafetyResolution, parseMemberStatusAction, type MemberStatusRepository } from "../../features/admin/member-status";
 
 test("maps the four allowlisted member actions to account states with exactly one audit row", async () => {
   const rows: Parameters<MemberStatusRepository["applyStatusAtomic"]>[0][] = [];
@@ -29,4 +29,11 @@ test("member parser accepts only the action field", () => {
   assert.equal(parseMemberStatusAction({ action: "hide" }), "hide");
   assert.throws(() => parseMemberStatusAction({ action: "hide", role: "admin" }), /invalid/i);
   assert.throws(() => parseMemberStatusAction({ action: "delete" }), /invalid/i);
+});
+
+test("safety sanctions reuse the canonical member transition vocabulary", () => {
+  assert.deepEqual(memberTransitionForSafetyResolution("hide_profile"), { status: "hidden", audit: "member.hidden" });
+  assert.deepEqual(memberTransitionForSafetyResolution("suspend_connections"), { status: "connection_suspended", audit: "member.connections_suspended" });
+  assert.deepEqual(memberTransitionForSafetyResolution("suspend_account"), { status: "suspended", audit: "member.account_suspended" });
+  assert.equal(memberTransitionForSafetyResolution("warn"), undefined);
 });

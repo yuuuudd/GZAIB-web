@@ -14,6 +14,7 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
   requireActiveSession(request: Request): Promise<ActiveSession>;
   createRuntimeService(): Promise<RuntimeService>;
   resolveRecipientId(slug: string): Promise<string | undefined>;
+  resolvePublicSlug?(userId: string): Promise<string | undefined>;
   createLiveContactService(): LiveContactService;
   now(): number;
 }) {
@@ -21,6 +22,7 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
     requireActiveSession: dependencies.requireActiveSession,
     createService: dependencies.createRuntimeService,
     resolveRecipientId: dependencies.resolveRecipientId,
+    resolvePublicSlug: dependencies.resolvePublicSlug,
     getVisibleContactCard: (viewerId, ownerId) => dependencies.createLiveContactService().getVisibleContactCard(viewerId, ownerId),
     now: dependencies.now,
   });
@@ -36,6 +38,7 @@ export async function createDefaultRuntimeConnectionRouteAdapter() {
     requireActiveSession: identity.requireActiveSession,
     createRuntimeService: service.createRuntimeConnectionService,
     resolveRecipientId: resolver.resolvePublicConnectionRecipientId,
+    resolvePublicSlug: resolver.resolvePublicConnectionSlug,
     createLiveContactService: () => cards.createContactCardService(repository.createContactCardRepository(database.getDb())),
     now: Date.now,
   });

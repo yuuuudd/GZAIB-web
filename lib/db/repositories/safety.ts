@@ -2,11 +2,10 @@ import { and, asc, eq, or, sql } from "drizzle-orm";
 import { auditLogs, blocks, connectionRequests, memberProfiles, reports, users } from "../../../db/schema";
 import type { getDb } from "../../../db";
 import type { SafetyRepository } from "../../../features/safety/service";
-import type { ReportResolution } from "../../../features/safety/types";
+import { memberTransitionForSafetyResolution } from "../../../features/admin/member-status";
 
 type Db = ReturnType<typeof getDb>;
 function pair(left: string, right: string) { return or(and(eq(connectionRequests.senderId, left), eq(connectionRequests.recipientId, right)), and(eq(connectionRequests.senderId, right), eq(connectionRequests.recipientId, left))); }
-function statusFor(resolution: ReportResolution): "connection_suspended" | "hidden" | "suspended" | undefined { return resolution === "suspend_connections" ? "connection_suspended" : resolution === "hide_profile" ? "hidden" : resolution === "suspend_account" ? "suspended" : undefined; }
 
 export function createSafetyRepository(db: Db): SafetyRepository {
   return {
@@ -30,11 +29,13 @@ export function createSafetyRepository(db: Db): SafetyRepository {
     async listReportsForAdmin() { const rows = await db.select().from(reports).orderBy(asc(reports.createdAt)); return rows.map((row) => ({ id: row.id, reporterId: row.reporterId, targetUserId: row.targetUserId, category: row.category as never, description: row.description, requestId: row.connectionRequestId ?? undefined, status: row.status as never, resolution: row.resolution as never })); },
     async resolveReportAtomic(input) {
       const status = input.resolution === "dismiss" ? "dismissed" : "resolved";
-      const sanction = statusFor(input.resolution);
+      const transition = memberTransitionForSafetyResolution(input.resolution);
       const update = db.update(reports).set({ status, resolution: input.resolution, resolvedAt: input.now, resolvedBy: input.adminId }).where(and(eq(reports.id, input.reportId), eq(reports.status, "open")));
-      const audit = db.insert(auditLogs).select(sql`select ${input.auditId}, ${input.adminId}, 'member', target_user_id, ${`report.${input.resolution}`}, '{}', ${input.now} from reports where id = ${input.reportId} and status = ${status} and resolved_at = ${input.now}`);
+      const auditAction = transition?.audit ?? (input.resolution === "dismiss" ? "report.dismissed" : "report.warned");
+      // SQLite changes() observes the immediately preceding guarded update in this D1 batch.
+      const audit = db.insert(auditLogs).select(sql`select ${input.auditId}, ${input.adminId}, 'member', target_user_id, ${auditAction}, ${JSON.stringify({ resolution: input.resolution })}, ${input.now} from reports where id = ${input.reportId} and changes() = 1`);
       const operations: [typeof update, typeof audit, ...unknown[]] = [update, audit];
-      if (sanction) operations.push(db.update(users).set({ status: sanction, updatedAt: input.now }).where(and(eq(users.id, sql`(select target_user_id from reports where id = ${input.reportId} and status = ${status} and resolved_at = ${input.now})`), eq(users.status, "active"))) as never);
+      if (transition) operations.push(db.update(users).set({ status: transition.status, updatedAt: input.now }).where(and(eq(users.id, sql`(select target_id from audit_logs where id = ${input.auditId})`), eq(users.status, "active"))) as never);
       const results = await db.batch(operations as never) as Array<{ meta?: { changes?: number } }>;
       if ((results[0]?.meta?.changes ?? 0) !== 1) return undefined;
       return this.getReportForAdmin(input.reportId);
