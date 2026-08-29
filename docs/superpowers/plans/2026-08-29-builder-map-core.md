@@ -522,7 +522,6 @@ git commit -m "feat: enforce profile visibility projection"
 **Interfaces:**
 - Produces: two server-owned identities, `demo-member` and `demo-admin`, with fixed roles and safe display names
 - Produces: `createDemoSession(identity, now)`, `verifyDemoSession(cookie, now)`, `requireSession(request)`, `clearSession(response)`
-- Produces: `createSession(userId, now)`, `requireSession(request)`, `clearSession(response)`
 - Produces: `NotificationSender.send(message): Promise<DeliveryResult>` as an in-app notification port
 
 - [ ] **Step 1: Record the product decision before coding**
