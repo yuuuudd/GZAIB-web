@@ -50,3 +50,32 @@ test("maps the security service to the fixed official host and appends only serv
   assert.equal(upstream?.searchParams.get("jscode"), "server-secret");
   assert.equal(upstream?.searchParams.get("platform"), "JS");
 });
+
+test("rejects a declared AMap body over the hard ceiling before contacting upstream", async () => {
+  let contacted = false;
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/_AMapService", {
+      method: "POST",
+      headers: { "content-length": String(64 * 1024 + 1), "content-type": "application/x-www-form-urlencoded" },
+      body: "x",
+    }),
+    ["_AMapService"],
+    { securityCode: "secret", fetchImpl: async () => { contacted = true; return new Response(); } },
+  );
+  assert.equal(response.status, 413);
+  assert.equal(contacted, false);
+});
+
+test("rejects a chunked AMap body over the hard ceiling before contacting upstream", async () => {
+  let contacted = false;
+  const stream = new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(64 * 1024)); controller.enqueue(new Uint8Array([1])); controller.close(); },
+  });
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/_AMapService", { method: "POST", body: stream, duplex: "half" as never }),
+    ["_AMapService"],
+    { securityCode: "secret", fetchImpl: async () => { contacted = true; return new Response(); } },
+  );
+  assert.equal(response.status, 413);
+  assert.equal(contacted, false);
+});

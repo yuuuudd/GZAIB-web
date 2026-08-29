@@ -30,7 +30,7 @@ const events: Array<{ event: NotificationEvent; expected: Omit<NotificationMessa
       subject: "你的共建者地图申请已提交",
       text: "我们已收到申请，审核结果会在站内通知中更新。",
       link: "/apply",
-      dedupeKey: "application:application-1:submitted",
+      dedupeKey: "application:application-1:submitted:1700000000000",
     },
   },
   {
@@ -41,7 +41,7 @@ const events: Array<{ event: NotificationEvent; expected: Omit<NotificationMessa
       subject: "你的共建者地图申请已通过",
       text: "欢迎加入广东高校共建者地图，你的公开资料已按本人设置上线。",
       link: "/me",
-      dedupeKey: "application:application-1:approved",
+      dedupeKey: "application:application-1:approved:1700000000000",
     },
   },
   {
@@ -58,7 +58,7 @@ const events: Array<{ event: NotificationEvent; expected: Omit<NotificationMessa
       subject: "你的共建者地图申请需要补充",
       text: "请返回申请页查看并补充资料后重新提交。",
       link: "/apply",
-      dedupeKey: "application:application-1:changes_requested",
+      dedupeKey: "application:application-1:changes_requested:1700000000000",
     },
   },
   {
@@ -75,7 +75,7 @@ const events: Array<{ event: NotificationEvent; expected: Omit<NotificationMessa
       subject: "你的共建者地图申请未通过",
       text: "本次申请暂未通过，你可以返回申请页查看状态。",
       link: "/apply",
-      dedupeKey: "application:application-1:rejected",
+      dedupeKey: "application:application-1:rejected:1700000000000",
     },
   },
   {
@@ -103,6 +103,22 @@ test("maps every phase-one event to exact member-facing content without private 
     assert.deepEqual(message, { id: "notification-1", createdAt: now, ...expected });
     assert.doesNotMatch(JSON.stringify(message), /internalReviewNotes|运营内部核验记录|仅供审核团队查看/);
   }
+});
+
+test("keeps an application event retry idempotent while giving a later transition a fresh notification key", () => {
+  const first = toInAppNotification({
+    type: "application_changes_requested", userId: "member-1", applicationId: "application-1", createdAt: now,
+  }, "notification-1");
+  const retry = toInAppNotification({
+    type: "application_changes_requested", userId: "member-1", applicationId: "application-1", createdAt: now,
+  }, "notification-2");
+  const later = toInAppNotification({
+    type: "application_changes_requested", userId: "member-1", applicationId: "application-1", createdAt: now + 1,
+  }, "notification-3");
+
+  assert.equal(retry.dedupeKey, first.dedupeKey);
+  assert.notEqual(later.dedupeKey, first.dedupeKey);
+  assert.match(later.dedupeKey, /:1700000000001$/);
 });
 
 test("records a failed delivery attempt and resolves instead of throwing when D1 delivery fails", async () => {
@@ -142,7 +158,7 @@ test("maps transport-neutral copy to only the allowlisted D1 notification column
     title: "你的共建者地图申请需要补充",
     body: "请返回申请页查看并补充资料后重新提交。",
     href: "/apply",
-    dedupeKey: "application:application-1:changes_requested",
+    dedupeKey: "application:application-1:changes_requested:1700000000000",
     deliveryStatus: "failed",
     createdAt: now,
     updatedAt: now,

@@ -1,6 +1,8 @@
 import type { AvatarStorageBindings } from "../../lib/r2";
+import { RequestBodyTooLargeError, readBoundedRequestBody, requestFromBoundedBody } from "../../lib/bounded-body";
 
 export const MAX_AVATAR_SOURCE_BYTES = 5 * 1024 * 1024;
+export const MAX_AVATAR_MULTIPART_BYTES = 6 * 1024 * 1024;
 export const AVATAR_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 type AcceptedAvatarMime = "image/jpeg" | "image/png" | "image/webp";
@@ -133,8 +135,10 @@ export async function handleAvatarUpload(request: Request, dependencies: AvatarU
     if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("multipart/form-data;")) {
       return jsonError("头像上传格式不正确", 400);
     }
-    file = avatarFile(await request.formData());
-  } catch {
+    const body = await readBoundedRequestBody(request, MAX_AVATAR_MULTIPART_BYTES);
+    file = avatarFile(await requestFromBoundedBody(request, body).formData());
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return jsonError("头像文件过大", 413);
     return jsonError("头像上传格式不正确", 400);
   }
   if (!file) return jsonError("请选择一张头像", 400);

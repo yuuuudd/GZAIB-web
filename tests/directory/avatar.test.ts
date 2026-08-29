@@ -109,6 +109,37 @@ test("rejects invalid avatar uploads with 400 instead of invoking platform stora
   assert.equal(stored, false);
 });
 
+test("rejects a declared multipart body over the hard ceiling before parsing or storing", async () => {
+  let stored = false;
+  const request = avatarRequest();
+  const headers = new Headers(request.headers);
+  headers.set("content-length", String(6 * 1024 * 1024 + 1));
+  const response = await handleAvatarUpload(new Request(request, { headers }), {
+    authenticate: async () => "user-1",
+    store: async () => { stored = true; return { objectKey: "unused", publicUrl: "unused" }; },
+    replaceReferences: async () => [], remove: async () => undefined, reportFailure: () => undefined,
+  });
+  assert.equal(response.status, 413);
+  assert.equal(stored, false);
+});
+
+test("rejects a chunked multipart body over the hard ceiling before parsing or storing", async () => {
+  let stored = false;
+  const boundary = "upload-boundary";
+  const stream = new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(6 * 1024 * 1024)); controller.enqueue(new Uint8Array([1])); controller.close(); },
+  });
+  const response = await handleAvatarUpload(new Request("https://site.test/api/uploads/avatar", {
+    method: "POST", headers: { "content-type": `multipart/form-data; boundary=${boundary}` }, body: stream, duplex: "half" as never,
+  }), {
+    authenticate: async () => "user-1",
+    store: async () => { stored = true; return { objectKey: "unused", publicUrl: "unused" }; },
+    replaceReferences: async () => [], remove: async () => undefined, reportFailure: () => undefined,
+  });
+  assert.equal(response.status, 413);
+  assert.equal(stored, false);
+});
+
 test("hides missing platform bindings behind a generic upload error", async () => {
   const response = await handleAvatarUpload(avatarRequest(), {
     authenticate: async () => "user-1",

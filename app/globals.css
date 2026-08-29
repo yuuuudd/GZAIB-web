@@ -117,3 +117,5 @@ a { color: inherit; }
   .profile-form-grid,.privacy-grid { grid-template-columns:1fr; }
   .profile-danger-card label { min-width:0; width:100%; }
 }
+
+.drawer-load-more { display:block; width:100%; margin:1rem 0 0; border:1px solid #91adfa; border-radius:11px; padding:.72rem .9rem; background:#f4f7ff; color:var(--cobalt); font:inherit; font-size:.8rem; font-weight:800; cursor:pointer; }.drawer-load-more:hover,.drawer-load-more:focus-visible { border-color:var(--cobalt); background:#eaf0ff; outline:3px solid rgba(30,78,216,.12); }.drawer-load-more:disabled { cursor:wait; opacity:.65; }

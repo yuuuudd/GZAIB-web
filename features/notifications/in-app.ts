@@ -17,28 +17,28 @@ function eventCopy(event: NotificationEvent): MessageCopy {
         subject: "你的共建者地图申请已提交",
         text: "我们已收到申请，审核结果会在站内通知中更新。",
         link: "/apply",
-        dedupeKey: `application:${event.applicationId}:submitted`,
+        dedupeKey: `application:${event.applicationId}:submitted:${event.createdAt}`,
       };
     case "application_approved":
       return {
         subject: "你的共建者地图申请已通过",
         text: "欢迎加入广东高校共建者地图，你的公开资料已按本人设置上线。",
         link: "/me",
-        dedupeKey: `application:${event.applicationId}:approved`,
+        dedupeKey: `application:${event.applicationId}:approved:${event.createdAt}`,
       };
     case "application_changes_requested":
       return {
         subject: "你的共建者地图申请需要补充",
         text: "请返回申请页查看并补充资料后重新提交。",
         link: "/apply",
-        dedupeKey: `application:${event.applicationId}:changes_requested`,
+        dedupeKey: `application:${event.applicationId}:changes_requested:${event.createdAt}`,
       };
     case "application_rejected":
       return {
         subject: "你的共建者地图申请未通过",
         text: "本次申请暂未通过，你可以返回申请页查看状态。",
         link: "/apply",
-        dedupeKey: `application:${event.applicationId}:rejected`,
+        dedupeKey: `application:${event.applicationId}:rejected:${event.createdAt}`,
       };
     case "contribution_confirmed":
       return {

@@ -54,3 +54,12 @@ test("home page omits social URLs and images for malformed forwarded Host input"
   assert.doesNotMatch(html, /name="twitter:image"/);
   assert.doesNotMatch(html, /attacker\.test|builder-map\.invalid/);
 });
+
+test("home page ignores a syntactically valid hostile forwarded host and keeps direct loopback metadata local", async () => {
+  const response = await renderHomePage({ host: "localhost", "x-forwarded-host": "attacker.test", "x-forwarded-proto": "https" });
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /property="og:image"[^>]+content="http:\/\/localhost\/og\.png"/);
+  assert.doesNotMatch(html, /attacker\.test/);
+});

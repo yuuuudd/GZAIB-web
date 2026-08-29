@@ -1,3 +1,5 @@
+import { RequestBodyTooLargeError, readBoundedRequestBody } from "../../../../lib/bounded-body";
+
 type ProxyOptions = {
   securityCode?: string;
   fetchImpl?: typeof fetch;
@@ -6,6 +8,7 @@ type ProxyOptions = {
 const OFFICIAL_AMAP_ORIGIN = "https://restapi.amap.com";
 const ALLOWED_PROXY_PATHS = new Set(["_AMapService"]);
 const FORWARDED_QUERY_KEYS = new Set(["platform", "logversion", "appname", "csid", "sdkversion", "key", "serviceName", "version", "callback"]);
+const MAX_AMAP_POST_BYTES = 64 * 1024;
 
 function fixedUpstream(path: string[], requestUrl: URL, securityCode: string): URL | null {
   const normalized = path.join("/");
@@ -31,7 +34,7 @@ export async function handleAmapRequest(request: Request, path: string[], option
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
   try {
-    const body = request.method === "POST" ? await request.arrayBuffer() : undefined;
+    const body = request.method === "POST" ? await readBoundedRequestBody(request, MAX_AMAP_POST_BYTES) : undefined;
     const response = await (options.fetchImpl ?? fetch)(upstream, {
       method: request.method,
       body,
@@ -43,6 +46,7 @@ export async function handleAmapRequest(request: Request, path: string[], option
       headers: { "content-type": response.headers.get("content-type") ?? "application/json; charset=utf-8" },
     });
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return Response.json({ error: "Request body too large" }, { status: 413 });
     const status = error instanceof DOMException && error.name === "AbortError" ? 504 : 502;
     return Response.json({ error: "AMap service unavailable" }, { status });
   } finally {

@@ -68,7 +68,7 @@ test("the actual application POST service persists application_submitted through
     subject: "你的共建者地图申请已提交",
     text: "我们已收到申请，审核结果会在站内通知中更新。",
     link: "/apply",
-    dedupeKey: "application:application-1:submitted",
+    dedupeKey: "application:application-1:submitted:1700000000000",
     createdAt: now,
     deliveryStatus: "sent",
   }]);

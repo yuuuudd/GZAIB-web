@@ -116,7 +116,7 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
             <SchoolDirectoryFallback schools={schools} selectedId={selectedId} onSelect={selectSchool} prominent />
           )}
         </AmapLoader>
-        <SchoolDrawer school={selected} onClose={() => setSelectedId(undefined)} />
+        <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} onClose={() => setSelectedId(undefined)} />
       </div>
       <div className="map-stats" aria-label="目录统计">
         <div><span aria-hidden="true">校</span><strong>{schools.length}</strong><p>所学校</p></div>
