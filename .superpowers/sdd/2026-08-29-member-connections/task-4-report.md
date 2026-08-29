@@ -30,3 +30,28 @@
 - All route responses are `Cache-Control: private, no-store`; returned request DTOs intentionally omit sender/recipient IDs.
 - Contact-card plaintext is not SSR-provided by the inbox. It is live-read only for accepted requests through the Task 3 authorization boundary; denied live reads omit it.
 - The operator identity remains admin-only and cannot impersonate either fixed member peer.
+
+## Review-fix round — CTA, production adapter, and dialog focus
+
+### RED → GREEN
+
+1. Added focused CTA-state tests for an accepted relationship subsequently blocked in either direction, plus normal accepted and pending relationships. They first failed because no shared server-side CTA resolver existed; the resolver now applies blocked/unavailable before accepted or pending.
+2. Added runtime-adapter tests that exercise create, list, public-slug resolve, and a cross-user forbidden response through the same `createConnectionRouteHandlers` composition used by the app routes. They initially failed because the adapter module did not exist.
+3. Added dialog focus tests for Tab and Shift+Tab wrapping, Escape-only close requests, and modal labeling/close-control structure. They initially failed because the focus helpers did not exist.
+
+### Production-wiring evidence and caveat
+
+- `app/api/connections/route.ts` and `app/api/connections/[id]/route.ts` now lazily import `createDefaultRuntimeConnectionRouteAdapter`. The factory composes the production active-session boundary, runtime D1 service, public recipient resolver, and live contact-card service without evaluating the platform D1 binding at module load.
+- The controlled adapter test proves the real route-handler composition receives its active session, service, slug resolver, and live-card service dependencies and maps a cross-user service rejection to 403. A source contract also checks both application route modules delegate to that lazy production factory.
+- The Node unit runner cannot construct a Cloudflare D1 binding, so this is intentionally not represented as a real SQL/D1 integration test. Before production, run the same create/list/resolve/forbidden flow against the local Worker/D1 runtime binding.
+
+### Focus lifecycle
+
+- The request dialog installs its key listener only while mounted, removes it on close/unmount, traps Tab/Shift+Tab within enabled controls, closes on Escape, and restores focus to the opening CTA when the dialog is dismissed.
+
+### Review-round verification
+
+- `npm.cmd run test:unit` — pass, 172/172
+- `npm.cmd run lint` — pass
+- `npm.cmd run build` — pass
+- `git diff --check` — pass

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { nextDialogFocusIndex, shouldCloseConnectionDialog } from "./dialog-focus";
 
 export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRemaining, onClose, onCreated }: {
   recipientSlug: string;
@@ -10,11 +11,24 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
   onCreated(): void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const [topic, setTopic] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   useEffect(() => { titleRef.current?.focus(); }, []);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (shouldCloseConnectionDialog(event.key)) { event.preventDefault(); onClose(); return; }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])
+        .filter((element) => element.offsetParent !== null);
+      const target = nextDialogFocusIndex(focusable.indexOf(document.activeElement as HTMLElement), focusable.length, event.shiftKey);
+      if (target >= 0) { event.preventDefault(); focusable[target]?.focus(); }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setNotice("");
@@ -28,7 +42,7 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
     finally { setBusy(false); }
   }
   return <div className="connection-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className="connection-dialog" role="dialog" aria-modal="true" aria-labelledby="connection-dialog-title" aria-describedby="connection-dialog-description">
+    <section className="connection-dialog" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="connection-dialog-title" aria-describedby="connection-dialog-description">
       <button type="button" className="connection-dialog-close" onClick={onClose} aria-label="关闭连接请求对话框">×</button>
       <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>认识 {recipientName}</h2>
       <p id="connection-dialog-description">用一段清晰、友善的介绍开启交流。请不要填写微信号、邮箱或其他联系方式。</p>

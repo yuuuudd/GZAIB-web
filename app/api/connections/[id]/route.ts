@@ -1,17 +1,5 @@
-import { createConnectionRouteHandlers } from "../../../../features/connections/route-handlers";
-import { createContactCardService } from "../../../../features/connections/contact-card";
-import { createRuntimeConnectionService } from "../../../../features/connections/service";
-import { resolvePublicConnectionRecipientId } from "../../../../features/connections/recipient-resolver";
-import { requireActiveSession } from "../../../../features/identity/active-account";
-import { getDb } from "../../../../db";
-import { createContactCardRepository } from "../../../../lib/db/repositories/contact-cards";
+async function handlers() {
+  return (await import("../../../../features/connections/runtime-route")).createDefaultRuntimeConnectionRouteAdapter();
+}
 
-const handlers = createConnectionRouteHandlers({
-  requireActiveSession,
-  createService: () => createRuntimeConnectionService(),
-  resolveRecipientId: resolvePublicConnectionRecipientId,
-  getVisibleContactCard: (viewerId, ownerId) => createContactCardService(createContactCardRepository(getDb())).getVisibleContactCard(viewerId, ownerId),
-  now: Date.now,
-});
-
-export const PATCH = handlers.PATCH;
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) { return (await handlers()).PATCH(request, context); }

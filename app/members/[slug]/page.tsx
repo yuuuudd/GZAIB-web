@@ -4,31 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MemberProfile } from "../../../components/directory/MemberProfile";
 import { createRuntimeProfileAccessService, resolveRuntimeProfileViewer } from "../../../features/directory/profile-access";
-import { canCreate } from "../../../features/connections/policy";
 import { createConnectionRepository } from "../../../lib/db/repositories/connections";
 import { resolvePublicConnectionRecipientId } from "../../../features/connections/recipient-resolver";
 import { getDb } from "../../../db";
-import type { ConnectionCtaState } from "../../../components/connections/ConnectButton";
+import { resolveConnectionCtaState } from "../../../features/connections/cta-state";
 
 export const dynamic = "force-dynamic";
-
-async function connectionCta(viewer: Awaited<ReturnType<typeof resolveRuntimeProfileViewer>>, slug: string): Promise<{ state: ConnectionCtaState; dailyRemaining: number }> {
-  if (viewer.kind === "visitor") return { state: "visitor", dailyRemaining: 0 };
-  if (viewer.kind !== "member") return { state: "unavailable", dailyRemaining: 0 };
-  const recipientId = await resolvePublicConnectionRecipientId(slug);
-  if (!recipientId) return { state: "unavailable", dailyRemaining: 0 };
-  if (recipientId === viewer.userId) return { state: "own", dailyRemaining: 0 };
-  const repository = createConnectionRepository(getDb());
-  const now = Date.now();
-  const [accepted, context] = await Promise.all([
-    repository.hasAcceptedRelationship(viewer.userId, recipientId),
-    repository.getCreateContext(viewer.userId, recipientId, { topic: "连接", message: "我想聊聊校园 AI 共建的实践与想法。" }, now),
-  ]);
-  const dailyRemaining = Math.max(0, 5 - context.requestsInLast24Hours);
-  if (accepted) return { state: "accepted", dailyRemaining };
-  if (context.pendingEitherDirection) return { state: "pending", dailyRemaining };
-  return { state: canCreate(context).ok ? "eligible" : "unavailable", dailyRemaining };
-}
 
 export default async function MemberProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const requestHeaders = await headers();
@@ -37,7 +18,7 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
   const viewer = await resolveRuntimeProfileViewer(request);
   const [profile, connection] = await Promise.all([
     (await createRuntimeProfileAccessService()).getProfile(slug, viewer),
-    connectionCta(viewer, slug),
+    resolveConnectionCtaState(viewer, slug, { resolveRecipientId: resolvePublicConnectionRecipientId, repository: createConnectionRepository(getDb()), now: Date.now }),
   ]);
   if (!profile) notFound();
   return <main className="member-page-shell">
