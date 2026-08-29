@@ -10,10 +10,7 @@ export function ContributionReviewPanel({ contributions }: { contributions: Cont
   async function confirm(item: Contribution) {
     setPending(true); setMessage("");
     try {
-      const input = {
-        profileId: item.profileId, activityKey: item.activityKey, title: item.title, activityDate: item.activityDate,
-        role: item.role, outcome: item.outcome, publicSummary: item.publicSummary, visibility: item.visibility, status: "confirmed" as const,
-      };
+      const input = { id: item.id, status: "confirmed" as const };
       const response = await fetch("/api/admin/contributions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error ?? "确认失败");

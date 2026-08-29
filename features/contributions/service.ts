@@ -1,11 +1,15 @@
 import type { AuditRecord } from "../admin/authorization";
 
-export const CONTRIBUTION_STATUSES = ["pending", "confirmed", "rejected"] as const;
-export const CONTRIBUTION_VISIBILITIES = ["public", "members", "private"] as const;
-export type ContributionStatus = (typeof CONTRIBUTION_STATUSES)[number];
-export type ContributionVisibility = (typeof CONTRIBUTION_VISIBILITIES)[number];
+export type ContributionStatus = "pending" | "confirmed" | "rejected";
+export type ContributionVisibility = "public" | "members" | "private";
 
-export type ContributionInput = {
+export type ContributionConfirmationInput = {
+  id: string;
+  status: "confirmed";
+};
+
+export type ContributionRecord = {
+  id: string;
   profileId: string;
   activityKey: string;
   title: string;
@@ -15,10 +19,6 @@ export type ContributionInput = {
   publicSummary: string;
   visibility: ContributionVisibility;
   status: ContributionStatus;
-};
-
-export type ContributionRecord = ContributionInput & {
-  id: string;
   confirmedBy?: string;
   confirmedAt?: number;
   createdAt: number;
@@ -26,93 +26,115 @@ export type ContributionRecord = ContributionInput & {
 };
 
 export type ContributionRepository = {
-  applyStatusAtomic(input: { profileId: string; contribution: ContributionRecord; audit?: AuditRecord }): Promise<{ verifiedBuilder: boolean }>;
+  confirmPendingAtomic(input: {
+    contributionId: string;
+    confirmedBy: string;
+    confirmedAt: number;
+    audit: AuditRecord;
+  }): Promise<
+    | { transitioned: false }
+    | { transitioned: true; contribution: ContributionRecord; verifiedBuilder: boolean }
+  >;
 };
 
-const contributionFields = [
-  "profileId", "activityKey", "title", "activityDate", "role", "outcome", "publicSummary", "visibility", "status",
-] as const;
-
-export function parseContributionInput(value: unknown): ContributionInput {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid contribution");
+export function parseContributionInput(value: unknown): ContributionConfirmationInput {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid contribution confirmation");
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).length !== contributionFields.length || contributionFields.some((field) => !(field in record))) {
-    throw new Error("Invalid contribution");
+  if (Object.keys(record).length !== 2 || record.status !== "confirmed"
+    || typeof record.id !== "string" || !/^[a-zA-Z0-9:_-]{1,200}$/.test(record.id)) {
+    throw new Error("Invalid contribution confirmation");
   }
-  return validate(record as ContributionInput);
-}
-
-function text(value: unknown, min: number, max: number): value is string {
-  return typeof value === "string" && value.trim().length >= min && value.trim().length <= max;
-}
-
-function validate(input: ContributionInput): ContributionInput {
-  if (!input || typeof input !== "object") throw new Error("Invalid contribution");
-  if (!text(input.profileId, 1, 160) || !/^[a-zA-Z0-9:_-]+$/.test(input.profileId)) throw new Error("Invalid contribution profile");
-  if (!text(input.activityKey, 2, 120) || !/^[a-zA-Z0-9:_-]+$/.test(input.activityKey)) throw new Error("Invalid activity key");
-  if (!text(input.title, 2, 120) || !text(input.role, 2, 80) || !text(input.outcome, 2, 500) || !text(input.publicSummary, 10, 500)) {
-    throw new Error("Invalid contribution details");
-  }
-  if (!Number.isSafeInteger(input.activityDate) || input.activityDate <= 0) throw new Error("Invalid contribution date");
-  if (!CONTRIBUTION_STATUSES.includes(input.status) || !CONTRIBUTION_VISIBILITIES.includes(input.visibility)) throw new Error("Invalid contribution status");
-  return { ...input, title: input.title.trim(), role: input.role.trim(), outcome: input.outcome.trim(), publicSummary: input.publicSummary.trim() };
+  return { id: record.id, status: "confirmed" };
 }
 
 export function createContributionService(
   repository: ContributionRepository,
-  createId: (input: ContributionInput) => string = (input) => `contribution:${input.profileId}:${input.activityKey}`,
   createAuditId: () => string = () => crypto.randomUUID(),
 ) {
   return {
-    async confirmContribution(adminId: string, rawInput: ContributionInput, now: number) {
+    async confirmContribution(adminId: string, rawInput: ContributionConfirmationInput, now: number) {
       if (adminId !== "demo-admin") throw new Error("Forbidden");
-      const input = validate(rawInput);
-      const contribution: ContributionRecord = {
-        ...input,
-        id: createId(input),
-        ...(input.status === "confirmed" ? { confirmedBy: adminId, confirmedAt: now } : {}),
-        createdAt: now,
-        updatedAt: now,
-      };
-      const audit: AuditRecord | undefined = input.status === "confirmed" ? {
-        id: createAuditId(), actorUserId: adminId, targetType: "contribution", targetId: contribution.id,
-        action: "contribution.confirmed", diffJson: JSON.stringify({ status: input.status }), createdAt: now,
-      } : undefined;
-      const result = await repository.applyStatusAtomic({ profileId: input.profileId, contribution, ...(audit ? { audit } : {}) });
-      return { contribution, verifiedBuilder: result.verifiedBuilder };
+      const input = parseContributionInput(rawInput);
+      const result = await repository.confirmPendingAtomic({
+        contributionId: input.id,
+        confirmedBy: adminId,
+        confirmedAt: now,
+        audit: {
+          id: createAuditId(), actorUserId: adminId, targetType: "contribution", targetId: input.id,
+          action: "contribution.confirmed", diffJson: JSON.stringify({ status: "confirmed" }), createdAt: now,
+        },
+      });
+      if (!result.transitioned) throw new Error("Pending contribution state changed before commit");
+      return { contribution: result.contribution, verifiedBuilder: result.verifiedBuilder };
     },
   };
 }
 
-export async function confirmContribution(adminId: string, input: ContributionInput, now: number) {
+export async function confirmContribution(adminId: string, input: ContributionConfirmationInput, now: number) {
   return (await createRuntimeContributionService()).confirmContribution(adminId, input, now);
 }
 
 export async function createRuntimeContributionService() {
-  const [{ getDb }, schema, { eq, sql }] = await Promise.all([import("../../db"), import("../../db/schema"), import("drizzle-orm")]);
+  const [{ getDb }, schema, drizzle] = await Promise.all([import("../../db"), import("../../db/schema"), import("drizzle-orm")]);
   const db = getDb();
   return createContributionService({
-    async applyStatusAtomic(input) {
-      const save = db.insert(schema.contributions).values(input.contribution).onConflictDoUpdate({
-        target: schema.contributions.id,
-        set: {
-          activityKey: input.contribution.activityKey, title: input.contribution.title, activityDate: input.contribution.activityDate,
-          role: input.contribution.role, outcome: input.contribution.outcome, publicSummary: input.contribution.publicSummary,
-          visibility: input.contribution.visibility, status: input.contribution.status,
-          confirmedBy: input.contribution.confirmedBy ?? null, confirmedAt: input.contribution.confirmedAt ?? null,
-          updatedAt: input.contribution.updatedAt,
-        },
-      });
-      const recalculate = db.update(schema.memberProfiles).set({
-        verifiedBuilder: sql<boolean>`EXISTS (SELECT 1 FROM contributions c WHERE c.profile_id = ${input.profileId} AND c.status = 'confirmed')`,
-        updatedAt: input.contribution.updatedAt,
-      }).where(eq(schema.memberProfiles.id, input.profileId));
-      if (input.audit) await db.batch([save, recalculate, db.insert(schema.auditLogs).values(input.audit)]);
-      else await db.batch([save, recalculate]);
-      const [profile] = await db.select({ verifiedBuilder: schema.memberProfiles.verifiedBuilder })
-        .from(schema.memberProfiles).where(eq(schema.memberProfiles.id, input.profileId));
-      if (!profile) throw new Error("Profile not found");
-      return profile;
+    async confirmPendingAtomic(input) {
+      const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
+        select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
+        from ${schema.contributions}
+        where ${schema.contributions.id} = ${input.contributionId}
+          and ${schema.contributions.status} = 'pending'
+      `);
+      const auditExists = drizzle.sql`exists (select 1 from ${schema.auditLogs} where ${schema.auditLogs.id} = ${input.audit.id})`;
+      const results = await db.batch([
+        gateAudit,
+        db.update(schema.contributions).set({
+          status: "confirmed", confirmedBy: input.confirmedBy, confirmedAt: input.confirmedAt, updatedAt: input.confirmedAt,
+        }).where(drizzle.and(
+          drizzle.eq(schema.contributions.id, input.contributionId),
+          drizzle.eq(schema.contributions.status, "pending"),
+          auditExists,
+        )),
+        db.update(schema.memberProfiles).set({
+          verifiedBuilder: drizzle.sql<boolean>`exists (
+            select 1 from ${schema.contributions} confirmed
+            where confirmed.profile_id = ${schema.memberProfiles.id} and confirmed.status = 'confirmed'
+          )`,
+          updatedAt: input.confirmedAt,
+        }).where(drizzle.and(
+          drizzle.eq(
+            schema.memberProfiles.id,
+            drizzle.sql`(select profile_id from ${schema.contributions} where ${schema.contributions.id} = ${input.contributionId})`,
+          ),
+          auditExists,
+        )),
+      ]);
+      const gateResult = results[0] as { meta?: { changes?: number } };
+      if ((gateResult.meta?.changes ?? 0) !== 1) return { transitioned: false };
+
+      const [row] = await db.select({ contribution: schema.contributions, profile: schema.memberProfiles })
+        .from(schema.contributions)
+        .innerJoin(schema.memberProfiles, drizzle.eq(schema.memberProfiles.id, schema.contributions.profileId))
+        .where(drizzle.eq(schema.contributions.id, input.contributionId));
+      if (!row || row.contribution.status !== "confirmed") throw new Error("Confirmed contribution could not be loaded");
+      const contribution: ContributionRecord = {
+        id: row.contribution.id,
+        profileId: row.contribution.profileId,
+        activityKey: row.contribution.activityKey,
+        title: row.contribution.title,
+        activityDate: row.contribution.activityDate,
+        role: row.contribution.role,
+        outcome: row.contribution.outcome,
+        publicSummary: row.contribution.publicSummary,
+        status: "confirmed",
+        visibility: row.contribution.visibility,
+        createdAt: row.contribution.createdAt,
+        updatedAt: row.contribution.updatedAt,
+        ...(row.contribution.confirmedBy ? { confirmedBy: row.contribution.confirmedBy } : {}),
+        ...(row.contribution.confirmedAt ? { confirmedAt: row.contribution.confirmedAt } : {}),
+      };
+      return { transitioned: true, contribution, verifiedBuilder: row.profile.verifiedBuilder };
     },
   });
 }

@@ -4,6 +4,7 @@ export const AUDIT_ACTIONS = [
   "application.approved",
   "application.changes_requested",
   "application.rejected",
+  "school.coordinate_suggested",
   "school.coordinate_confirmed",
   "contribution.confirmed",
   "member.hidden",

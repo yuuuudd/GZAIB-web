@@ -43,11 +43,11 @@ export type ApplicationReviewRepository = {
     profile: ReviewedProfile;
     visibility: { id: string; profileId: string; fieldName: string; visibility: Visibility; updatedAt: number }[];
     audit: AuditRecord;
-  }): Promise<void>;
+  }): Promise<{ transitioned: boolean }>;
   recordDecisionAtomic(input: {
     application: { id: string; status: "changes_requested" | "rejected"; reviewedBy: string; reviewedAt: number; reviewReason: string };
     audit: AuditRecord;
-  }): Promise<void>;
+  }): Promise<{ transitioned: boolean }>;
 };
 
 function safeSlug(value: string): string {
@@ -90,7 +90,7 @@ export function createApplicationReviewService(
         if (!validReason(decision.reason)) throw new Error("Review reason must contain 10-500 characters");
         const reason = decision.reason.trim();
         const status = decision.decision;
-        await repository.recordDecisionAtomic({
+        const transition = await repository.recordDecisionAtomic({
           application: { id: applicationId, status, reviewedBy: adminId, reviewedAt: now, reviewReason: reason },
           audit: {
             id: createAuditId(), actorUserId: adminId, targetType: "application", targetId: applicationId,
@@ -98,6 +98,7 @@ export function createApplicationReviewService(
             diffJson: JSON.stringify({ status }), createdAt: now,
           },
         });
+        if (!transition.transitioned) throw new Error("Application review state changed before commit");
         return { application: { ...context.application, status, updatedAt: now }, profile: undefined };
       }
 
@@ -132,7 +133,7 @@ export function createApplicationReviewService(
       const visibilityRows = Object.entries(visibility).map(([fieldName, fieldVisibility]) => ({
         id: `${profileId}:${fieldName}`, profileId, fieldName, visibility: fieldVisibility, updatedAt: now,
       }));
-      await repository.applyReviewAtomic({
+      const transition = await repository.applyReviewAtomic({
         application: { id: applicationId, status: "approved", reviewedBy: adminId, reviewedAt: now, reviewReason: null },
         profile,
         visibility: visibilityRows,
@@ -141,6 +142,7 @@ export function createApplicationReviewService(
           action: "application.approved", diffJson: JSON.stringify({ status: "approved", publishStatus: profile.publishStatus }), createdAt: now,
         },
       });
+      if (!transition.transitioned) throw new Error("Application review state changed before commit");
       return { application: { ...context.application, status: "approved" as ApplicationStatus, updatedAt: now }, profile };
     },
   };
@@ -176,28 +178,66 @@ export async function createRuntimeApplicationReviewService() {
       delete profileUpdate.id;
       delete profileUpdate.userId;
       delete profileUpdate.createdAt;
-      await db.batch([
+      const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
+        select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
+        from ${schema.applications}
+        inner join ${schema.schools} on ${schema.schools.id} = ${schema.applications.schoolId}
+        where ${schema.applications.id} = ${input.application.id}
+          and ${schema.applications.status} = 'pending'
+          and ${schema.applications.userId} <> ${input.application.reviewedBy}
+          and ${schema.schools.coordinateStatus} = 'confirmed'
+      `);
+      const auditExists = drizzle.sql`exists (select 1 from ${schema.auditLogs} where ${schema.auditLogs.id} = ${input.audit.id})`;
+      const insertProfile = db.insert(schema.memberProfiles).select(drizzle.sql`
+        select ${input.profile.id}, ${input.profile.userId}, ${input.profile.slug}, ${input.profile.nickname},
+          ${input.profile.realName ?? null}, ${input.profile.avatarKey ?? null}, ${input.profile.schoolId},
+          ${input.profile.major ?? null}, ${input.profile.grade ?? null}, ${input.profile.intro},
+          ${input.profile.currentFocus ?? null}, ${input.profile.canOffer ?? null}, ${input.profile.wantsToMeet ?? null},
+          ${input.profile.skillsJson}, ${input.profile.interestsJson}, ${input.profile.rolesJson}, ${input.profile.workLinksJson},
+          ${input.profile.publishStatus}, ${input.profile.verifiedBuilder}, ${input.profile.publishedAt ?? null},
+          ${input.profile.createdAt}, ${input.profile.updatedAt}
+        where ${auditExists}
+      `).onConflictDoUpdate({ target: schema.memberProfiles.userId, set: profileUpdate });
+      const insertVisibility = input.visibility.map((row) => db.insert(schema.profileVisibility).select(drizzle.sql`
+        select ${row.id}, ${row.profileId}, ${row.fieldName}, ${row.visibility}, ${row.updatedAt}
+        where ${auditExists}
+      `));
+      const results = await db.batch([
+        gateAudit,
         db.update(schema.applications).set({
           status: input.application.status, reviewedBy: input.application.reviewedBy, reviewedAt: input.application.reviewedAt,
           reviewReason: input.application.reviewReason, updatedAt: input.application.reviewedAt,
-        }).where(drizzle.eq(schema.applications.id, input.application.id)),
-        db.insert(schema.memberProfiles).values(input.profile).onConflictDoUpdate({
-          target: schema.memberProfiles.userId,
-          set: profileUpdate,
-        }),
-        db.delete(schema.profileVisibility).where(drizzle.eq(schema.profileVisibility.profileId, input.profile.id)),
-        db.insert(schema.profileVisibility).values(input.visibility),
-        db.insert(schema.auditLogs).values(input.audit),
-      ]);
+        }).where(drizzle.and(drizzle.eq(schema.applications.id, input.application.id), auditExists)),
+        insertProfile,
+        db.delete(schema.profileVisibility).where(drizzle.and(
+          drizzle.eq(schema.profileVisibility.profileId, input.profile.id),
+          auditExists,
+        )),
+        ...insertVisibility,
+      ] as const);
+      const gateResult = results[0] as { meta?: { changes?: number } };
+      return { transitioned: (gateResult.meta?.changes ?? 0) === 1 };
     },
     async recordDecisionAtomic(input) {
-      await db.batch([
+      const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
+        select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
+        from ${schema.applications}
+        where ${schema.applications.id} = ${input.application.id}
+          and ${schema.applications.status} = 'pending'
+          and ${schema.applications.userId} <> ${input.application.reviewedBy}
+      `);
+      const auditExists = drizzle.sql`exists (select 1 from ${schema.auditLogs} where ${schema.auditLogs.id} = ${input.audit.id})`;
+      const results = await db.batch([
+        gateAudit,
         db.update(schema.applications).set({
           status: input.application.status, reviewedBy: input.application.reviewedBy, reviewedAt: input.application.reviewedAt,
           reviewReason: input.application.reviewReason, updatedAt: input.application.reviewedAt,
-        }).where(drizzle.eq(schema.applications.id, input.application.id)),
-        db.insert(schema.auditLogs).values(input.audit),
+        }).where(drizzle.and(drizzle.eq(schema.applications.id, input.application.id), auditExists)),
       ]);
+      const gateResult = results[0] as { meta?: { changes?: number } };
+      return { transitioned: (gateResult.meta?.changes ?? 0) === 1 };
     },
   };
   return createApplicationReviewService(repository);

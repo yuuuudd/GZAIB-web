@@ -27,7 +27,7 @@ function application(overrides: Partial<ApplicationRecord> = {}): ApplicationRec
   };
 }
 
-function repository(options: { record?: ApplicationRecord; coordinateStatus?: "suggested" | "confirmed" } = {}) {
+function repository(options: { record?: ApplicationRecord; coordinateStatus?: "suggested" | "confirmed"; driftBeforeCommit?: boolean } = {}) {
   const atomicReviews: Parameters<ApplicationReviewRepository["applyReviewAtomic"]>[0][] = [];
   const decisions: Parameters<ApplicationReviewRepository["recordDecisionAtomic"]>[0][] = [];
   const repo: ApplicationReviewRepository = {
@@ -35,8 +35,12 @@ function repository(options: { record?: ApplicationRecord; coordinateStatus?: "s
       application: options.record ?? application(),
       schoolCoordinateStatus: options.coordinateStatus ?? "confirmed",
     }),
-    applyReviewAtomic: async (input) => { atomicReviews.push(input); },
-    recordDecisionAtomic: async (input) => { decisions.push(input); },
+    applyReviewAtomic: async (input) => {
+      if (options.driftBeforeCommit) return { transitioned: false };
+      atomicReviews.push(input);
+      return { transitioned: true };
+    },
+    recordDecisionAtomic: async (input) => { decisions.push(input); return { transitioned: true }; },
   };
   return { repo, atomicReviews, decisions };
 }
@@ -92,6 +96,17 @@ test("rejects approval while the school coordinate is unconfirmed and leaves the
   const service = createApplicationReviewService(store.repo);
   await assert.rejects(() => service.reviewApplication("demo-admin", "a1", { decision: "approved" }, 1_000), /coordinate/i);
   assert.equal(store.atomicReviews.length, 0);
+});
+
+test("fails cleanly when pending or confirmed-school state drifts before the atomic approval commit", async () => {
+  const store = repository({ driftBeforeCommit: true });
+  const service = createApplicationReviewService(store.repo, () => "profile-1", () => "audit-1");
+
+  await assert.rejects(
+    () => service.reviewApplication("demo-admin", "a1", { decision: "approved" }, 1_000),
+    /state changed/i,
+  );
+  assert.equal(store.atomicReviews.length, 0, "profile, visibility, and audit side effects must all remain absent");
 });
 
 test("approves but keeps a profile unpublished when a required map field is not public", async () => {

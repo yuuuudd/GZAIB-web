@@ -3,24 +3,25 @@ import test from "node:test";
 import { createSchoolAdminService, parseSchoolAdminAction, type SchoolAdminRepository } from "../../features/admin/schools";
 
 test("proposes a server-geocoded coordinate as suggested rather than immediately publishing it", async () => {
-  const suggestions: Parameters<SchoolAdminRepository["saveSuggested"]>[0][] = [];
+  const suggestions: Parameters<SchoolAdminRepository["saveSuggestedAtomic"]>[0][] = [];
   const repository: SchoolAdminRepository = {
-    saveSuggested: async (school) => { suggestions.push(school); return school; },
-    confirmCoordinateAtomic: async () => undefined,
+    saveSuggestedAtomic: async (input) => { suggestions.push(input); return input.school; },
+    confirmCoordinateAtomic: async () => ({ transitioned: true }),
   };
   const service = createSchoolAdminService(repository, async () => ({ longitude: 113_264_400, latitude: 23_129_100 }), () => "school-1", () => "audit-1");
   const result = await service.proposeSchool("demo-admin", { name: "演示大学（虚构）", campus: "共创校区", city: "广州" }, 1_000);
 
   assert.equal(result.coordinateStatus, "suggested");
-  assert.equal(suggestions[0]?.longitude, 113_264_400);
-  assert.equal(suggestions[0]?.latitude, 23_129_100);
+  assert.equal(suggestions[0]?.school.longitude, 113_264_400);
+  assert.equal(suggestions[0]?.school.latitude, 23_129_100);
+  assert.equal(suggestions[0]?.audit.action, "school.coordinate_suggested");
 });
 
 test("confirms only a stored school id and writes one coordinate-confirmed audit row atomically", async () => {
   const confirmations: Parameters<SchoolAdminRepository["confirmCoordinateAtomic"]>[0][] = [];
   const repository: SchoolAdminRepository = {
-    saveSuggested: async (school) => school,
-    confirmCoordinateAtomic: async (input) => { confirmations.push(input); },
+    saveSuggestedAtomic: async (input) => input.school,
+    confirmCoordinateAtomic: async (input) => { confirmations.push(input); return { transitioned: true }; },
   };
   const service = createSchoolAdminService(repository, async () => ({ longitude: 1, latitude: 1 }), undefined, () => "audit-1");
   await service.confirmSchoolCoordinate("demo-admin", "school-1", 2_000);

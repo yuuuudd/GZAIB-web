@@ -13,8 +13,8 @@ export type SchoolCoordinateRecord = {
 };
 
 export type SchoolAdminRepository = {
-  saveSuggested(school: SchoolCoordinateRecord): Promise<SchoolCoordinateRecord>;
-  confirmCoordinateAtomic(input: { schoolId: string; updatedAt: number; audit: AuditRecord }): Promise<void>;
+  saveSuggestedAtomic(input: { school: SchoolCoordinateRecord; audit: AuditRecord }): Promise<SchoolCoordinateRecord>;
+  confirmCoordinateAtomic(input: { schoolId: string; updatedAt: number; audit: AuditRecord }): Promise<{ transitioned: boolean }>;
 };
 
 export type SchoolAdminAction =
@@ -54,15 +54,24 @@ export function createSchoolAdminService(
         || Math.abs(coordinate.longitude) > 180_000_000 || Math.abs(coordinate.latitude) > 90_000_000) {
         throw new Error("Invalid geocoded coordinate");
       }
-      return repository.saveSuggested({
+      const school = {
         id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city,
-        ...coordinate, coordinateStatus: "suggested", createdAt: now, updatedAt: now,
+        ...coordinate, coordinateStatus: "suggested" as const, createdAt: now, updatedAt: now,
+      };
+      return repository.saveSuggestedAtomic({
+        school,
+        audit: {
+          id: createAuditId(), actorUserId: adminId, targetType: "school", targetId: school.id,
+          action: "school.coordinate_suggested",
+          diffJson: JSON.stringify({ coordinateStatus: "suggested", source: "server_geocode" }),
+          createdAt: now,
+        },
       });
     },
     async confirmSchoolCoordinate(adminId: string, schoolId: string, now: number) {
       if (adminId !== "demo-admin") throw new Error("Forbidden");
       if (!validText(schoolId, 1, 160)) throw new Error("Invalid school action");
-      await repository.confirmCoordinateAtomic({
+      const transition = await repository.confirmCoordinateAtomic({
         schoolId,
         updatedAt: now,
         audit: {
@@ -70,6 +79,7 @@ export function createSchoolAdminService(
           action: "school.coordinate_confirmed", diffJson: JSON.stringify({ coordinateStatus: "confirmed" }), createdAt: now,
         },
       });
+      if (!transition.transitioned) throw new Error("School coordinate state changed before commit");
       return { schoolId, coordinateStatus: "confirmed" as const };
     },
   };
@@ -95,25 +105,49 @@ export async function geocodeSchool(
 }
 
 export async function createRuntimeSchoolAdminService() {
-  const [{ getDb }, schema, { and, eq }] = await Promise.all([import("../../db"), import("../../db/schema"), import("drizzle-orm")]);
+  const [{ getDb }, schema, drizzle] = await Promise.all([import("../../db"), import("../../db/schema"), import("drizzle-orm")]);
   const db = getDb();
   const repository: SchoolAdminRepository = {
-    async saveSuggested(school) {
-      await db.insert(schema.schools).values(school).onConflictDoUpdate({
+    async saveSuggestedAtomic(input) {
+      const save = db.insert(schema.schools).values(input.school).onConflictDoUpdate({
         target: [schema.schools.name, schema.schools.campus],
-        set: { city: school.city, longitude: school.longitude, latitude: school.latitude, coordinateStatus: "suggested", updatedAt: school.updatedAt },
+        set: {
+          city: input.school.city, longitude: input.school.longitude, latitude: input.school.latitude,
+          coordinateStatus: "suggested", updatedAt: input.school.updatedAt,
+        },
       });
-      const [saved] = await db.select().from(schema.schools).where(and(eq(schema.schools.name, school.name), eq(schema.schools.campus, school.campus)));
+      const audit = db.insert(schema.auditLogs).select(drizzle.sql`
+        select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType},
+          (select ${schema.schools.id} from ${schema.schools}
+            where ${schema.schools.name} = ${input.school.name} and ${schema.schools.campus} = ${input.school.campus}),
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
+      `);
+      await db.batch([save, audit]);
+      const [saved] = await db.select().from(schema.schools).where(drizzle.and(
+        drizzle.eq(schema.schools.name, input.school.name),
+        drizzle.eq(schema.schools.campus, input.school.campus),
+      ));
       if (!saved) throw new Error("Unable to save school coordinate");
       return saved;
     },
     async confirmCoordinateAtomic(input) {
-      const [school] = await db.select({ id: schema.schools.id }).from(schema.schools).where(eq(schema.schools.id, input.schoolId));
-      if (!school) throw new Error("School not found");
-      await db.batch([
-        db.update(schema.schools).set({ coordinateStatus: "confirmed", updatedAt: input.updatedAt }).where(eq(schema.schools.id, input.schoolId)),
-        db.insert(schema.auditLogs).values(input.audit),
+      const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
+        select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
+          ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
+        from ${schema.schools}
+        where ${schema.schools.id} = ${input.schoolId} and ${schema.schools.coordinateStatus} = 'suggested'
+      `);
+      const auditExists = drizzle.sql`exists (select 1 from ${schema.auditLogs} where ${schema.auditLogs.id} = ${input.audit.id})`;
+      const results = await db.batch([
+        gateAudit,
+        db.update(schema.schools).set({ coordinateStatus: "confirmed", updatedAt: input.updatedAt }).where(drizzle.and(
+          drizzle.eq(schema.schools.id, input.schoolId),
+          drizzle.eq(schema.schools.coordinateStatus, "suggested"),
+          auditExists,
+        )),
       ]);
+      const gateResult = results[0] as { meta?: { changes?: number } };
+      return { transitioned: (gateResult.meta?.changes ?? 0) === 1 };
     },
   };
   return createSchoolAdminService(repository, geocodeSchool);
