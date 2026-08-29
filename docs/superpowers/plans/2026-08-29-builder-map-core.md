@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建成可公开浏览的广东高校共建者地图，以及邮箱一次性登录、申请审核、资料公开控制、贡献认证和运营后台。
+**Goal:** 建成可公开浏览的广东高校共建者地图 Demo，以及可替换的模拟身份会话、申请审核、资料公开控制、贡献认证和运营后台。
 
 **Architecture:** 使用 Sites 的 Vinext/React 应用作为同仓全栈 Web 项目；D1 保存结构化数据，R2 保存头像，高德 JS API 2.0 提供地图与学校点聚合。业务规则集中在 `features/*`，路由只做输入、鉴权和输出转换；公开地图始终读取经过审核和可见性投影后的数据。
 
@@ -18,9 +18,10 @@
 - 所有 D1 查询使用 Drizzle 或单条 prepared statement；一条 `prepare()` 只包含一条 SQL。
 - 地图只保存学校/校区坐标，不请求浏览器定位，不保存成员独立坐标。
 - 公开查询只返回 `approved + active + published` 且字段可见级别允许的数据。
-- 邮箱登录链接有效 15 分钟、单次使用，数据库只保存令牌 SHA-256 哈希。
+- 当前 Demo 只使用服务端固定的“共建者/运营员”模拟身份；不发送登录邮件、不接入真实账号，不允许客户端提交任意用户 ID 或角色。
+- Demo 会话使用服务端密钥签名的 HttpOnly Cookie，仅在 `DEMO_MODE=true` 时启用，8 小时过期；正式认证将在后续接公众号服务时替换同一会话接口。
 - 高德安全密钥只在服务端环境变量中；前端只使用 Web JS API key 和固定 `serviceHost`。
-- 在实现公开邮箱登录前，重新阅读当前 Sites 身份认证说明；如果运行平台明确禁止该认证路径，停止执行并请求产品决策，不得静默改成 ChatGPT 登录或第三方 OAuth。
+- Demo 模拟登录必须在页面持续显示“演示模式”，README 必须明确禁止将其作为正式登录直接发布。
 - 第一阶段不实现连接请求、联系方式交换、聊天、动态、关注、活动报名或公众号通知。
 - 未经用户明确要求，不执行截图、DOM 点击或浏览器视觉 QA；用单元、集成、构建和渲染 HTML 测试验收。
 - 每个任务结束后运行该任务列出的测试并提交；若执行环境仍未初始化 Git，Task 1 先初始化仓库。
@@ -69,7 +70,7 @@ components/
   admin/ApplicationReviewPanel.tsx
 features/
   identity/types.ts                  # 会话与用户类型
-  identity/magic-links.ts            # 令牌生成、哈希和消费规则
+  identity/demo-auth.ts              # 固定模拟身份与签名载荷
   identity/session.ts                # 会话 Cookie
   applications/types.ts
   applications/validation.ts
@@ -79,8 +80,8 @@ features/
   directory/service.ts
   contributions/service.ts
   admin/authorization.ts
-  notifications/types.ts             # 登录、申请及第二阶段连接共用的通知端口
-  notifications/resend.ts
+  notifications/types.ts             # 申请、审核及第二阶段连接共用的通知端口
+  notifications/in-app.ts
 lib/
   db/index.ts
   db/repositories/*.ts
@@ -500,70 +501,63 @@ git commit -m "feat: enforce profile visibility projection"
 
 ---
 
-### Task 4: 实现邮箱一次性登录与安全会话
+### Task 4: 实现 Demo 模拟身份与安全会话
 
 **Files:**
 - Create: `features/identity/types.ts`
-- Create: `features/identity/magic-links.ts`
+- Create: `features/identity/demo-auth.ts`
 - Create: `features/identity/session.ts`
 - Create: `features/notifications/types.ts`
-- Create: `features/notifications/resend.ts`
 - Create: `lib/db/repositories/identity.ts`
 - Create: `lib/db/repositories/notifications.ts`
 - Create: `lib/env.ts`
-- Create: `app/api/auth/magic-link/request/route.ts`
-- Create: `app/api/auth/magic-link/consume/route.ts`
+- Create: `app/api/auth/demo-login/route.ts`
 - Create: `app/api/auth/logout/route.ts`
-- Create: `tests/identity/magic-links.test.ts`
+- Create: `components/auth/DemoIdentitySwitcher.tsx`
+- Modify: `app/layout.tsx`
+- Modify: `app/globals.css`
+- Create: `tests/identity/demo-auth.test.ts`
 - Create: `tests/identity/session.test.ts`
 
 **Interfaces:**
-- Produces: `issueMagicLink(email, purpose, now): Promise<{ rawToken: string; expiresAt: number }>`
-- Produces: `consumeMagicLink(rawToken, now): Promise<{ userId: string; purpose: MagicLinkPurpose }>`
+- Produces: two server-owned identities, `demo-member` and `demo-admin`, with fixed roles and safe display names
+- Produces: `createDemoSession(identity, now)`, `verifyDemoSession(cookie, now)`, `requireSession(request)`, `clearSession(response)`
 - Produces: `createSession(userId, now)`, `requireSession(request)`, `clearSession(response)`
-- Produces: `NotificationSender.send(message): Promise<DeliveryResult>` with initial `magic_link` support
+- Produces: `NotificationSender.send(message): Promise<DeliveryResult>` as an in-app notification port
 
-- [ ] **Step 1: Confirm the supported public-auth path before coding**
+- [ ] **Step 1: Record the product decision before coding**
 
-Read the current Sites authentication reference and confirm that public app-owned email magic links can run in the deployed Worker. Record the result in the commit message body. If the platform now prohibits this path, stop the plan at this task and ask the user to choose between platform sign-in and an external authentication provider.
+The user selected Demo-only simulated identities on 2026-08-29 after the current Sites authentication reference ruled out silently scaffolding app-owned public sign-in. Record this decision in the commit message body. Do not add ChatGPT sign-in, email magic links, OAuth, passwords, or real emails.
 
-- [ ] **Step 2: Write failing token lifecycle tests**
+- [ ] **Step 2: Write failing demo-session tests**
 
-Cover normalized lowercase emails, 15-minute expiry, single consumption, purpose binding, and hash-only persistence:
+Cover the fixed role allowlist, `DEMO_MODE` gating, HMAC tamper rejection, 8-hour expiry, cookie attributes, and rejection of client-supplied user IDs or role escalation:
 
 ```ts
-test("magic link expires after 15 minutes and is single-use", async () => {
-  const issued = await service.issue("Student@Example.edu", "member_login", 1_000);
-  assert.equal(issued.expiresAt, 901_000);
-  assert.equal(store.rows[0].rawToken, undefined);
-  await service.consume(issued.rawToken, 2_000);
-  await assert.rejects(() => service.consume(issued.rawToken, 3_000), /already used/);
+test("demo session rejects tampering and expires after eight hours", async () => {
+  const cookie = await createDemoSession("member", 1_000, secret);
+  await assert.rejects(() => verifyDemoSession(`${cookie}x`, 2_000, secret), /invalid/i);
+  await assert.rejects(() => verifyDemoSession(cookie, 28_801_001, secret), /expired/i);
 });
 ```
 
 - [ ] **Step 3: Run the tests and verify they fail**
 
 ```bash
-npm run test:unit -- tests/identity/magic-links.test.ts tests/identity/session.test.ts
+npm run test:unit -- tests/identity/demo-auth.test.ts tests/identity/session.test.ts
 ```
 
-Expected: FAIL because identity modules do not exist.
+Expected: FAIL because demo identity modules do not exist.
 
-- [ ] **Step 4: Implement token and session services**
+- [ ] **Step 4: Implement fixed identities and signed sessions**
 
-Generate 32 random bytes with `crypto.getRandomValues`, encode base64url, and store `sha256(rawToken)`. Consume inside a D1 batch/state-checked update so two requests cannot use the same token. Session cookies must be `HttpOnly`, `Secure` in production, `SameSite=Lax`, path `/`, and expire after 30 days.
+Define the two identities in server code and map the only accepted input values `member` and `admin` to them. Sign a versioned base64url JSON payload with HMAC-SHA-256 using `DEMO_SESSION_SECRET`. Session cookies must be `HttpOnly`, `Secure` in production, `SameSite=Lax`, path `/`, and expire after 8 hours. Reject missing/short secrets outside tests. Do not put emails, contacts, arbitrary user IDs, or client-provided roles in the payload.
 
-Return generic success from the request endpoint regardless of whether an email is already known, preventing email enumeration:
+Ensure the fixed identities exist in D1 before issuing a session, using idempotent repository writes. Keep all later callers behind the generic session interface so公众号认证 can replace Demo auth without changing application/admin services.
 
-```ts
-return Response.json({ ok: true, message: "如果该邮箱可以使用，登录链接将很快送达。" });
-```
+- [ ] **Step 5: Implement the explicit Demo switcher and logout**
 
-Create a pending in-app notification and deliver the raw magic link only through `ResendNotificationSender`; never write the raw token to logs or the database. When `purpose === "admin_login"`, grant the admin role only if the normalized email is present in `ADMIN_EMAILS`; otherwise return the same generic success without issuing an admin link.
-
-- [ ] **Step 5: Implement route validation and logout**
-
-`POST /api/auth/magic-link/request` accepts `{ email, purpose }`; allowed purposes are `application`, `member_login`, and `admin_login`. `GET /api/auth/magic-link/consume?token=...` consumes the token, creates the session, and redirects only to a same-origin relative `returnTo`. `POST /api/auth/logout` expires the session cookie.
+`POST /api/auth/demo-login` accepts only `{ identity: "member" | "admin", returnTo?: string }`, works only when `DEMO_MODE=true`, and redirects only to a same-origin relative path. `POST /api/auth/logout` expires the session cookie. Add a persistent “演示模式” banner and identity switcher; visually distinguish “以共建者体验” and “以运营员体验”. Never imply this is a real account.
 
 - [ ] **Step 6: Run identity tests and build**
 
@@ -572,13 +566,13 @@ npm run test:unit -- tests/identity/*.test.ts
 npm run build
 ```
 
-Expected: PASS, including concurrent/single-use and open-redirect rejection tests.
+Expected: PASS, including tamper, role escalation, disabled-mode, expiry, and open-redirect rejection tests.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add features/identity features/notifications lib/env.ts lib/db/repositories/identity.ts lib/db/repositories/notifications.ts app/api/auth tests/identity
-git commit -m "feat: add passwordless email sessions"
+git add features/identity features/notifications lib/env.ts lib/db/repositories/identity.ts lib/db/repositories/notifications.ts app/api/auth components/auth app/layout.tsx app/globals.css tests/identity
+git commit -m "feat: add demo identity sessions"
 ```
 
 ---
@@ -944,13 +938,13 @@ git commit -m "feat: add member profiles and privacy controls"
 
 ---
 
-### Task 10: 完成通知端口、邮件投递和核心系统验证
+### Task 10: 完成站内通知端口和核心系统验证
 
 **Files:**
 - Modify: `features/notifications/types.ts`
-- Modify: `features/notifications/resend.ts`
+- Create: `features/notifications/in-app.ts`
 - Modify: `lib/db/repositories/notifications.ts`
-- Create: `tests/notifications/resend.test.ts`
+- Create: `tests/notifications/in-app.test.ts`
 - Modify: application and review services to enqueue/send notifications
 - Modify: `app/layout.tsx`
 - Create: `public/og.png`
@@ -958,12 +952,12 @@ git commit -m "feat: add member profiles and privacy controls"
 - Modify: `README.md`
 
 **Interfaces:**
-- Produces: `NotificationSender.send(message): Promise<DeliveryResult>`; `ResendNotificationSender`
-- Consumes: `RESEND_API_KEY`, `EMAIL_FROM`, `APP_ORIGIN`
+- Produces: `NotificationSender.send(message): Promise<DeliveryResult>`; `InAppNotificationSender`
+- Consumes: the D1 `DB` binding only; external delivery remains an adapter point for公众号 service
 
 - [ ] **Step 1: Write failing notification tests**
 
-Test exact event mapping, generic email content without private review notes, one retry for transient `429/5xx`, no retry for `4xx`, and business success even when delivery fails:
+Test exact event mapping, generic in-app content without private review notes, and business success even when notification persistence fails:
 
 ```ts
 assert.equal(message.subject, "你的共建者地图申请已通过");
@@ -975,14 +969,14 @@ assert.equal(notifications.rows[0].deliveryStatus, "failed");
 - [ ] **Step 2: Run tests and verify they fail**
 
 ```bash
-npm run test:unit -- tests/notifications/resend.test.ts
+npm run test:unit -- tests/notifications/in-app.test.ts
 ```
 
-Expected: FAIL because the phase-one adapter handles only `magic_link` and has no application/contribution event mapping.
+Expected: FAIL because the in-app adapter has no application/contribution event mapping yet.
 
-- [ ] **Step 3: Extend the notification port and Resend adapter**
+- [ ] **Step 3: Implement the in-app notification adapter**
 
-Support event types `magic_link`, `application_submitted`, `application_approved`, `application_changes_requested`, `application_rejected`, and `contribution_confirmed`. Store an in-app notification before attempting email. Redact tokens and private fields from logs. Apply a 10-second fetch timeout.
+Support event types `application_submitted`, `application_approved`, `application_changes_requested`, `application_rejected`, and `contribution_confirmed`. Persist only the member-facing title/body/link and delivery status. Never store private review notes. Keep the port transport-neutral so a later公众号 adapter does not change application/review services.
 
 - [ ] **Step 4: Generate exactly one site-specific social card**
 
@@ -1013,7 +1007,7 @@ Expected: all commands PASS. Keep the development server running for Sites hosti
 
 - [ ] **Step 7: Document environment and launch prerequisites**
 
-In `README.md`, list the exact environment variable names, D1/R2 bindings, migration command, first-admin allowlist procedure, high德 Web JS API key/security-key creation, email domain setup, and the 10–20 member private-beta checklist. Do not include real secrets.
+In `README.md`, list the exact environment variable names, D1/R2 bindings, migration command, Demo identity procedure and publication warning, 高德 Web JS API key/security-key creation, future公众号 adapter point, and the 10–20 member private-beta checklist. Do not include real secrets.
 
 - [ ] **Step 8: Commit**
 
