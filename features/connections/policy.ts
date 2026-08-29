@@ -7,7 +7,7 @@ const TOPIC_MAX_LENGTH = 60;
 
 const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
 const PHONE_PATTERN = /(?<!\d)(?:\+?86[\s.-]?)?\(?1[3-9]\d\)?[\s.-]?\d{4}[\s.-]?\d{4}(?!\d)/;
-const WECHAT_PATTERN = /(?:微信|\b(?:wechat|weixin|vx)\b)\s*(?:(?:号|id|是|为|is)(?:\s*[:：=@])?|[:：=@])\s*[@a-z0-9][a-z0-9_-]{3,}/i;
+const WECHAT_PATTERN = /(?:微信|\b(?:wechat|weixin|vx)\b)\s*(?:(?:号|id)\s*(?:(?:是|为|is)\s*)?(?:[:：=@]\s*)?|(?:是|为|is)\s*(?:[:：=@]\s*)?|[:：=@]\s*)[@a-z0-9][a-z0-9_-]{3,}/i;
 
 export function normalizeConnectionInput(input: Pick<CreateConnectionInput, "topic" | "message">): Pick<CreateConnectionInput, "topic" | "message"> {
   return {

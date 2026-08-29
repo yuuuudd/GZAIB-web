@@ -70,7 +70,9 @@ test("rejects obvious email, phone, and WeChat disclosures in a request body", (
     "Phone: (138) 0013 8000 is best after class.",
     "My WeChat is campus_builder_2026; please add me there.",
     "WeChat ID: campus_builder_2026; please add me there.",
+    "WeChat ID is campus_builder_2026; please add me there.",
     "微信号：campus_builder_2026，欢迎联系我。",
+    "微信号是 campus_builder_2026，欢迎联系我。",
   ]) {
     assert.deepEqual(canCreate({ ...base, message }), { ok: false, code: "invalid_message" });
   }
