@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import {
   CONSENT_VERSION,
   DEFAULT_APPLICATION_VISIBILITY,
@@ -16,6 +16,11 @@ import { VisibilityField } from "./VisibilityField";
 type SchoolOption = { id: string; name: string; campus: string; city: string };
 type PrivacyField = keyof typeof DEFAULT_APPLICATION_VISIBILITY;
 const privacyFields = [...MAP_REQUIRED_VISIBILITY_FIELDS, ...OPTIONAL_VISIBILITY_FIELDS] as PrivacyField[];
+const maxAvatarSourceBytes = 5 * 1024 * 1024;
+
+function nicknameInitial(nickname: string): string {
+  return Array.from(nickname.trim())[0] ?? "你";
+}
 
 const privacyLabels: Record<PrivacyField, string> = {
   nickname: "昵称", avatarUrl: "头像", school: "学校", city: "城市", intro: "一句话介绍", skills: "技能", roles: "参与角色",
@@ -28,6 +33,12 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
   const [visibility, setVisibility] = useState(() => ({ ...DEFAULT_APPLICATION_VISIBILITY }));
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [avatarKey, setAvatarKey] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
 
   function setFieldVisibility(field: PrivacyField, value: Visibility) {
     setVisibility((current) => ({ ...current, [field]: value }));
@@ -35,8 +46,41 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
 
   const mapEligibility = getMapEligibility(visibility);
 
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > maxAvatarSourceBytes) {
+      setAvatarMessage("头像文件须小于或等于 5 MB。");
+      input.value = "";
+      return;
+    }
+    const form = new FormData();
+    form.set("avatar", file);
+    setUploadingAvatar(true);
+    setAvatarMessage(null);
+    try {
+      const response = await fetch("/api/uploads/avatar", { method: "POST", body: form });
+      const data = await response.json() as { error?: string; objectKey?: string; publicUrl?: string };
+      if (!response.ok || !data.objectKey || !data.publicUrl) throw new Error(data.error ?? "头像上传失败，请稍后重试。");
+      setAvatarKey(data.objectKey);
+      setAvatarUrl(data.publicUrl);
+      setAvatarImageFailed(false);
+      setAvatarMessage("头像已安全处理并保存。");
+    } catch (error) {
+      setAvatarMessage(error instanceof Error ? error.message : "头像上传失败，请稍后重试。");
+      input.value = "";
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (uploadingAvatar) {
+      setMessage("请等待头像上传完成后再提交。");
+      return;
+    }
     const form = new FormData(event.currentTarget);
     const optional = (name: string) => {
       const value = String(form.get(name) ?? "").trim();
@@ -71,7 +115,19 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       <section className="application-section">
         <p className="section-kicker">01 / 身份</p><h1>申请点亮我的头像</h1>
         <p className="section-intro">提交后由运营团队审核；通过后，符合公开条件的资料才会出现在共建地图中。</p>
-        <div className="form-grid"><label>昵称 <input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" /></label><label>真实姓名（仅审核所需）<input name="realName" maxLength={60} /></label><label>头像文件标识（可选）<input name="avatarKey" maxLength={240} placeholder="上传功能开放后填写" /></label></div>
+        <div className="identity-fields">
+          <div className="form-grid identity-copy-fields"><label>昵称 <input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label><label>真实姓名（仅审核所需）<input name="realName" maxLength={60} /></label></div>
+          <div className="avatar-upload-card">
+            <div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>
+              {avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}
+            </div>
+            <div className="avatar-upload-copy"><strong>上传头像（可选）</strong><small>JPEG、PNG 或 WebP，最大 5 MB；会自动裁成清晰方形头像。</small>
+              <label className="avatar-upload-action">{uploadingAvatar ? "正在安全处理…" : avatarKey ? "更换头像" : "选择头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>
+              {avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}
+            </div>
+            <input name="avatarKey" type="hidden" value={avatarKey} />
+          </div>
+        </div>
       </section>
       <section className="application-section">
         <p className="section-kicker">02 / 学校</p><h2>你的校园与方向</h2>
@@ -104,7 +160,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       </section>
       <label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label>
       {message ? <p className="form-error" role="alert">{message}</p> : null}
-      <button className="application-submit" type="submit" disabled={submitting}>{submitting ? "正在提交…" : "保存并提交审核 →"}</button>
+      <button className="application-submit" type="submit" disabled={submitting || uploadingAvatar}>{submitting ? "正在提交…" : uploadingAvatar ? "请等待头像处理完成…" : "保存并提交审核 →"}</button>
     </form>
   );
 }

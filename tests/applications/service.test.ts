@@ -41,6 +41,16 @@ test("submits with server-owned owner, pending status, and recorded consent", as
   assert.equal(store.saved?.status, "pending");
 });
 
+test("rejects an avatar key owned by a different authenticated user", async () => {
+  const store = repository();
+  const service = createApplicationService(store, () => "application-1");
+  await assert.rejects(() => service.submitApplication("demo-member", {
+    ...input,
+    avatarKey: "avatars/demo-admin/123e4567-e89b-42d3-a456-426614174000.webp",
+  }, 1_000));
+  assert.equal(store.saved, undefined);
+});
+
 test("does not submit an application for an unconfirmed school", async () => {
   const store = repository(undefined, false);
   const service = createApplicationService(store, () => "application-1");

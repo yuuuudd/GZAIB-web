@@ -1,6 +1,7 @@
 import type { ApplicationRepository } from "../../lib/db/repositories/applications";
 import type { ApplicationInput, ApplicationRecord } from "./types";
 import { completeApplicationVisibility, CONSENT_VERSION, getMapEligibility, validateApplication } from "./validation";
+import { isOwnedAvatarKey } from "../directory/avatar";
 
 export class ApplicationServiceError extends Error {
   constructor(message: string) {
@@ -23,6 +24,9 @@ export function createApplicationService(
   async function submitApplication(userId: string, rawInput: unknown, now: number): Promise<ApplicationRecord> {
     const validated = validateApplication(rawInput);
     if (!validated.ok) throw new ApplicationServiceError(validated.errors[0] ?? "申请资料不正确");
+    if (validated.value.avatarKey && !isOwnedAvatarKey(validated.value.avatarKey, userId)) {
+      throw new ApplicationServiceError("头像不属于当前用户");
+    }
     if (!await repository.isSchoolConfirmed(validated.value.schoolId)) {
       throw new ApplicationServiceError("请选择已确认坐标的学校或校区");
     }
