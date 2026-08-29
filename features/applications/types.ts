@@ -8,10 +8,8 @@ export type ApplicationStatus =
   | "rejected"
   | "withdrawn";
 
+/** The allowlisted data an applicant may submit. Ownership and review state never belong here. */
 export type ApplicationInput = {
-  id: string;
-  userId: string;
-  status: ApplicationStatus;
   nickname: string;
   realName?: string;
   avatarKey?: string;
@@ -27,7 +25,15 @@ export type ApplicationInput = {
   roles: string[];
   workLinks: string[];
   visibility: VisibilityRules;
+  consentAccepted: true;
   consentVersion: string;
+};
+
+/** Server-owned persistence record, including its owner, lifecycle, and consent timestamp. */
+export type ApplicationRecord = Omit<ApplicationInput, "consentAccepted"> & {
+  id: string;
+  userId: string;
+  status: ApplicationStatus;
   consentAcceptedAt: number;
   submittedAt?: number;
   createdAt: number;

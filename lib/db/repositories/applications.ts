@@ -1,17 +1,63 @@
-import { eq } from "drizzle-orm";
-import { applications } from "../../../db/schema";
+import { and, eq } from "drizzle-orm";
+import { applications, schools } from "../../../db/schema";
 import type { getDb } from "../../../db";
-import type { ApplicationInput, ApplicationReviewInput } from "../../../features/applications/types";
+import type { ApplicationRecord, ApplicationReviewInput } from "../../../features/applications/types";
+import type { VisibilityRules } from "../../../features/directory/types";
 
 type Db = ReturnType<typeof getDb>;
 
 export type ApplicationRepository = {
-  saveApplication(input: ApplicationInput): Promise<void>;
+  getApplicationByUserId(userId: string): Promise<ApplicationRecord | undefined>;
+  isSchoolConfirmed(schoolId: string): Promise<boolean>;
+  saveApplication(input: ApplicationRecord): Promise<void>;
   reviewApplication(input: ApplicationReviewInput): Promise<void>;
 };
 
+function readStringArray(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string") ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function readVisibility(value: string): VisibilityRules {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as VisibilityRules : {};
+  } catch {
+    return {};
+  }
+}
+
+function toApplicationRecord(row: typeof applications.$inferSelect): ApplicationRecord {
+  return {
+    id: row.id, userId: row.userId, status: row.status as ApplicationRecord["status"],
+    nickname: row.nickname, realName: row.realName ?? undefined, avatarKey: row.avatarKey ?? undefined,
+    schoolId: row.schoolId, major: row.major ?? undefined, grade: row.grade ?? undefined,
+    intro: row.intro, currentFocus: row.currentFocus ?? undefined, canOffer: row.canOffer ?? undefined,
+    wantsToMeet: row.wantsToMeet ?? undefined, skills: readStringArray(row.skillsJson),
+    interests: readStringArray(row.interestsJson), roles: readStringArray(row.rolesJson),
+    workLinks: readStringArray(row.workLinksJson), visibility: readVisibility(row.visibilityJson),
+    consentVersion: row.consentVersion, consentAcceptedAt: row.consentAcceptedAt,
+    submittedAt: row.submittedAt ?? undefined, createdAt: row.createdAt, updatedAt: row.updatedAt,
+  };
+}
+
 export function createApplicationRepository(db: Db): ApplicationRepository {
   return {
+    async getApplicationByUserId(userId) {
+      const [record] = await db.select().from(applications).where(eq(applications.userId, userId));
+      return record ? toApplicationRecord(record) : undefined;
+    },
+    async isSchoolConfirmed(schoolId) {
+      const [school] = await db.select({ id: schools.id }).from(schools).where(and(
+        eq(schools.id, schoolId),
+        eq(schools.coordinateStatus, "confirmed"),
+      ));
+      return Boolean(school);
+    },
     async saveApplication(input) {
       await db.insert(applications).values({
         id: input.id,
@@ -75,7 +121,7 @@ export function createApplicationRepository(db: Db): ApplicationRepository {
   };
 }
 
-export async function saveApplication(db: Db, input: ApplicationInput): Promise<void> {
+export async function saveApplication(db: Db, input: ApplicationRecord): Promise<void> {
   return createApplicationRepository(db).saveApplication(input);
 }
 
