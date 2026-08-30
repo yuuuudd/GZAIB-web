@@ -9,9 +9,35 @@ export type AmapNamespace = {
   Marker: new (options: Record<string, unknown>) => AmapMarker;
   MarkerCluster: new (map: AmapMap, markers: AmapMarker[], options?: Record<string, unknown>) => { setMap(map: null): void };
   PlaceSearch: new (options: Record<string, unknown>) => { search(keyword: string, callback: (status: string, result: unknown) => void): void };
+  DistrictSearch: new (options: Record<string, unknown>) => AmapDistrictSearch;
+  Polygon: new (options: Record<string, unknown>) => AmapPolygon;
 };
-export type AmapMap = { destroy(): void; add(markers: AmapMarker[]): void; setFitView(markers?: AmapMarker[]): void };
-export type AmapMarker = { on(event: "click", handler: () => void): void };
+export type AmapOverlay = AmapMarker | AmapPolygon;
+export type AmapMap = {
+  destroy(): void;
+  add(overlays: AmapOverlay[]): void;
+  remove(overlays: AmapOverlay[]): void;
+  setFitView(overlays?: AmapOverlay[], immediately?: boolean, avoid?: number[], maxZoom?: number): void;
+  getZoom(): number;
+  setZoomAndCenter(zoom: number, center: [number, number], immediately?: boolean): void;
+  on(event: "zoomend", handler: () => void): void;
+  off(event: "zoomend", handler: () => void): void;
+};
+export type AmapMarker = {
+  on(event: "click", handler: () => void): void;
+  setMap(map: AmapMap | null): void;
+};
+export type AmapPolygon = { setMap(map: AmapMap | null): void };
+export type AmapDistrict = {
+  name?: string;
+  adcode?: string;
+  center?: { lng: number; lat: number };
+  boundaries?: unknown[][];
+  districtList?: AmapDistrict[];
+};
+export type AmapDistrictSearch = {
+  search(keyword: string, callback: (status: string, result: { districtList?: AmapDistrict[] } | string) => void): void;
+};
 export type AmapLocation = {
   name: string;
   city: string;
@@ -49,13 +75,21 @@ function loadAmap(key: string): Promise<AmapNamespace> {
     script.addEventListener("load", ready, { once: true });
     script.addEventListener("error", failed, { once: true });
     if (!existing) {
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}&plugin=AMap.MarkerCluster,AMap.PlaceSearch`;
+      script.src = buildAmapScriptUrl(key);
       script.async = true;
       script.dataset.builderMap = "amap";
       document.head.append(script);
     }
   });
   return window.__builderMapAmapPromise;
+}
+
+export function buildAmapScriptUrl(key: string): string {
+  const url = new URL("https://webapi.amap.com/maps");
+  url.searchParams.set("v", "2.0");
+  url.searchParams.set("key", key);
+  url.searchParams.set("plugin", "AMap.MarkerCluster,AMap.PlaceSearch,AMap.DistrictSearch");
+  return url.toString();
 }
 
 export async function resolveAmapKey(apiKey?: string, fetchImpl: typeof fetch = fetch): Promise<string> {
