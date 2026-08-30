@@ -11,3 +11,8 @@ test("manual member form offers draft and publish options but never requests a l
   assert.doesNotMatch(html, /登录邮箱/);
   assert.doesNotMatch(html, /name="email"/);
 });
+
+test("manual member form provides an in-place school search rather than requiring a separate page", () => {
+  const html = renderToStaticMarkup(createElement(ManualMemberForm, { schools: [], amapKey: "test-key" }));
+  assert.match(html, /搜索高德学校/);
+});
