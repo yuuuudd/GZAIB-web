@@ -88,6 +88,7 @@ test("publishes an eligible application through one atomic review payload and au
   assert.equal(result.profile?.publishStatus, "published");
   assert.equal(store.atomicReviews.length, 1);
   assert.equal(store.atomicReviews[0]?.application.status, "approved");
+  assert.equal((store.atomicReviews[0]?.profile as { adminManaged?: boolean }).adminManaged, false);
   assert.equal(store.atomicReviews[0]?.audit.action, "application.approved");
   assert.equal(store.atomicReviews[0]?.visibility.length, Object.keys(DEFAULT_APPLICATION_VISIBILITY).length);
 });

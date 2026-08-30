@@ -29,6 +29,7 @@ export type ReviewedProfile = {
   rolesJson: string;
   workLinksJson: string;
   publishStatus: "published" | "unpublished";
+  adminManaged: boolean;
   verifiedBuilder: boolean;
   publishedAt?: number;
   createdAt: number;
@@ -135,6 +136,7 @@ export function createApplicationReviewService(
         rolesJson: JSON.stringify(context.application.roles),
         workLinksJson: JSON.stringify(context.application.workLinks),
         publishStatus: eligible ? "published" : "unpublished",
+        adminManaged: false,
         verifiedBuilder: context.existingProfile?.verifiedBuilder ?? false,
         ...(eligible ? { publishedAt: now } : {}),
         createdAt: context.existingProfile?.createdAt ?? now,
@@ -199,6 +201,7 @@ export async function createRuntimeApplicationReviewService() {
       delete profileUpdate.id;
       delete profileUpdate.userId;
       delete profileUpdate.createdAt;
+      delete profileUpdate.adminManaged;
       const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
         select ${input.audit.id}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
           ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
@@ -215,7 +218,7 @@ export async function createRuntimeApplicationReviewService() {
           ${input.profile.major ?? null}, ${input.profile.grade ?? null}, ${input.profile.intro},
           ${input.profile.currentFocus ?? null}, ${input.profile.canOffer ?? null}, ${input.profile.wantsToMeet ?? null},
           ${input.profile.skillsJson}, ${input.profile.interestsJson}, ${input.profile.rolesJson}, ${input.profile.workLinksJson},
-          ${input.profile.publishStatus}, ${input.profile.verifiedBuilder}, ${input.profile.publishedAt ?? null},
+          ${input.profile.publishStatus}, ${input.profile.adminManaged}, ${input.profile.verifiedBuilder}, ${input.profile.publishedAt ?? null},
           ${input.profile.createdAt}, ${input.profile.updatedAt}
         where ${auditExists}
       `).onConflictDoUpdate({ target: schema.memberProfiles.userId, set: profileUpdate });
