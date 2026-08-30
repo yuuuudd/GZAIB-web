@@ -20,6 +20,7 @@ export type SchoolAdminRepository = {
 
 export type SchoolAdminAction =
   | { action: "propose"; name: string; campus: string; city: string }
+  | { action: "select_amap"; name: string; campus: string; city: string; longitude: number; latitude: number }
   | { action: "confirm"; schoolId: string };
 
 function validText(value: unknown, min: number, max: number): value is string {
@@ -36,6 +37,12 @@ export function parseSchoolAdminAction(value: unknown): SchoolAdminAction {
     && validText(record.name, 2, 120) && validText(record.campus, 2, 120) && validText(record.city, 2, 80)) {
     return { action: "propose", name: record.name.trim(), campus: record.campus.trim(), city: record.city.trim() };
   }
+  if (record.action === "select_amap" && Object.keys(record).length === 6
+    && validText(record.name, 2, 120) && validText(record.campus, 2, 120) && validText(record.city, 2, 80)
+    && Number.isSafeInteger(record.longitude) && Number.isSafeInteger(record.latitude)
+    && Math.abs(record.longitude) <= 180_000_000 && Math.abs(record.latitude) <= 90_000_000) {
+    return { action: "select_amap", name: record.name.trim(), campus: record.campus.trim(), city: record.city.trim(), longitude: record.longitude, latitude: record.latitude };
+  }
   throw new Error("Invalid school action");
 }
 
@@ -46,6 +53,16 @@ export function createSchoolAdminService(
   createAuditId: () => string = () => crypto.randomUUID(),
 ) {
   return {
+    async proposeSelectedSchool(adminId: string, input: Omit<Extract<SchoolAdminAction, { action: "select_amap" }>, "action">, now: number) {
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
+      const parsed = parseSchoolAdminAction({ action: "select_amap", ...input });
+      if (parsed.action !== "select_amap") throw new Error("Invalid school action");
+      const school = { id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city, longitude: parsed.longitude, latitude: parsed.latitude, coordinateStatus: "suggested" as const, createdAt: now, updatedAt: now };
+      return repository.saveSuggestedAtomic({
+        school,
+        audit: { id: createAuditId(), actorUserId: adminId, targetType: "school", targetId: school.id, action: "school.coordinate_suggested", diffJson: JSON.stringify({ coordinateStatus: "suggested", source: "amap_place_search" }), createdAt: now },
+      });
+    },
     async proposeSchool(adminId: string, input: Omit<Extract<SchoolAdminAction, { action: "propose" }>, "action">, now: number) {
       if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       const parsed = parseSchoolAdminAction({ action: "propose", ...input });

@@ -8,6 +8,7 @@ export type AmapNamespace = {
   Map: new (container: HTMLElement, options: Record<string, unknown>) => AmapMap;
   Marker: new (options: Record<string, unknown>) => AmapMarker;
   MarkerCluster: new (map: AmapMap, markers: AmapMarker[], options?: Record<string, unknown>) => { setMap(map: null): void };
+  PlaceSearch: new (options: Record<string, unknown>) => { search(keyword: string, callback: (status: string, result: unknown) => void): void };
 };
 export type AmapMap = { destroy(): void; add(markers: AmapMarker[]): void; setFitView(markers?: AmapMarker[]): void };
 export type AmapMarker = { on(event: "click", handler: () => void): void };
@@ -40,7 +41,7 @@ function loadAmap(key: string): Promise<AmapNamespace> {
     script.addEventListener("load", ready, { once: true });
     script.addEventListener("error", failed, { once: true });
     if (!existing) {
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}&plugin=AMap.MarkerCluster`;
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}&plugin=AMap.MarkerCluster,AMap.PlaceSearch`;
       script.async = true;
       script.dataset.builderMap = "amap";
       document.head.append(script);

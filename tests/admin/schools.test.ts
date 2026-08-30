@@ -35,3 +35,19 @@ test("school action parser rejects client coordinates and identity claims", () =
   assert.throws(() => parseSchoolAdminAction({ action: "confirm", schoolId: "school-1", longitude: 1 }), /invalid/i);
   assert.throws(() => parseSchoolAdminAction({ action: "propose", name: "演示大学", campus: "校区", city: "广州", role: "admin" }), /invalid/i);
 });
+
+test("stores an administrator-selected AMap result as a suggested coordinate without calling geocoding", async () => {
+  const suggestions: Parameters<SchoolAdminRepository["saveSuggestedAtomic"]>[0][] = [];
+  const repository: SchoolAdminRepository = {
+    saveSuggestedAtomic: async (input) => { suggestions.push(input); return input.school; },
+    confirmCoordinateAtomic: async () => ({ transitioned: true }),
+  };
+  const service = createSchoolAdminService(repository, async () => { throw new Error("geocoding should not run"); }, () => "school-1", () => "audit-1");
+  const result = await service.proposeSelectedSchool("chatgpt:operator", {
+    name: "Guangzhou AI University", campus: "Main campus", city: "Guangzhou", longitude: 113_264_400, latitude: 23_129_100,
+  }, 1_000);
+
+  assert.equal(result.coordinateStatus, "suggested");
+  assert.equal(suggestions[0]?.school.longitude, 113_264_400);
+  assert.match(suggestions[0]?.audit.diffJson ?? "", /amap_place_search/);
+});

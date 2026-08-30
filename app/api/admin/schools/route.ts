@@ -11,7 +11,9 @@ export async function POST(request: Request) {
     const service = await createRuntimeSchoolAdminService();
     const result = action.action === "propose"
       ? await service.proposeSchool(authorization.adminId, action, Date.now())
-      : await service.confirmSchoolCoordinate(authorization.adminId, action.schoolId, Date.now());
+      : action.action === "select_amap"
+        ? await service.proposeSelectedSchool(authorization.adminId, action, Date.now())
+        : await service.confirmSchoolCoordinate(authorization.adminId, action.schoolId, Date.now());
     return Response.json(result);
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Invalid school action" }, { status: 400 });
