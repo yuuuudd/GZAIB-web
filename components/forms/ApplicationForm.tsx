@@ -7,9 +7,66 @@ import {
   ROLE_OPTIONS,
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
+import { AmapLoader, AmapLocationPreview, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
-type SchoolOption = { id: string; name: string; campus: string; city: string };
+export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
+
+function coordinate(value: unknown): { longitude: number; latitude: number } | null {
+  if (!value || typeof value !== "object") return null;
+  const location = value as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
+  const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
+  const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
+  return Number.isFinite(longitude) && Number.isFinite(latitude) ? { longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) } : null;
+}
+
+function normalizedSchoolName(value: string): string {
+  return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
+}
+
+export function matchConfirmedSchool(candidateName: string, schools: SchoolOption[]): SchoolOption | undefined {
+  const candidate = normalizedSchoolName(candidateName);
+  const campusMatch = schools.find((school) => candidate.includes(normalizedSchoolName(school.name)) && candidate.includes(normalizedSchoolName(school.campus)));
+  if (campusMatch) return campusMatch;
+  const nameMatches = schools.filter((school) => candidate.includes(normalizedSchoolName(school.name)));
+  return nameMatches.length === 1 ? nameMatches[0] : undefined;
+}
+
+function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamespace; schools: SchoolOption[]; onSelect: (school: SchoolOption) => void }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<AmapLocation[]>([]);
+  const [preview, setPreview] = useState<AmapLocation>();
+  const [message, setMessage] = useState("");
+  const matchedSchool = preview ? matchConfirmedSchool(preview.name, schools) : undefined;
+
+  function search() {
+    const keyword = query.trim();
+    if (!keyword) return;
+    setMessage("正在搜索高德地图…");
+    setPreview(undefined);
+    new amap.PlaceSearch({ city: "广东" }).search(keyword, (status, value) => {
+      const pois = status === "complete" && value && typeof value === "object" ? ((value as { poiList?: { pois?: unknown[] } }).poiList?.pois ?? []) : [];
+      const next = pois.flatMap((poi) => {
+        if (!poi || typeof poi !== "object") return [];
+        const item = poi as { name?: unknown; cityname?: unknown; adname?: unknown; address?: unknown; location?: unknown };
+        const point = coordinate(item.location);
+        return point && typeof item.name === "string" ? [{ name: item.name, city: typeof item.cityname === "string" && item.cityname ? item.cityname : "广州", district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", ...point }] : [];
+      }).slice(0, 8);
+      setResults(next);
+      setMessage(next.length ? "请选择学校地点" : "未找到地点，请尝试输入学校全称或校区名称。");
+    });
+  }
+
+  function confirm() {
+    if (!matchedSchool) return;
+    onSelect(matchedSchool);
+    setPreview(undefined);
+    setResults([]);
+    setMessage(`已选择 ${matchedSchool.name} · ${matchedSchool.campus}`);
+  }
+
+  return <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，再选择已由管理员确认坐标的学校。</p><div><input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="例如：华南理工大学五山校区" aria-label="搜索高德学校" /><button type="button" className="action-primary" onClick={search}>搜索</button></div>{message ? <p role="status">{message}</p> : null}{preview ? <><AmapLocationPreview amap={amap} location={preview} onBack={() => setPreview(undefined)} onConfirm={confirm} confirmDisabled={!matchedSchool} confirmLabel={matchedSchool ? "确认选择这个学校" : "该地点尚未确认"} />{!matchedSchool ? <p className="application-school-warning">这个地点还没有通过管理员坐标确认，暂时不能用于申请。你可以返回选择其他结果，或请管理员先录入并确认。</p> : null}</> : <ul>{results.map((candidate) => <li key={`${candidate.name}-${candidate.longitude}`}><button type="button" onClick={() => setPreview(candidate)}><strong>{candidate.name}</strong><span>{[candidate.city, candidate.district, candidate.address].filter(Boolean).join(" · ")}</span></button></li>)}</ul>}</section>;
+}
 
 function nicknameInitial(nickname: string): string {
   return Array.from(nickname.trim())[0] ?? "你";
@@ -24,6 +81,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
   const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
+  const [selectedSchoolId, setSelectedSchoolId] = useState("");
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -113,7 +171,8 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       </section>
       <section className="application-section">
         <p className="section-kicker">02 / 学校</p><h2>你的校园与方向</h2>
-        <div className="form-grid"><label>已确认学校 / 校区<select name="schoolId" required defaultValue=""><option value="" disabled>请选择学校或校区</option>{schools.map((school) => <option key={school.id} value={school.id}>{school.name} · {school.campus} · {school.city}</option>)}</select></label><label>专业（可选）<input name="major" maxLength={100} /></label><label>年级（可选）<input name="grade" maxLength={40} /></label></div>
+        <AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schools} onSelect={(school) => setSelectedSchoolId(school.id)} /> : <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，再选择已由管理员确认坐标的学校。{state === "failed" ? "高德搜索暂不可用，请从下方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader>
+        <div className="form-grid"><label>已确认学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择或搜索学校</option>{schools.map((school) => <option key={school.id} value={school.id}>{school.name} · {school.campus} · {school.city}</option>)}</select></label><label>专业（可选）<input name="major" maxLength={100} /></label><label>年级（可选）<input name="grade" maxLength={40} /></label></div>
       </section>
       <section className="application-section">
         <p className="section-kicker">03 / 方向</p><h2>让大家知道你正在关注什么</h2>

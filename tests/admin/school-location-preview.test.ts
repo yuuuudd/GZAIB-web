@@ -30,3 +30,21 @@ test("selected school renders a reusable AMap preview before confirmation", asyn
   assert.match(html, /确认使用这个学校/);
   assert.match(html, /返回搜索结果/);
 });
+
+test("unconfirmed application place disables only the confirm action", async () => {
+  const module = await import("../../components/map/AmapLoader");
+  const Preview = (module as Record<string, unknown>).AmapLocationPreview;
+  assert.equal(typeof Preview, "function");
+
+  const html = renderToStaticMarkup(createElement(Preview as ComponentType<Record<string, unknown>>, {
+    amap: {} as AmapNamespace,
+    location: { name: "待确认学校", city: "广州市", district: "天河区", address: "校园路1号", longitude: 113_000_000, latitude: 23_000_000 },
+    confirmDisabled: true,
+    confirmLabel: "该地点尚未确认",
+    onConfirm: () => undefined,
+    onBack: () => undefined,
+  }));
+
+  assert.match(html, /<button[^>]*>返回搜索结果<\/button>/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*>该地点尚未确认<\/button>/);
+});
