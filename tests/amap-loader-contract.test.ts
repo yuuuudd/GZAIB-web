@@ -10,7 +10,7 @@ const mapSource = readFileSync(join(process.cwd(), "components", "map", "Builder
 test("AMap loader can discard one failed script request and retry it", () => {
   assert.match(source, /function resetAmapLoad\(\)/);
   assert.match(source, /const retry = \(\) =>/);
-  assert.match(mapSource, /onClick=\{retry\}/);
+  assert.match(mapSource, /retry\?\.\(\)/);
 });
 
 test("AMap security proxy uses the mandatory _AMapService path", () => {

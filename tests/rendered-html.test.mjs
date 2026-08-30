@@ -31,6 +31,9 @@ test("home page renders finished Chinese metadata, CTA, and privacy copy", async
   assert.match(html, /让广东每一所高校/);
   assert.match(html, /申请点亮我的头像/);
   assert.match(html, /仅展示审核通过且本人选择公开的信息，不采集个人实时位置/);
+  assert.match(html, /默认聚焦广州/);
+  assert.match(html, /广东城市概览/);
+  assert.match(html, /广州学校网络/);
   assert.doesNotMatch(html, /codex-preview/);
   assert.doesNotMatch(html, /site-creator-vinext-starter|vinext-starter|loading skeleton/i);
 });

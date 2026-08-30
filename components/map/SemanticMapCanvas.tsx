@@ -63,7 +63,7 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
   onFailure: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<AmapMap>();
+  const mapRef = useRef<AmapMap | undefined>(undefined);
   const overlaysRef = useRef<AmapOverlay[]>([]);
   const generationRef = useRef(0);
   const viewRef = useRef("");
