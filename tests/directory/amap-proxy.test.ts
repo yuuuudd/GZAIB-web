@@ -20,6 +20,17 @@ test("returns 404 for an unknown path even when the proxy is unconfigured", asyn
   assert.equal(response.status, 404);
 });
 
+test("serves the public AMap key from runtime configuration", async () => {
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/config"),
+    ["config"],
+    { publicKey: "runtime-public-key", securityCode: "" },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { key: "runtime-public-key" });
+});
+
 test("refuses unsupported methods before contacting upstream", async () => {
   let contacted = false;
   const response = await handleAmapRequest(

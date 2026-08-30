@@ -1,6 +1,7 @@
 import { RequestBodyTooLargeError, readBoundedRequestBody } from "../../../../lib/bounded-body";
 
 type ProxyOptions = {
+  publicKey?: string;
   securityCode?: string;
   fetchImpl?: typeof fetch;
 };
@@ -24,6 +25,12 @@ function fixedUpstream(path: string[], requestUrl: URL, securityCode: string): U
 export async function handleAmapRequest(request: Request, path: string[], options: ProxyOptions = {}): Promise<Response> {
   if (request.method !== "GET" && request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405, headers: { Allow: "GET, POST" } });
+  }
+  if (path.join("/") === "config") {
+    if (request.method !== "GET") return Response.json({ error: "Method not allowed" }, { status: 405, headers: { Allow: "GET" } });
+    const publicKey = options.publicKey ?? process.env.NEXT_PUBLIC_AMAP_JS_KEY;
+    if (!publicKey?.trim()) return Response.json({ error: "AMap is not configured" }, { status: 503 });
+    return Response.json({ key: publicKey.trim() }, { headers: { "cache-control": "private, max-age=300" } });
   }
   if (!ALLOWED_PROXY_PATHS.has(path.join("/"))) return Response.json({ error: "Not found" }, { status: 404 });
   const securityCode = options.securityCode ?? process.env.AMAP_SECURITY_JS_CODE;

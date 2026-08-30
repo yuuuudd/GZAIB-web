@@ -50,6 +50,15 @@ function loadAmap(key: string): Promise<AmapNamespace> {
   return window.__builderMapAmapPromise;
 }
 
+export async function resolveAmapKey(apiKey?: string, fetchImpl: typeof fetch = fetch): Promise<string> {
+  if (apiKey?.trim()) return apiKey.trim();
+  const response = await fetchImpl("/api/amap/config", { cache: "no-store" });
+  if (!response.ok) throw new Error("AMap is not configured");
+  const payload = await response.json() as { key?: unknown };
+  if (typeof payload.key !== "string" || !payload.key.trim()) throw new Error("AMap key unavailable");
+  return payload.key.trim();
+}
+
 function resetAmapLoad() {
   document.querySelector<HTMLScriptElement>('script[data-builder-map="amap"]')?.remove();
   delete window.__builderMapAmapPromise;
@@ -68,12 +77,8 @@ export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (s
 
   useEffect(() => {
     let active = true;
-    if (!apiKey) {
-      queueMicrotask(() => active && setState("failed"));
-      return () => { active = false; };
-    }
     queueMicrotask(() => active && setState("loading"));
-    loadAmap(apiKey).then((loaded) => {
+    resolveAmapKey(apiKey).then(loadAmap).then((loaded) => {
       if (!active) return;
       setAmap(loaded);
       setState("ready");
