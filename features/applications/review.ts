@@ -88,9 +88,9 @@ export function createApplicationReviewService(
       const context = await repository.getReviewContext(applicationId);
       if (!context) throw new Error("Application not found");
       if (context.application.status !== "pending") throw new Error("Application is not pending");
-      if (context.application.userId === adminId) throw new Error("Administrators cannot review their own application");
 
       if (decision.decision !== "approved") {
+        if (context.application.userId === adminId) throw new Error("Administrators cannot reject or request changes on their own application");
         if (!validReason(decision.reason)) throw new Error("Review reason must contain 10-500 characters");
         const reason = decision.reason.trim();
         const status = decision.decision;
@@ -149,7 +149,11 @@ export function createApplicationReviewService(
         visibility: visibilityRows,
         audit: {
           id: createAuditId(), actorUserId: adminId, targetType: "application", targetId: applicationId,
-          action: "application.approved", diffJson: JSON.stringify({ status: "approved", publishStatus: profile.publishStatus }), createdAt: now,
+          action: "application.approved", diffJson: JSON.stringify({
+            status: "approved",
+            publishStatus: profile.publishStatus,
+            ...(context.application.userId === adminId ? { selfReview: true } : {}),
+          }), createdAt: now,
         },
       });
       if (!transition.transitioned) throw new Error("Application review state changed before commit");
@@ -202,7 +206,6 @@ export async function createRuntimeApplicationReviewService() {
         inner join ${schema.schools} on ${schema.schools.id} = ${schema.applications.schoolId}
         where ${schema.applications.id} = ${input.application.id}
           and ${schema.applications.status} = 'pending'
-          and ${schema.applications.userId} <> ${input.application.reviewedBy}
           and ${schema.schools.coordinateStatus} = 'confirmed'
       `);
       const auditExists = drizzle.sql`exists (select 1 from ${schema.auditLogs} where ${schema.auditLogs.id} = ${input.audit.id})`;

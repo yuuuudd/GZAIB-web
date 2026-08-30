@@ -92,11 +92,18 @@ test("publishes an eligible application through one atomic review payload and au
   assert.equal(store.atomicReviews[0]?.visibility.length, Object.keys(DEFAULT_APPLICATION_VISIBILITY).length);
 });
 
-test("never lets the applicant approve their own application", async () => {
+test("lets a verified administrator approve their own application and records the self-review", async () => {
   const store = repository({ record: application({ userId: "demo-admin" }) });
-  const service = createApplicationReviewService(store.repo);
-  await assert.rejects(() => service.reviewApplication("demo-admin", "a1", { decision: "approved" }, 1_000), /own application/i);
-  assert.equal(store.atomicReviews.length, 0);
+  const service = createApplicationReviewService(store.repo, () => "profile-1", () => "audit-1");
+  const result = await service.reviewApplication("demo-admin", "a1", { decision: "approved" }, 1_000);
+
+  assert.equal(result.application.status, "approved");
+  assert.equal(store.atomicReviews.length, 1);
+  assert.deepEqual(JSON.parse(store.atomicReviews[0]?.audit.diffJson ?? "{}"), {
+    status: "approved",
+    publishStatus: "published",
+    selfReview: true,
+  });
 });
 
 test("rejects approval while the school coordinate is unconfirmed and leaves the profile off-map", async () => {
