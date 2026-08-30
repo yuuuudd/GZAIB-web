@@ -8,10 +8,15 @@ type ProxyOptions = {
 };
 
 const OFFICIAL_AMAP_ORIGIN = "https://restapi.amap.com";
-const ALLOWED_PROXY_PATHS = new Set(["_AMapService", "_AMapService/v3/place/text"]);
+const ALLOWED_PROXY_PATHS = new Set([
+  "_AMapService",
+  "_AMapService/v3/place/text",
+  "_AMapService/v3/config/district",
+]);
 const FORWARDED_QUERY_KEYS = new Set([
   "platform", "logversion", "appname", "csid", "sdkversion", "key", "serviceName", "version", "callback",
   "keywords", "city", "offset", "page", "extensions", "types", "children", "citylimit", "language", "output", "s",
+  "subdistrict", "filter", "showbiz",
 ]);
 const MAX_AMAP_POST_BYTES = 64 * 1024;
 

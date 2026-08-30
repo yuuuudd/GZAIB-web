@@ -116,6 +116,28 @@ test("forwards PlaceSearch text queries with their search parameters", async () 
   assert.equal(upstream?.searchParams.get("jscode"), "server-secret");
 });
 
+test("forwards DistrictSearch boundary queries needed by the semantic map", async () => {
+  let upstream: URL | undefined;
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/_AMapService/v3/config/district?keywords=%E5%B9%BF%E5%B7%9E%E5%B8%82&subdistrict=0&extensions=all"),
+    ["_AMapService", "v3", "config", "district"],
+    {
+      securityCode: "server-secret",
+      fetchImpl: async (input) => {
+        upstream = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url);
+        return new Response("ok", { status: 200 });
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(upstream?.pathname, "/v3/config/district");
+  assert.equal(upstream?.searchParams.get("keywords"), "广州市");
+  assert.equal(upstream?.searchParams.get("subdistrict"), "0");
+  assert.equal(upstream?.searchParams.get("extensions"), "all");
+  assert.equal(upstream?.searchParams.get("jscode"), "server-secret");
+});
+
 test("rejects a declared AMap body over the hard ceiling before contacting upstream", async () => {
   let contacted = false;
   const response = await handleAmapRequest(
