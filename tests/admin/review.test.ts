@@ -52,17 +52,25 @@ test("requires the signed fixed demo-admin identity and rejects role/id lookalik
   assert.equal(requireAdmin(adminSession), "demo-admin");
 });
 
-test("admin route boundary is Demo-only and returns 403 for a non-admin signed session", async () => {
+test("admin route boundary accepts only verified demo or allowlisted ChatGPT identities", async () => {
   const request = new Request("https://example.test/api/admin/applications/a1", { method: "POST" });
-  const hidden = await authorizeAdminRoute(request, { isDemoMode: () => false, requireSession: async () => adminSession });
+  const productionRequest = new Request("https://example.test/api/admin/applications/a1", { headers: {
+    "oai-authenticated-user-id": "operator-1", "oai-authenticated-user-email": "JL5319604@gmail.com",
+  } });
+  const production = await authorizeAdminRoute(productionRequest, {
+    isDemoMode: () => false, requireSession: async () => adminSession,
+    adminEmails: () => "jl5319604@gmail.com", ensureAdminAccount: async () => {},
+  });
+  const forbiddenProduction = await authorizeAdminRoute(request, { isDemoMode: () => false, requireSession: async () => adminSession, adminEmails: () => "jl5319604@gmail.com", ensureAdminAccount: async () => {} });
   const forbidden = await authorizeAdminRoute(request, { isDemoMode: () => true, requireSession: async () => memberSession });
   const allowed = await authorizeAdminRoute(request, { isDemoMode: () => true, requireSession: async () => adminSession });
 
-  assert.equal(hidden.ok, false);
-  if (!hidden.ok) assert.equal(hidden.response.status, 404);
+  assert.deepEqual(production, { ok: true, adminId: "chatgpt:operator-1", email: "jl5319604@gmail.com" });
+  assert.equal(forbiddenProduction.ok, false);
+  if (!forbiddenProduction.ok) assert.equal(forbiddenProduction.response.status, 403);
   assert.equal(forbidden.ok, false);
   if (!forbidden.ok) assert.equal(forbidden.response.status, 403);
-  assert.deepEqual(allowed, { ok: true, adminId: "demo-admin" });
+  assert.deepEqual(allowed, { ok: true, adminId: "demo-admin", email: null });
 });
 
 test("review parser accepts only exact decisions and never accepts identity claims", () => {

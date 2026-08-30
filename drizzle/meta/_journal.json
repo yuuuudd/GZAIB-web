@@ -15,6 +15,13 @@
       "when": 1788028488819,
       "tag": "0001_member_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788035000000,
+      "tag": "0002_real_admin_manual_members",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import type { AuditRecord } from "../admin/authorization";
+import { isAuthorizedAdminId } from "../admin/identity";
 import type { Visibility } from "../directory/types";
 import type { ApplicationRecord, ApplicationStatus } from "./types";
 import { completeApplicationVisibility, getMapEligibility } from "./validation";
@@ -80,7 +81,7 @@ export function createApplicationReviewService(
 ) {
   return {
     async reviewApplication(adminId: string, applicationId: string, decision: ReviewDecision, now: number) {
-      if (adminId !== "demo-admin") throw new Error("Forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       if (!applicationId || !decision || !["approved", "changes_requested", "rejected"].includes(decision.decision)) {
         throw new Error("Invalid review decision");
       }

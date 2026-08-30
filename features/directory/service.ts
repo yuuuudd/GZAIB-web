@@ -231,7 +231,6 @@ export async function createRuntimeDirectoryService() {
         .select({ profile: schema.memberProfiles, school: schema.schools, accountStatus: schema.users.status })
         .from(schema.memberProfiles)
         .innerJoin(schema.users, drizzle.eq(schema.users.id, schema.memberProfiles.userId))
-        .innerJoin(schema.applications, drizzle.eq(schema.applications.userId, schema.memberProfiles.userId))
         .innerJoin(schema.schools, drizzle.eq(schema.schools.id, schema.memberProfiles.schoolId))
         .where(drizzle.and(
           drizzle.inArray(schema.users.status, ["active", "connection_suspended"]),

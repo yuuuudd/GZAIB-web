@@ -111,7 +111,7 @@ async function accessCandidate(
     applicationStatus: applications.status,
   }).from(memberProfiles)
     .innerJoin(users, eq(users.id, memberProfiles.userId))
-    .innerJoin(applications, eq(applications.userId, memberProfiles.userId))
+    .leftJoin(applications, eq(applications.userId, memberProfiles.userId))
     .innerJoin(schools, eq(schools.id, memberProfiles.schoolId))
     .where(condition);
   if (!row) return undefined;
@@ -153,7 +153,6 @@ async function queryPublishedRows(db: Db, filters: DirectoryFilters, slug?: stri
     .select({ profile: memberProfiles, school: schools })
     .from(memberProfiles)
     .innerJoin(users, eq(users.id, memberProfiles.userId))
-    .innerJoin(applications, eq(applications.userId, memberProfiles.userId))
     .innerJoin(schools, eq(schools.id, memberProfiles.schoolId))
     .where(where);
 }

@@ -89,6 +89,7 @@ export const memberProfiles = sqliteTable("member_profiles", {
   rolesJson: text("roles_json").notNull().default("[]"),
   workLinksJson: text("work_links_json").notNull().default("[]"),
   publishStatus: text("publish_status", { enum: ["unpublished", "published", "pending_school_review"] }).notNull(),
+  adminManaged: integer("admin_managed", { mode: "boolean" }).notNull().default(false),
   verifiedBuilder: integer("verified_builder", { mode: "boolean" }).notNull().default(false),
   publishedAt: integer("published_at"),
   createdAt: integer("created_at").notNull(),

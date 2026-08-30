@@ -15,6 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="admin-workspace">
         <aside className="admin-sidebar" aria-label="运营后台导航">
           <nav>
+            <a href="/admin/members/new">＋<span>手动录入成员</span></a>
             <a href="/admin">⌂ <span>概览</span></a>
             <a href="/admin/applications">● <span>成员申请</span></a>
             <a href="/admin/schools">⌖ <span>学校坐标</span></a>

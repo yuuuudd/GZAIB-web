@@ -1,4 +1,5 @@
 import type { AuditRecord } from "./authorization";
+import { isAuthorizedAdminId } from "./identity";
 
 export const MEMBER_STATUS_ACTIONS = ["hide", "restore", "suspend_connections", "suspend_account"] as const;
 export type MemberStatusAction = (typeof MEMBER_STATUS_ACTIONS)[number];
@@ -38,7 +39,7 @@ export function createMemberStatusService(
 ) {
   return {
     async updateMemberStatus(adminId: string, memberId: string, action: MemberStatusAction, now: number) {
-      if (adminId !== "demo-admin") throw new Error("Forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       if (!MEMBER_STATUS_ACTIONS.includes(action) || !memberId || memberId === adminId) throw new Error("Invalid member action");
       const transition = transitions[action];
       await repository.applyStatusAtomic({

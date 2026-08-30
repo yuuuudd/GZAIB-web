@@ -1,4 +1,5 @@
 import { REPORT_CATEGORIES, REPORT_RESOLUTIONS, type ReportInput, type ReportResolution, type SafetyReport } from "./types";
+import { isAuthorizedAdminId } from "../admin/identity";
 
 export type BlockedMember = { blockedId: string; displayName: string };
 export type SafetyRepository = {
@@ -12,7 +13,7 @@ export type SafetyRepository = {
   getReportForReporter(id: string, reporterId: string): Promise<SafetyReport | undefined>;
   getReportForAdmin(id: string): Promise<SafetyReport | undefined>;
   listReportsForAdmin(): Promise<SafetyReport[]>;
-  resolveReportAtomic(input: { reportId: string; adminId: "demo-admin"; resolution: ReportResolution; now: number; auditId: string }): Promise<SafetyReport | undefined>;
+  resolveReportAtomic(input: { reportId: string; adminId: string; resolution: ReportResolution; now: number; auditId: string }): Promise<SafetyReport | undefined>;
 };
 
 export class SafetyServiceError extends Error {
@@ -63,11 +64,11 @@ export function createSafetyService(repository: SafetyRepository, createId: () =
       return report ? { id: report.id, category: report.category, status: report.status, resolution: report.resolution ? "已由运营处理" : undefined } : undefined;
     },
     listReportsForAdmin(adminId: string) {
-      if (adminId !== "demo-admin") throw new SafetyServiceError("forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new SafetyServiceError("forbidden");
       return repository.listReportsForAdmin();
     },
     async resolveReport(adminId: string, reportId: string, resolution: ReportResolution, now: number): Promise<SafetyReport> {
-      if (adminId !== "demo-admin") throw new SafetyServiceError("forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new SafetyServiceError("forbidden");
       if (!reportId || !REPORT_RESOLUTIONS.includes(resolution) || !Number.isFinite(now)) throw new SafetyServiceError("invalid_resolution");
       const result = await repository.resolveReportAtomic({ reportId, adminId, resolution, now, auditId: createId() });
       if (!result) throw new SafetyServiceError("state_conflict");

@@ -1,4 +1,5 @@
 import type { AuditRecord } from "./authorization";
+import { isAuthorizedAdminId } from "./identity";
 
 export type SchoolCoordinateRecord = {
   id: string;
@@ -46,7 +47,7 @@ export function createSchoolAdminService(
 ) {
   return {
     async proposeSchool(adminId: string, input: Omit<Extract<SchoolAdminAction, { action: "propose" }>, "action">, now: number) {
-      if (adminId !== "demo-admin") throw new Error("Forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       const parsed = parseSchoolAdminAction({ action: "propose", ...input });
       if (parsed.action !== "propose") throw new Error("Invalid school action");
       const coordinate = await geocode(parsed);
@@ -69,7 +70,7 @@ export function createSchoolAdminService(
       });
     },
     async confirmSchoolCoordinate(adminId: string, schoolId: string, now: number) {
-      if (adminId !== "demo-admin") throw new Error("Forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       if (!validText(schoolId, 1, 160)) throw new Error("Invalid school action");
       const transition = await repository.confirmCoordinateAtomic({
         schoolId,

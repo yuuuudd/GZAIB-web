@@ -4,7 +4,7 @@ import type { Session } from "../identity/types";
 
 export type ProfileAccessCandidate = {
   accountStatus: string;
-  applicationStatus: string;
+  applicationStatus: string | null;
   publishStatus: string;
   profile: MemberProfileRecord;
   visibility: VisibilityRules;

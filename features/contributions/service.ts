@@ -1,4 +1,5 @@
 import type { AuditRecord } from "../admin/authorization";
+import { isAuthorizedAdminId } from "../admin/identity";
 import type { NotificationSender } from "../notifications/types";
 import { sendNotificationWithoutRollback } from "../notifications/types";
 
@@ -56,7 +57,7 @@ export function createContributionService(
 ) {
   return {
     async confirmContribution(adminId: string, rawInput: ContributionConfirmationInput, now: number) {
-      if (adminId !== "demo-admin") throw new Error("Forbidden");
+      if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
       const input = parseContributionInput(rawInput);
       const result = await repository.confirmPendingAtomic({
         contributionId: input.id,

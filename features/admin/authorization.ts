@@ -1,4 +1,5 @@
 import type { Session } from "../identity/types";
+import { authorizeChatGPTAdmin, ensureRuntimeAdminAccount, type RuntimeAdmin, type TrustedChatGPTUser } from "./identity";
 
 export const AUDIT_ACTIONS = [
   "application.approved",
@@ -12,6 +13,8 @@ export const AUDIT_ACTIONS = [
   "member.connections_suspended",
   "member.account_suspended",
   "member.self_deleted",
+  "member.manually_created_draft",
+  "member.manually_created_published",
   "report.dismissed",
   "report.warned",
   "demo.seeded",
@@ -49,21 +52,33 @@ export function requireAdmin(session: Session | unknown): "demo-admin" {
 export type AdminRouteDependencies = {
   isDemoMode(): boolean;
   requireSession(request: Request): Promise<Session>;
+  adminEmails?(): string;
+  ensureAdminAccount?(admin: RuntimeAdmin): Promise<void>;
 };
 
 export type AdminRouteAuthorization =
-  | { ok: true; adminId: "demo-admin" }
+  | { ok: true; adminId: string; email: string | null }
   | { ok: false; response: Response };
 
-/** Shared API boundary: Demo mode is checked before signed-session authorization. */
+export function trustedChatGPTUserFromHeaders(requestHeaders: Headers): TrustedChatGPTUser | null {
+  const userId = requestHeaders.get("oai-authenticated-user-id");
+  const email = requestHeaders.get("oai-authenticated-user-email");
+  return userId && email ? { userId, email } : null;
+}
+
+/** Shared API boundary: demo sessions locally, trusted ChatGPT headers and an allowlist in production. */
 export async function authorizeAdminRoute(
   request: Request,
   dependencies: AdminRouteDependencies,
 ): Promise<AdminRouteAuthorization> {
-  if (!dependencies.isDemoMode()) return { ok: false, response: Response.json({ error: "Not found" }, { status: 404 }) };
   try {
-    const session = await dependencies.requireSession(request);
-    return { ok: true, adminId: requireAdmin(session) };
+    if (dependencies.isDemoMode()) {
+      const session = await dependencies.requireSession(request);
+      return { ok: true, adminId: requireAdmin(session), email: null };
+    }
+    const admin = authorizeChatGPTAdmin(trustedChatGPTUserFromHeaders(request.headers), dependencies.adminEmails?.());
+    await (dependencies.ensureAdminAccount ?? ensureRuntimeAdminAccount)(admin);
+    return { ok: true, adminId: admin.id, email: admin.email };
   } catch {
     return { ok: false, response: Response.json({ error: "Forbidden" }, { status: 403 }) };
   }

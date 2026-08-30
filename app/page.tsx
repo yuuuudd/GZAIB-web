@@ -12,6 +12,7 @@ export default function Home() {
         <nav className="brand-nav" aria-label="主导航">
           <a className="brand-nav-active" href="#map">共建地图</a><a href="#how-it-works">如何点亮</a><a href="#about">关于我们</a>
         </nav>
+        <a className="brand-header-action" href="/admin">管理员入口</a>
         <a className="brand-header-action" href="/apply">申请点亮我的头像</a>
       </header>
       <section className="brand-hero" id="top" aria-labelledby="hero-title">

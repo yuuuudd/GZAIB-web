@@ -15,6 +15,7 @@ export function createPublicConnectionRecipientResolver(db: Db) {
       eq(memberProfiles.slug, slug),
       eq(users.role, "member"),
       eq(memberProfiles.publishStatus, "published"),
+      eq(memberProfiles.adminManaged, false),
       eq(applications.status, "approved"),
       inArray(users.status, ["active", "connection_suspended"]),
     ));
@@ -31,7 +32,7 @@ export async function resolvePublicConnectionRecipientId(slug: string): Promise<
 export function createPublicConnectionSlugResolver(db: Db) {
   return async (userId: string): Promise<string | undefined> => {
     const [row] = await db.select({ slug: memberProfiles.slug }).from(memberProfiles).innerJoin(users, eq(users.id, memberProfiles.userId))
-      .where(and(eq(users.id, userId), eq(users.role, "member"), eq(memberProfiles.publishStatus, "published"), inArray(users.status, ["active", "connection_suspended"]))).limit(1);
+      .where(and(eq(users.id, userId), eq(users.role, "member"), eq(memberProfiles.publishStatus, "published"), eq(memberProfiles.adminManaged, false), inArray(users.status, ["active", "connection_suspended"]))).limit(1);
     return row?.slug;
   };
 }
