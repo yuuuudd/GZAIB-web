@@ -96,3 +96,14 @@ test("the application POST still returns 201 when both notification persistence 
   assert.equal(applications.saved?.status, "pending");
   assert.equal(attempts, 2);
 });
+
+test("an anonymous submit asks for ChatGPT login instead of a demo identity", async () => {
+  const response = await handleApplicationPost(request(), {
+    authenticate: async () => null,
+    service: runtimeApplicationRouteService,
+    now: () => now,
+  });
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "请先登录 ChatGPT 后再提交申请" });
+});

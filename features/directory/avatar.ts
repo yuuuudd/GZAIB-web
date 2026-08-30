@@ -128,7 +128,7 @@ export async function handleAvatarUpload(request: Request, dependencies: AvatarU
   } catch {
     userId = null;
   }
-  if (!userId) return jsonError("请先选择演示身份", 401);
+  if (!userId) return jsonError("请先登录 ChatGPT 后再上传头像", 401);
 
   let file: Blob | null = null;
   try {

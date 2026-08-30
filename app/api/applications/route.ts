@@ -4,7 +4,7 @@ import {
   submitApplication,
   type ApplicationService,
 } from "../../../features/applications/service";
-import { requireActiveSession } from "../../../features/identity/active-account";
+import { resolveRequestUserId } from "../../../features/identity/request-user";
 
 type ApplicationRouteService = Pick<ApplicationService, "getApplicationStatus" | "submitApplication">;
 
@@ -16,7 +16,7 @@ export type ApplicationRouteDependencies = {
 
 async function currentUserId(request: Request): Promise<string | null> {
   try {
-    return (await requireActiveSession(request)).identity.id;
+    return await resolveRequestUserId(request);
   } catch {
     return null;
   }
@@ -33,7 +33,7 @@ export function runtimeApplicationRouteService(): ApplicationRouteService {
 
 export async function handleApplicationGet(request: Request, dependencies: ApplicationRouteDependencies) {
   const userId = await dependencies.authenticate(request);
-  if (!userId) return Response.json({ error: "请先选择演示身份" }, { status: 401 });
+  if (!userId) return Response.json({ error: "请先登录 ChatGPT 后查看申请状态" }, { status: 401 });
   try {
     return Response.json({ application: await (await dependencies.service()).getApplicationStatus(userId) });
   } catch (error) {
@@ -44,7 +44,7 @@ export async function handleApplicationGet(request: Request, dependencies: Appli
 
 export async function handleApplicationPost(request: Request, dependencies: ApplicationRouteDependencies) {
   const userId = await dependencies.authenticate(request);
-  if (!userId) return Response.json({ error: "请先选择演示身份" }, { status: 401 });
+  if (!userId) return Response.json({ error: "请先登录 ChatGPT 后再提交申请" }, { status: 401 });
   let input: unknown;
   try {
     input = await request.json();

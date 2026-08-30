@@ -1,5 +1,5 @@
 import { createRuntimeSchoolAdminService, parseSchoolAdminAction } from "../../../features/admin/schools";
-import { requireActiveSession } from "../../../features/identity/active-account";
+import { resolveRequestUserId } from "../../../features/identity/request-user";
 
 type SelectedSchoolInput = { name: string; campus: string; city: string; longitude: number; latitude: number };
 type SchoolSelectionService = { selectAmapSchool(actorId: string, input: SelectedSchoolInput, now: number): Promise<unknown> };
@@ -12,7 +12,7 @@ export type SchoolSelectionRouteDependencies = {
 
 async function currentUserId(request: Request): Promise<string | null> {
   try {
-    return (await requireActiveSession(request)).identity.id;
+    return await resolveRequestUserId(request);
   } catch {
     return null;
   }

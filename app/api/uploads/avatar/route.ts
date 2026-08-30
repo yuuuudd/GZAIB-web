@@ -1,5 +1,5 @@
 import { handleAvatarUpload, storeAvatar } from "../../../../features/directory/avatar";
-import { requireActiveSession } from "../../../../features/identity/active-account";
+import { resolveRequestUserId } from "../../../../features/identity/request-user";
 import { removeAvatarObject, replaceAvatarReferences } from "../../../../lib/r2";
 
 function reportAvatarFailure(error: unknown) {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   return handleAvatarUpload(request, {
     authenticate: async (currentRequest) => {
       try {
-        return (await requireActiveSession(currentRequest)).identity.id;
+        return await resolveRequestUserId(currentRequest);
       } catch {
         return null;
       }
