@@ -24,7 +24,7 @@ declare global {
 function loadAmap(key: string): Promise<AmapNamespace> {
   if (window.AMap) return Promise.resolve(window.AMap);
   if (window.__builderMapAmapPromise) return window.__builderMapAmapPromise;
-  window._AMapSecurityConfig = { serviceHost: "/api/amap" };
+  window._AMapSecurityConfig = { serviceHost: "/api/amap/_AMapService" };
   window.__builderMapAmapPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>('script[data-builder-map="amap"]');
     const script = existing ?? document.createElement("script");
