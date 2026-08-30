@@ -4,33 +4,18 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import {
   CONSENT_VERSION,
   DEFAULT_APPLICATION_VISIBILITY,
-  getMapEligibility,
-  MAP_REQUIRED_VISIBILITY_FIELDS,
-  OPTIONAL_VISIBILITY_FIELDS,
   ROLE_OPTIONS,
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
-import type { Visibility } from "../../features/directory/types";
-import { VisibilityField } from "./VisibilityField";
 
 type SchoolOption = { id: string; name: string; campus: string; city: string };
-type PrivacyField = keyof typeof DEFAULT_APPLICATION_VISIBILITY;
-const privacyFields = [...MAP_REQUIRED_VISIBILITY_FIELDS, ...OPTIONAL_VISIBILITY_FIELDS] as PrivacyField[];
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
 
 function nicknameInitial(nickname: string): string {
   return Array.from(nickname.trim())[0] ?? "你";
 }
 
-const privacyLabels: Record<PrivacyField, string> = {
-  nickname: "昵称", avatarUrl: "头像", school: "学校", city: "城市", intro: "一句话介绍", skills: "技能", roles: "参与角色",
-  verifiedBuilder: "共建者状态", contributions: "已确认贡献",
-  currentFocus: "我正在做什么", canOffer: "我能提供什么", wantsToMeet: "我希望认识谁",
-  workLinks: "作品链接", major: "专业", grade: "年级",
-};
-
 export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
-  const [visibility, setVisibility] = useState(() => ({ ...DEFAULT_APPLICATION_VISIBILITY }));
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [nickname, setNickname] = useState("");
@@ -39,12 +24,6 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
   const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
-
-  function setFieldVisibility(field: PrivacyField, value: Visibility) {
-    setVisibility((current) => ({ ...current, [field]: value }));
-  }
-
-  const mapEligibility = getMapEligibility(visibility);
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -93,7 +72,8 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       skills: form.getAll("skills"), interests: String(form.get("interests") ?? "").split(/[,，\n]/).map((item) => item.trim()).filter(Boolean),
       roles: form.getAll("roles"),
       workLinks: String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean),
-      visibility, consentAccepted: form.get("consentAccepted") === "on", consentVersion: CONSENT_VERSION,
+      visibility: DEFAULT_APPLICATION_VISIBILITY,
+      consentAccepted: form.get("consentAccepted") === "on", consentVersion: CONSENT_VERSION,
     };
 
     setSubmitting(true);
@@ -150,16 +130,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
         <p className="section-kicker">05 / 作品</p><h2>可选作品链接</h2>
         <label>每行一个 HTTPS 链接，最多 5 条<textarea name="workLinks" placeholder="https://example.com/my-work" /></label>
       </section>
-      <section className="application-section application-privacy">
-        <p className="section-kicker">06 / 公开范围</p><h2>资料由你逐项决定谁能看见</h2>
-        <p className="section-intro">地图所需资料默认所有访客可见；新的可选资料默认仅自己和必要管理员可见。你可以逐项调整，但只有全部地图所需资料公开时，审核通过的资料才会出现在地图。</p>
-        <div className="privacy-grid">{privacyFields.map((field) => <VisibilityField key={field} label={privacyLabels[field]} value={visibility[field]} onChange={(value) => setFieldVisibility(field, value)} />)}</div>
-        <p className={`map-eligibility ${mapEligibility.eligible ? "map-eligible" : "map-ineligible"}`} role="status">
-          {mapEligibility.eligible
-            ? "当前公开设置已满足地图展示条件。"
-            : `当前公开设置会让地图展示暂不可用：${mapEligibility.blockedBy.map((field) => privacyLabels[field as PrivacyField]).join("、")}。即使审核通过，资料也会保持在地图外，直到这些字段改为“所有访客可见”。`}
-        </p>
-      </section>
+      <p className="application-settings-note">审核通过后可在账号设置中调整资料公开范围。</p>
       <label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label>
       {message ? <p className="form-error" role="alert">{message}</p> : null}
       <button className="application-submit" type="submit" disabled={submitting || uploadingAvatar}>{submitting ? "正在提交…" : uploadingAvatar ? "请等待头像处理完成…" : "保存并提交审核 →"}</button>
