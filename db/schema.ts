@@ -16,7 +16,7 @@ export const schools = sqliteTable("schools", {
   city: text("city").notNull(),
   longitude: integer("longitude_e6").notNull(),
   latitude: integer("latitude_e6").notNull(),
-  coordinateStatus: text("coordinate_status", { enum: ["suggested", "confirmed"] }).notNull().default("suggested"),
+  coordinateStatus: text("coordinate_status", { enum: ["suggested", "confirmed"] }).notNull().default("confirmed"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 }, (t) => [uniqueIndex("ux_schools_name_campus").on(t.name, t.campus), index("idx_schools_city").on(t.city)]);

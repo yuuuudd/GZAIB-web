@@ -105,13 +105,12 @@ export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (s
   return children(state, amap, retry);
 }
 
-export function AmapLocationPreview({ amap, location, onConfirm, onBack, pending = false, confirmDisabled = false, confirmLabel = "确认使用这个学校" }: {
+export function AmapLocationPreview({ amap, location, onConfirm, onBack, pending = false, confirmLabel = "确认使用这个学校" }: {
   amap: AmapNamespace;
   location: AmapLocation;
   onConfirm: () => void;
   onBack: () => void;
   pending?: boolean;
-  confirmDisabled?: boolean;
   confirmLabel?: string;
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -137,7 +136,7 @@ export function AmapLocationPreview({ amap, location, onConfirm, onBack, pending
     </div>
     <div className="school-place-preview-actions">
       <button type="button" className="action-secondary" disabled={pending} onClick={onBack}>返回搜索结果</button>
-      <button type="button" className="action-primary" disabled={pending || confirmDisabled} onClick={onConfirm}>{pending ? "正在保存…" : confirmLabel}</button>
+      <button type="button" className="action-primary" disabled={pending} onClick={onConfirm}>{pending ? "正在保存…" : confirmLabel}</button>
     </div>
   </article>;
 }

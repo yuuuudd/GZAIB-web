@@ -17,6 +17,7 @@ test("member application offers AMap school search before choosing a school", ()
 
   assert.match(html, /搜索高德学校/);
   assert.match(html, /先查看地点和周边地图/);
+  assert.doesNotMatch(html, /坐标确认|确认坐标|已由管理员确认/);
 });
 
 test("AMap results can select only a matching confirmed school", async () => {

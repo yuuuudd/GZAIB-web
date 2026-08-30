@@ -52,16 +52,22 @@ export function createSchoolAdminService(
   createSchoolId: () => string = () => crypto.randomUUID(),
   createAuditId: () => string = () => crypto.randomUUID(),
 ) {
+  async function saveSelectedSchool(actorId: string, input: Omit<Extract<SchoolAdminAction, { action: "select_amap" }>, "action">, now: number) {
+    if (!validText(actorId, 1, 160)) throw new Error("Forbidden");
+    const parsed = parseSchoolAdminAction({ action: "select_amap", ...input });
+    if (parsed.action !== "select_amap") throw new Error("Invalid school action");
+    const school = { id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city, longitude: parsed.longitude, latitude: parsed.latitude, coordinateStatus: "confirmed" as const, createdAt: now, updatedAt: now };
+    return repository.saveSuggestedAtomic({
+      school,
+      audit: { id: createAuditId(), actorUserId: actorId, targetType: "school", targetId: school.id, action: "school.coordinate_confirmed", diffJson: JSON.stringify({ coordinateStatus: "confirmed", source: "amap_place_search", automatic: true }), createdAt: now },
+    });
+  }
+
   return {
+    selectAmapSchool: saveSelectedSchool,
     async proposeSelectedSchool(adminId: string, input: Omit<Extract<SchoolAdminAction, { action: "select_amap" }>, "action">, now: number) {
       if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
-      const parsed = parseSchoolAdminAction({ action: "select_amap", ...input });
-      if (parsed.action !== "select_amap") throw new Error("Invalid school action");
-      const school = { id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city, longitude: parsed.longitude, latitude: parsed.latitude, coordinateStatus: "suggested" as const, createdAt: now, updatedAt: now };
-      return repository.saveSuggestedAtomic({
-        school,
-        audit: { id: createAuditId(), actorUserId: adminId, targetType: "school", targetId: school.id, action: "school.coordinate_suggested", diffJson: JSON.stringify({ coordinateStatus: "suggested", source: "amap_place_search" }), createdAt: now },
-      });
+      return saveSelectedSchool(adminId, input, now);
     },
     async proposeSchool(adminId: string, input: Omit<Extract<SchoolAdminAction, { action: "propose" }>, "action">, now: number) {
       if (!isAuthorizedAdminId(adminId)) throw new Error("Forbidden");
@@ -74,14 +80,14 @@ export function createSchoolAdminService(
       }
       const school = {
         id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city,
-        ...coordinate, coordinateStatus: "suggested" as const, createdAt: now, updatedAt: now,
+        ...coordinate, coordinateStatus: "confirmed" as const, createdAt: now, updatedAt: now,
       };
       return repository.saveSuggestedAtomic({
         school,
         audit: {
           id: createAuditId(), actorUserId: adminId, targetType: "school", targetId: school.id,
-          action: "school.coordinate_suggested",
-          diffJson: JSON.stringify({ coordinateStatus: "suggested", source: "server_geocode" }),
+          action: "school.coordinate_confirmed",
+          diffJson: JSON.stringify({ coordinateStatus: "confirmed", source: "server_geocode", automatic: true }),
           createdAt: now,
         },
       });
@@ -131,7 +137,7 @@ export async function createRuntimeSchoolAdminService() {
         target: [schema.schools.name, schema.schools.campus],
         set: {
           city: input.school.city, longitude: input.school.longitude, latitude: input.school.latitude,
-          coordinateStatus: "suggested", updatedAt: input.school.updatedAt,
+          coordinateStatus: input.school.coordinateStatus, updatedAt: input.school.updatedAt,
         },
       });
       const audit = db.insert(schema.auditLogs).select(drizzle.sql`

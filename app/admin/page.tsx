@@ -18,9 +18,9 @@ export default async function AdminPage() {
   ]);
   const stats = [
     ["审核通过成员", approved?.value ?? 0, "blue"], ["认证共建者", builders?.value ?? 0, "orange"],
-    ["已确认学校", schoolTotal?.value ?? 0, "blue"], ["覆盖城市", cityTotal?.value ?? 0, "orange"],
+    ["学校数量", schoolTotal?.value ?? 0, "blue"], ["覆盖城市", cityTotal?.value ?? 0, "orange"],
     ["待审核申请", pending?.value ?? 0, "orange"], ["资料浏览", profileViews?.value ?? 0, "blue"],
     ["地图到资料访问", mapVisits?.value ?? 0, "blue"],
   ] as const;
-  return <><header className="admin-page-heading"><div><p className="admin-kicker">运营概览</p><h1>让每一束光安全、真实地亮起</h1><p>这里仅显示社区级汇总，不公开个人连接数量或社交排名。</p></div><DemoSeedButton /></header><section className="admin-stat-grid">{stats.map(([label, value, color]) => <article className={`admin-stat ${color}`} key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="admin-guidance"><div><p className="admin-kicker">今日工作台</p><h2>先确认坐标，再审核公开边界</h2></div><ol><li><strong>01</strong><span>处理待审核申请，确认公开必填字段。</span></li><li><strong>02</strong><span>人工确认服务器提出的学校坐标。</span></li><li><strong>03</strong><span>确认公开贡献，形成真实的跨校协作线。</span></li></ol></section></>;
+  return <><header className="admin-page-heading"><div><p className="admin-kicker">运营概览</p><h1>让每一束光安全、真实地亮起</h1><p>这里仅显示社区级汇总，不公开个人连接数量或社交排名。</p></div><DemoSeedButton /></header><section className="admin-stat-grid">{stats.map(([label, value, color]) => <article className={`admin-stat ${color}`} key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="admin-guidance"><div><p className="admin-kicker">今日工作台</p><h2>审核成员资料与公开边界</h2></div><ol><li><strong>01</strong><span>处理待审核申请，确认公开必填字段。</span></li><li><strong>02</strong><span>补充需要展示的新学校地点。</span></li><li><strong>03</strong><span>确认公开贡献，形成真实的跨校协作线。</span></li></ol></section></>;
 }

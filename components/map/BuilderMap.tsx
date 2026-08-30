@@ -99,7 +99,7 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
     <section className="builder-map-section" id="map" aria-labelledby="map-title">
       <div className="map-heading-row">
         <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">从一所学校开始，遇见行动中的人</h2></div>
-        <p>地图只展示已确认的学校坐标，成员个人位置永不进入系统。</p>
+        <p>地图只展示学校坐标，成员个人位置永不进入系统。</p>
       </div>
       <DirectoryFilters query={query} onChange={setQuery} />
       {notice ? <p className="directory-notice" role="status">{notice}</p> : null}
