@@ -50,9 +50,21 @@ function loadAmap(key: string): Promise<AmapNamespace> {
   return window.__builderMapAmapPromise;
 }
 
-export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (state: AmapLoadState, amap?: AmapNamespace) => ReactNode }) {
+function resetAmapLoad() {
+  document.querySelector<HTMLScriptElement>('script[data-builder-map="amap"]')?.remove();
+  delete window.__builderMapAmapPromise;
+}
+
+export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (state: AmapLoadState, amap?: AmapNamespace, retry?: () => void) => ReactNode }) {
   const [state, setState] = useState<AmapLoadState>("idle");
   const [amap, setAmap] = useState<AmapNamespace>();
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = () => {
+    resetAmapLoad();
+    setAmap(undefined);
+    setAttempt((value) => value + 1);
+  };
 
   useEffect(() => {
     let active = true;
@@ -65,9 +77,17 @@ export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (s
       if (!active) return;
       setAmap(loaded);
       setState("ready");
-    }).catch(() => active && setState("failed"));
+    }).catch(() => {
+      if (!active) return;
+      if (attempt === 0) {
+        resetAmapLoad();
+        setAttempt(1);
+        return;
+      }
+      setState("failed");
+    });
     return () => { active = false; };
-  }, [apiKey]);
+  }, [apiKey, attempt]);
 
-  return children(state, amap);
+  return children(state, amap, retry);
 }

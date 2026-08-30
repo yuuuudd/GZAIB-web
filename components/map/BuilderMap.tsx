@@ -105,7 +105,7 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
       {notice ? <p className="directory-notice" role="status">{notice}</p> : null}
       <div className={`map-stage ${selected ? "map-stage-drawer-open" : ""}`} aria-busy={loading}>
         <AmapLoader apiKey={amapKey}>
-          {(state, amap) => state === "ready" && amap ? (
+          {(state, amap, retry) => state === "ready" && amap ? (
             <div className="map-live-layout">
               <div className="map-live"><MapCanvas amap={amap} schools={schools} onSelect={selectSchool} /><div className="map-live-label"><span>GD</span><strong>广东</strong><small>学校聚合视图</small></div></div>
               <SchoolDirectoryFallback schools={schools} selectedId={selectedId} onSelect={selectSchool} />
@@ -113,7 +113,15 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
           ) : state === "loading" ? (
             <div className="map-loading" role="status"><span /><strong>正在连接学校地图</strong><small>目录会在地图加载失败时自动接续</small></div>
           ) : (
-            <SchoolDirectoryFallback schools={schools} selectedId={selectedId} onSelect={selectSchool} prominent />
+            <div className="map-retry-state">
+              <div className="map-retry-copy">
+                <p className="map-section-kicker">高德地图</p>
+                <strong>地图暂时没有连上</strong>
+                <p>学校目录仍可浏览；点击后会重新连接高德底图。</p>
+                <button type="button" onClick={retry}>重新加载地图</button>
+              </div>
+              <SchoolDirectoryFallback schools={schools} selectedId={selectedId} onSelect={selectSchool} />
+            </div>
           )}
         </AmapLoader>
         <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} onClose={() => setSelectedId(undefined)} />
