@@ -4,12 +4,27 @@ type ProxyOptions = {
   publicKey?: string;
   securityCode?: string;
   fetchImpl?: typeof fetch;
+  runtimeEnv?: Record<string, unknown>;
 };
 
 const OFFICIAL_AMAP_ORIGIN = "https://restapi.amap.com";
 const ALLOWED_PROXY_PATHS = new Set(["_AMapService"]);
 const FORWARDED_QUERY_KEYS = new Set(["platform", "logversion", "appname", "csid", "sdkversion", "key", "serviceName", "version", "callback"]);
 const MAX_AMAP_POST_BYTES = 64 * 1024;
+
+async function readRuntimeValue(key: string, runtimeEnv?: Record<string, unknown>): Promise<string | undefined> {
+  let environment = runtimeEnv;
+  if (!environment) {
+    try {
+      const workers = await import("cloudflare:workers");
+      environment = workers.env as unknown as Record<string, unknown>;
+    } catch {
+      environment = process.env;
+    }
+  }
+  const value = environment[key];
+  return typeof value === "string" ? value : undefined;
+}
 
 function fixedUpstream(path: string[], requestUrl: URL, securityCode: string): URL | null {
   const normalized = path.join("/");
@@ -28,12 +43,12 @@ export async function handleAmapRequest(request: Request, path: string[], option
   }
   if (path.join("/") === "config") {
     if (request.method !== "GET") return Response.json({ error: "Method not allowed" }, { status: 405, headers: { Allow: "GET" } });
-    const publicKey = options.publicKey ?? process.env.NEXT_PUBLIC_AMAP_JS_KEY;
+    const publicKey = options.publicKey ?? await readRuntimeValue("NEXT_PUBLIC_AMAP_JS_KEY", options.runtimeEnv);
     if (!publicKey?.trim()) return Response.json({ error: "AMap is not configured" }, { status: 503 });
     return Response.json({ key: publicKey.trim() }, { headers: { "cache-control": "private, max-age=300" } });
   }
   if (!ALLOWED_PROXY_PATHS.has(path.join("/"))) return Response.json({ error: "Not found" }, { status: 404 });
-  const securityCode = options.securityCode ?? process.env.AMAP_SECURITY_JS_CODE;
+  const securityCode = options.securityCode ?? await readRuntimeValue("AMAP_SECURITY_JS_CODE", options.runtimeEnv);
   if (!securityCode) return Response.json({ error: "AMap proxy is not configured" }, { status: 503 });
   const upstream = fixedUpstream(path, new URL(request.url), securityCode);
   if (!upstream) return Response.json({ error: "Not found" }, { status: 404 });

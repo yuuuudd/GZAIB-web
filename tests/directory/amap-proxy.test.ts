@@ -31,6 +31,35 @@ test("serves the public AMap key from runtime configuration", async () => {
   assert.deepEqual(await response.json(), { key: "runtime-public-key" });
 });
 
+test("reads the public AMap key from the Worker runtime environment", async () => {
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/config"),
+    ["config"],
+    { runtimeEnv: { NEXT_PUBLIC_AMAP_JS_KEY: "worker-public-key" } },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { key: "worker-public-key" });
+});
+
+test("reads the AMap security code from the Worker runtime environment", async () => {
+  let upstream: URL | undefined;
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/_AMapService?platform=JS"),
+    ["_AMapService"],
+    {
+      runtimeEnv: { AMAP_SECURITY_JS_CODE: "worker-security-code" },
+      fetchImpl: async (input) => {
+        upstream = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url);
+        return new Response("ok");
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(upstream?.searchParams.get("jscode"), "worker-security-code");
+});
+
 test("refuses unsupported methods before contacting upstream", async () => {
   let contacted = false;
   const response = await handleAmapRequest(
