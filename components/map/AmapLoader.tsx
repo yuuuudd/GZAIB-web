@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type AmapLoadState = "idle" | "loading" | "ready" | "failed";
 
@@ -12,6 +12,14 @@ export type AmapNamespace = {
 };
 export type AmapMap = { destroy(): void; add(markers: AmapMarker[]): void; setFitView(markers?: AmapMarker[]): void };
 export type AmapMarker = { on(event: "click", handler: () => void): void };
+export type AmapLocation = {
+  name: string;
+  city: string;
+  district: string;
+  address: string;
+  longitude: number;
+  latitude: number;
+};
 
 declare global {
   interface Window {
@@ -95,4 +103,39 @@ export function AmapLoader({ apiKey, children }: { apiKey?: string; children: (s
   }, [apiKey, attempt]);
 
   return children(state, amap, retry);
+}
+
+export function AmapLocationPreview({ amap, location, onConfirm, onBack, pending = false }: {
+  amap: AmapNamespace;
+  location: AmapLocation;
+  onConfirm: () => void;
+  onBack: () => void;
+  pending?: boolean;
+}) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    const center = [location.longitude / 1_000_000, location.latitude / 1_000_000];
+    const map = new amap.Map(mapContainer.current, { center, zoom: 16, viewMode: "2D", showLabel: true });
+    const marker = new amap.Marker({ position: center, title: location.name });
+    map.add([marker]);
+    return () => map.destroy();
+  }, [amap, location.latitude, location.longitude, location.name]);
+
+  const area = [location.city, location.district].filter(Boolean).join(" · ");
+  return <article className="school-place-preview">
+    <div ref={mapContainer} className="school-place-preview-map" aria-label={`${location.name}周边地图`} />
+    <div className="school-place-preview-copy">
+      <p className="admin-kicker">地点预览</p>
+      <h3>{location.name}</h3>
+      {area ? <p>{area}</p> : null}
+      {location.address ? <p>{location.address}</p> : null}
+      <small>{(location.longitude / 1_000_000).toFixed(6)}, {(location.latitude / 1_000_000).toFixed(6)}</small>
+    </div>
+    <div className="school-place-preview-actions">
+      <button type="button" className="action-secondary" disabled={pending} onClick={onBack}>返回搜索结果</button>
+      <button type="button" className="action-primary" disabled={pending} onClick={onConfirm}>{pending ? "正在保存…" : "确认使用这个学校"}</button>
+    </div>
+  </article>;
 }
