@@ -8,8 +8,11 @@ type ProxyOptions = {
 };
 
 const OFFICIAL_AMAP_ORIGIN = "https://restapi.amap.com";
-const ALLOWED_PROXY_PATHS = new Set(["_AMapService"]);
-const FORWARDED_QUERY_KEYS = new Set(["platform", "logversion", "appname", "csid", "sdkversion", "key", "serviceName", "version", "callback"]);
+const ALLOWED_PROXY_PATHS = new Set(["_AMapService", "_AMapService/v3/place/text"]);
+const FORWARDED_QUERY_KEYS = new Set([
+  "platform", "logversion", "appname", "csid", "sdkversion", "key", "serviceName", "version", "callback",
+  "keywords", "city", "offset", "page", "extensions", "types", "children", "citylimit", "language", "output", "s",
+]);
 const MAX_AMAP_POST_BYTES = 64 * 1024;
 
 async function readRuntimeValue(key: string, runtimeEnv?: Record<string, unknown>): Promise<string | undefined> {
@@ -29,7 +32,8 @@ async function readRuntimeValue(key: string, runtimeEnv?: Record<string, unknown
 function fixedUpstream(path: string[], requestUrl: URL, securityCode: string): URL | null {
   const normalized = path.join("/");
   if (!ALLOWED_PROXY_PATHS.has(normalized)) return null;
-  const upstream = new URL("/", OFFICIAL_AMAP_ORIGIN);
+  const upstreamPath = normalized === "_AMapService" ? "/" : `/${normalized.slice("_AMapService/".length)}`;
+  const upstream = new URL(upstreamPath, OFFICIAL_AMAP_ORIGIN);
   for (const [key, value] of requestUrl.searchParams) {
     if (FORWARDED_QUERY_KEYS.has(key)) upstream.searchParams.append(key, value);
   }

@@ -91,6 +91,31 @@ test("strips the local _AMapService prefix before forwarding to the fixed offici
   assert.equal(upstream?.searchParams.get("platform"), "JS");
 });
 
+test("forwards PlaceSearch text queries with their search parameters", async () => {
+  let upstream: URL | undefined;
+  const response = await handleAmapRequest(
+    new Request("https://site.test/api/amap/_AMapService/v3/place/text?keywords=%E4%B8%AD%E5%B1%B1%E5%A4%A7%E5%AD%A6&city=%E5%B9%BF%E4%B8%9C&offset=20&page=1&extensions=base"),
+    ["_AMapService", "v3", "place", "text"],
+    {
+      securityCode: "server-secret",
+      fetchImpl: async (input) => {
+        upstream = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url);
+        return new Response("ok", { status: 200 });
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(upstream?.origin, "https://restapi.amap.com");
+  assert.equal(upstream?.pathname, "/v3/place/text");
+  assert.equal(upstream?.searchParams.get("keywords"), "中山大学");
+  assert.equal(upstream?.searchParams.get("city"), "广东");
+  assert.equal(upstream?.searchParams.get("offset"), "20");
+  assert.equal(upstream?.searchParams.get("page"), "1");
+  assert.equal(upstream?.searchParams.get("extensions"), "base");
+  assert.equal(upstream?.searchParams.get("jscode"), "server-secret");
+});
+
 test("rejects a declared AMap body over the hard ceiling before contacting upstream", async () => {
   let contacted = false;
   const response = await handleAmapRequest(
