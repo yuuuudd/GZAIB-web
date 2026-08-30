@@ -31,7 +31,7 @@ test("refuses unsupported methods before contacting upstream", async () => {
   assert.equal(contacted, false);
 });
 
-test("maps the security service to the fixed official host and appends only server security code", async () => {
+test("strips the local _AMapService prefix before forwarding to the fixed official host", async () => {
   let upstream: URL | undefined;
   const response = await handleAmapRequest(
     new Request("https://site.test/api/amap/_AMapService?platform=JS&logversion=2", { method: "GET" }),
@@ -46,7 +46,7 @@ test("maps the security service to the fixed official host and appends only serv
   );
   assert.equal(response.status, 200);
   assert.equal(upstream?.origin, "https://restapi.amap.com");
-  assert.equal(upstream?.pathname, "/_AMapService");
+  assert.equal(upstream?.pathname, "/");
   assert.equal(upstream?.searchParams.get("jscode"), "server-secret");
   assert.equal(upstream?.searchParams.get("platform"), "JS");
 });

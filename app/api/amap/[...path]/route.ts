@@ -13,7 +13,7 @@ const MAX_AMAP_POST_BYTES = 64 * 1024;
 function fixedUpstream(path: string[], requestUrl: URL, securityCode: string): URL | null {
   const normalized = path.join("/");
   if (!ALLOWED_PROXY_PATHS.has(normalized)) return null;
-  const upstream = new URL(`/${normalized}`, OFFICIAL_AMAP_ORIGIN);
+  const upstream = new URL("/", OFFICIAL_AMAP_ORIGIN);
   for (const [key, value] of requestUrl.searchParams) {
     if (FORWARDED_QUERY_KEYS.has(key)) upstream.searchParams.append(key, value);
   }
