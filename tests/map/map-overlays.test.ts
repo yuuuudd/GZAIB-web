@@ -82,13 +82,13 @@ test("city exploration routes connect the live city center to each school coordi
   assert.ok(routes.every((route) => route.strokeStyle === "dashed"));
 });
 
-test("city exploration exposes the native blue-green AMap detail beneath a light district outline", () => {
+test("city exploration keeps only the native blue-green AMap color blocks beneath a light district outline", () => {
   const map = cityBasemapPresentation();
   const district = districtPolygonPresentation(true, false);
 
   assert.equal(map.mapStyle, "amap://styles/normal");
-  assert.equal(map.showLabel, true);
-  assert.deepEqual(map.features, ["bg", "road", "building", "point"]);
+  assert.equal(map.showLabel, false);
+  assert.deepEqual(map.features, ["bg"]);
   assert.equal(district.fillOpacity, 0.08);
   assert.equal(district.strokeColor, "#46a3a5");
 });

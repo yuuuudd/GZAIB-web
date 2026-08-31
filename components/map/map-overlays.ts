@@ -21,8 +21,8 @@ export type RoutePresentation = {
 
 export type CityBasemapPresentation = {
   mapStyle: "amap://styles/normal";
-  showLabel: true;
-  features: ["bg", "road", "building", "point"];
+  showLabel: false;
+  features: ["bg"];
 };
 
 export type DistrictPolygonPresentation = {
@@ -47,8 +47,8 @@ function escapeHtml(value: string): string {
 export function cityBasemapPresentation(): CityBasemapPresentation {
   return {
     mapStyle: "amap://styles/normal",
-    showLabel: true,
-    features: ["bg", "road", "building", "point"],
+    showLabel: false,
+    features: ["bg"],
   };
 }
 
