@@ -12,8 +12,9 @@ test("AMap loader can discard one failed script request and retry it", () => {
   assert.match(source, /const retry = \(\) =>/);
 });
 
-test("public builder map uses the paper artwork without mounting a visible AMap canvas", () => {
-  assert.doesNotMatch(mapSource, /AmapLoader|SemanticMapCanvas|amap-canvas/);
+test("public builder map loads AMap only for the city school network", () => {
+  assert.match(mapSource, /AmapLoader/);
+  assert.match(mapSource, /SemanticMapCanvas/);
   assert.match(mapSource, /CampusMapFallback/);
 });
 

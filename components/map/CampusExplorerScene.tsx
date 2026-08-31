@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- vinext provides image handling at build time; native images keep this component directly renderable in unit tests. */
+import type { ReactNode } from "react";
 import type { MapCitySummary, MapLevel } from "../../features/map/semantic-map";
 import type { DirectorySchool } from "../../features/directory/service";
 
@@ -72,14 +73,17 @@ function clamp(value: number): number {
   return Math.max(12, Math.min(88, value));
 }
 
-export function CampusMapFallback({ cities, level, activeCity, onSelectCity, onSelectSchool }: {
+export function CampusMapFallback({ cities, level, activeCity, onSelectCity, onSelectSchool, renderCityMap }: {
   cities: MapCitySummary[];
   level: MapLevel;
   activeCity: string;
   onRetry?: () => void;
   onSelectCity?: (city: string) => void;
   onSelectSchool?: (school: DirectorySchool) => void;
+  renderCityMap?: () => ReactNode;
 }) {
+  if (level === "city" && renderCityMap) return renderCityMap();
+
   const active = cities.find((city) => city.city === activeCity);
   const center = active?.center ?? { lng: 113.2644, lat: 23.1291 };
   const points = level === "province" ? [] : (active?.schools ?? []).map((school) => ({

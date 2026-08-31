@@ -56,22 +56,32 @@ test("province explorer scene summarizes the current public Guangdong directory"
   assert.doesNotMatch(html, /explorer-cloud|explorer-star|explorer-plane/);
 });
 
-test("paper map keeps Guangzhou schools clickable without mounting an AMap fallback", () => {
+test("province paper map keeps the Guangzhou city entry clickable", () => {
   const html = renderToStaticMarkup(createElement(CampusMapFallback, {
     cities,
-    level: "city",
+    level: "province",
     activeCity: "广州",
-    onRetry: () => undefined,
     onSelectCity: () => undefined,
     onSelectSchool: () => undefined,
   }));
 
-  assert.match(html, /aria-label="广州校园探索板块"/);
-  assert.match(html, /中山大学/);
-  assert.match(html, />7位</);
-  assert.match(html, /华南理工大学/);
-  assert.match(html, /aria-label="查看中山大学，7位共建者"/);
-  assert.doesNotMatch(html, /重新连接精确地图|amap-canvas/);
+  assert.match(html, /aria-label="广东校园探索板块"/);
+  assert.match(html, /aria-label="进入广州学校网络，12位共建者"/);
   assert.match(html, /class="paper-art-map/);
-  assert.doesNotMatch(html, /paper-map-layer/);
+  assert.doesNotMatch(html, /amap-canvas/);
+});
+
+test("province keeps the paper artwork while Guangzhou uses only the AMap outline", () => {
+  const guangzhou = renderToStaticMarkup(createElement(CampusMapFallback, {
+    cities,
+    level: "city",
+    activeCity: "广州",
+    onSelectCity: () => undefined,
+    onSelectSchool: () => undefined,
+    renderCityMap: () => createElement("div", { className: "amap-canvas", "aria-label": "广州高校共建地图" }),
+  } as Parameters<typeof CampusMapFallback>[0]));
+
+  assert.match(guangzhou, /amap-canvas/);
+  assert.match(guangzhou, /aria-label="广州高校共建地图"/);
+  assert.doesNotMatch(guangzhou, /guangdong-paper-clay\.webp|landmark-guangzhou\.webp|campus-explorer-art/);
 });

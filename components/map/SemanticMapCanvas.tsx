@@ -11,7 +11,6 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import type { AmapDistrict, AmapMap, AmapNamespace, AmapOverlay } from "./AmapLoader";
-import { CampusExplorerScene } from "./CampusExplorerScene";
 import { cityMarkerPresentation, collaborationRoutePresentations, schoolMarkerPresentation } from "./map-overlays";
 
 const GUANGDONG_CITIES = [
@@ -157,7 +156,6 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
   }, [activeCity, amap, cities, level, onSelectCity, onSelectSchool, selectedId]);
 
   return <div className="semantic-map-shell">
-    <CampusExplorerScene cities={cities} level={level} activeCity={activeCity} />
     <div ref={containerRef} className="amap-canvas" aria-label={`${level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`}`} />
     <div className="map-live-label">
       <span>{level === "province" ? "GD" : activeCity.slice(0, 1)}</span>
