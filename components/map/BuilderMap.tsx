@@ -9,7 +9,6 @@ import {
   schoolsForCity,
   type MapLevel,
 } from "../../features/map/semantic-map";
-import { DirectoryFilters } from "../directory/DirectoryFilters";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
 import { AmapLoader } from "./AmapLoader";
 import { CampusMapFallback } from "./CampusExplorerScene";
@@ -36,8 +35,10 @@ function directoryUrl(query: DirectoryQuery): string {
   return `/api/directory?${params}`;
 }
 
+const EMPTY_DIRECTORY_QUERY: DirectoryQuery = {};
+
 export function BuilderMap() {
-  const [query, setQuery] = useState<DirectoryQuery>({});
+  const query = EMPTY_DIRECTORY_QUERY;
   const [schools, setSchools] = useState<DirectorySchool[]>([]);
   const [level, setLevel] = useState<MapLevel>("city");
   const [activeCity, setActiveCity] = useState(DEFAULT_CITY);
@@ -64,7 +65,7 @@ export function BuilderMap() {
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
-    }, query.q ? 220 : 0);
+    }, 0);
     return () => { window.clearTimeout(timeout); controller.abort(); };
   }, [query]);
 
@@ -94,13 +95,17 @@ export function BuilderMap() {
         <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
         <p>像逛校园一样探索广东高校圈。每一枚图钉，都是正在发生的共建故事。</p>
       </div>
-      <div className="map-explorer-controls">
-        <DirectoryFilters query={query} onChange={setQuery} />
+      <div className="map-overview-row">
         <nav className="semantic-level-switcher" aria-label="共建地图层级">
-          <button type="button" aria-pressed={level === "province"} onClick={() => changeLevel("province")}><span aria-hidden="true">⌘</span> 广东城市概览</button>
-          <button type="button" aria-pressed={level === "city"} onClick={() => selectCity(activeCity)}><span aria-hidden="true">✦</span> {activeCity}学校网络</button>
-          <small>{level === "province" ? "点击城市继续探索" : `${activeSchools.length} 所学校正在发光`}</small>
+          <button type="button" aria-pressed={level === "city" && activeCity === DEFAULT_CITY} onClick={() => selectCity(DEFAULT_CITY)}>广州</button>
+          <button type="button" aria-pressed={level === "province"} onClick={() => changeLevel("province")}>广东</button>
+          <button type="button" disabled aria-disabled="true">全国<small>筹备中</small></button>
         </nav>
+        <div className="map-stats" aria-label="目录统计">
+          <div><span aria-hidden="true">校</span><strong>{schools.length}</strong><p>所学校</p></div>
+          <div><span aria-hidden="true">人</span><strong>{memberCount}</strong><p>位共建者</p></div>
+          <div><span aria-hidden="true">城</span><strong>{cities.length}</strong><p>座城市</p></div>
+        </div>
       </div>
       {notice ? <p className="directory-notice" role="status">{notice}</p> : null}
       <div className={`map-stage ${selected ? "map-stage-drawer-open" : ""}`} aria-busy={loading}>
@@ -143,12 +148,6 @@ export function BuilderMap() {
           />
         </div>
         <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} onClose={() => setSelectedId(undefined)} />
-      </div>
-      <div className="map-stats" aria-label="目录统计">
-        <div><span aria-hidden="true">校</span><strong>{schools.length}</strong><p>所学校</p></div>
-        <div><span aria-hidden="true">人</span><strong>{memberCount}</strong><p>位共建者</p></div>
-        <div><span aria-hidden="true">城</span><strong>{cities.length}</strong><p>座城市</p></div>
-        <p className="map-stats-note">统计随当前公开筛选实时变化；学校位置来自高德地点坐标与运营确认。</p>
       </div>
     </section>
   );
