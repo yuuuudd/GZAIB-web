@@ -19,6 +19,22 @@ export type RoutePresentation = {
   zIndex: number;
 };
 
+export type CityBasemapPresentation = {
+  mapStyle: "amap://styles/normal";
+  showLabel: true;
+  features: ["bg", "road", "building", "point"];
+};
+
+export type DistrictPolygonPresentation = {
+  strokeColor: string;
+  strokeWeight: number;
+  strokeOpacity: number;
+  fillColor: string;
+  fillOpacity: number;
+  bubble: true;
+  zIndex: number;
+};
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -26,6 +42,26 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+export function cityBasemapPresentation(): CityBasemapPresentation {
+  return {
+    mapStyle: "amap://styles/normal",
+    showLabel: true,
+    features: ["bg", "road", "building", "point"],
+  };
+}
+
+export function districtPolygonPresentation(active: boolean, provinceLevel: boolean): DistrictPolygonPresentation {
+  return {
+    strokeColor: provinceLevel ? active ? "#f3a34f" : "#96bd7e" : "#46a3a5",
+    strokeWeight: provinceLevel ? active ? 3.2 : 1.7 : 2.2,
+    strokeOpacity: provinceLevel ? active ? 0.95 : 0.78 : 0.82,
+    fillColor: provinceLevel ? active ? "#f8d785" : "#dceebd" : "#8fd3c8",
+    fillOpacity: provinceLevel ? active ? 0.72 : 0.48 : 0.08,
+    bubble: true,
+    zIndex: active ? 12 : 8,
+  };
 }
 
 export function schoolMarkerPresentation(school: DirectorySchool, selected: boolean): MarkerPresentation {

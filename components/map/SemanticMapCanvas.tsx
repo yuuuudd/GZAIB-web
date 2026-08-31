@@ -11,7 +11,13 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import type { AmapDistrict, AmapMap, AmapNamespace, AmapOverlay } from "./AmapLoader";
-import { cityMarkerPresentation, collaborationRoutePresentations, schoolMarkerPresentation } from "./map-overlays";
+import {
+  cityBasemapPresentation,
+  cityMarkerPresentation,
+  collaborationRoutePresentations,
+  districtPolygonPresentation,
+  schoolMarkerPresentation,
+} from "./map-overlays";
 
 const GUANGDONG_CITIES = [
   "广州", "深圳", "珠海", "汕头", "佛山", "韶关", "湛江", "肇庆", "江门", "茂名", "惠州",
@@ -41,13 +47,7 @@ function polygonsForDistrict(amap: AmapNamespace, district: AmapDistrict | undef
   if (!district?.boundaries?.length) return [];
   return district.boundaries.map((path) => new amap.Polygon({
     path,
-    strokeColor: active ? "#f3a34f" : "#96bd7e",
-    strokeWeight: active ? 3.2 : 1.7,
-    strokeOpacity: active ? 0.95 : 0.78,
-    fillColor: active ? "#f8d785" : "#dceebd",
-    fillOpacity: active && provinceLevel ? 0.72 : provinceLevel ? 0.48 : 0.58,
-    bubble: true,
-    zIndex: active ? 12 : 8,
+    ...districtPolygonPresentation(active, provinceLevel),
   }));
 }
 
@@ -74,10 +74,8 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
       const map = new amap.Map(containerRef.current, {
         zoom: 10.5,
         center: [113.2644, 23.1291],
-        mapStyle: "amap://styles/whitesmoke",
+        ...cityBasemapPresentation(),
         viewMode: "2D",
-        showLabel: false,
-        features: ["bg"],
         pitch: 0,
         animateEnable: true,
       });
