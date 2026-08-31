@@ -1,5 +1,4 @@
 /* eslint-disable @next/next/no-img-element -- vinext provides image handling at build time; native images keep this component directly renderable in unit tests. */
-import type { ReactNode } from "react";
 import type { MapCitySummary, MapLevel } from "../../features/map/semantic-map";
 import type { DirectorySchool } from "../../features/directory/service";
 
@@ -18,10 +17,20 @@ export function CampusExplorerScene({ cities, level, activeCity, onSelectCity }:
     ? cities.reduce((sum, city) => sum + city.schoolCount, 0)
     : active?.schoolCount ?? 0;
   const place = level === "province" ? "广东" : activeCity;
+  const isGuangzhouCity = level === "city" && activeCity === "广州";
 
   return <>
     <div className={`campus-explorer-art is-${level}`}>
-      <div className={`paper-art-map is-${level}`}>
+      {isGuangzhouCity ? <div className="guangzhou-region-art" role="img" aria-label="广州高校片区纸雕地图">
+        <img
+          className="guangzhou-region-art-image"
+          src="/map-art/guangzhou-university-regions-v1.png"
+          alt=""
+          width={1536}
+          height={1024}
+          fetchPriority="high"
+        />
+      </div> : <div className={`paper-art-map is-${level}`}>
         <img
           className="paper-art-map-image"
           src="/map-art/guangdong-paper-clay.webp"
@@ -56,7 +65,7 @@ export function CampusExplorerScene({ cities, level, activeCity, onSelectCity }:
             title="广州塔"
           /> : null}
         </div>
-      </div>
+      </div>}
     </div>
     <aside className="campus-energy-card" aria-label="共建能量">
       <span><i aria-hidden="true">+</i> 共建能量</span>
@@ -74,26 +83,50 @@ function clamp(value: number): number {
   return Math.max(12, Math.min(88, value));
 }
 
-export function CampusMapFallback({ cities, level, activeCity, onSelectCity, onSelectSchool, renderCityMap }: {
+function campusArtPosition(school: DirectorySchool, center: { lng: number; lat: number }, index: number) {
+  const identity = `${school.name}${school.campus ?? ""}`;
+  const universityTown = [
+    { left: 66, top: 61 }, { left: 74, top: 58 }, { left: 81, top: 63 },
+    { left: 84, top: 73 }, { left: 78, top: 81 }, { left: 68, top: 79 }, { left: 62, top: 70 },
+  ];
+
+  if (/大学城|东校园|小谷围/.test(identity)) return universityTown[index % universityTown.length];
+  if (/南校园|海珠|昌岗/.test(identity)) {
+    if (/中山大学/.test(identity)) return { left: 46, top: 56 };
+    if (/仲恺/.test(identity)) return { left: 53, top: 59 };
+    return { left: 59, top: 55 };
+  }
+  if (/五山|石牌|华南农业大学|暨南大学/.test(identity)) {
+    if (/华南理工大学/.test(identity)) return { left: 68, top: 31 };
+    if (/华南农业大学/.test(identity)) return { left: 76, top: 29 };
+    if (/暨南大学/.test(identity)) return { left: 61, top: 32 };
+    return { left: 54, top: 31 };
+  }
+  if (/白云|白云山/.test(identity)) return { left: 37 + (index % 3) * 6, top: 24 + (index % 2) * 4 };
+  if (/黄埔/.test(identity)) return { left: 84, top: 38 };
+
+  return {
+    left: clamp(50 + ((school.lng - center.lng) / 0.8) * 52),
+    top: clamp(50 - ((school.lat - center.lat) / 0.65) * 52),
+  };
+}
+
+export function CampusMapFallback({ cities, level, activeCity, onSelectCity, onSelectSchool }: {
   cities: MapCitySummary[];
   level: MapLevel;
   activeCity: string;
   onRetry?: () => void;
   onSelectCity?: (city: string) => void;
   onSelectSchool?: (school: DirectorySchool) => void;
-  renderCityMap?: () => ReactNode;
 }) {
-  if (level === "city" && renderCityMap) return renderCityMap();
-
   const active = cities.find((city) => city.city === activeCity);
   const center = active?.center ?? { lng: 113.2644, lat: 23.1291 };
-  const points = level === "province" ? [] : (active?.schools ?? []).map((school) => ({
+  const points = level === "province" ? [] : (active?.schools ?? []).map((school, index) => ({
       id: school.id,
       name: school.name,
       count: school.memberCount,
       school,
-      left: clamp(50 + ((school.lng - center.lng) / 0.8) * 52),
-      top: clamp(50 - ((school.lat - center.lat) / 0.65) * 52),
+      ...campusArtPosition(school, center, index),
     }));
 
   return <div className="campus-fallback-map" aria-label={`${level === "province" ? "广东" : activeCity}校园探索板块`}>

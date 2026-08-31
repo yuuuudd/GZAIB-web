@@ -10,10 +10,8 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
-import { AmapLoader } from "./AmapLoader";
 import { CampusMapFallback } from "./CampusExplorerScene";
 import { CityDirectoryFallback } from "./CityDirectoryFallback";
-import { SemanticMapCanvas } from "./SemanticMapCanvas";
 
 function recordMapView() {
   void fetch("/api/metrics", {
@@ -117,25 +115,8 @@ export function BuilderMap() {
               activeCity={activeCity}
               onSelectCity={selectCity}
               onSelectSchool={selectSchool}
-              renderCityMap={() => <AmapLoader>
-                {(state, amap, retry) => state === "ready" && amap ? <SemanticMapCanvas
-                  amap={amap}
-                  cities={cities}
-                  level="city"
-                  activeCity={activeCity}
-                  selectedId={selectedId}
-                  onLevelChange={changeLevel}
-                  onSelectCity={selectCity}
-                  onSelectSchool={selectSchool}
-                  onFailure={retry ?? (() => undefined)}
-                /> : state === "failed" ? <div className="map-unavailable" role="status">
-                  <strong>广州地图暂时没有连上</strong>
-                  <p>学校目录仍可浏览，也可以重新连接高德轮廓。</p>
-                  <button type="button" onClick={retry}>重新加载广州地图</button>
-                </div> : <div className="map-loading" role="status"><span aria-hidden="true" /><small>正在绘制广州学校网络…</small></div>}
-              </AmapLoader>}
             />
-            {level === "city" && !activeSchools.length && !loading ? <p className="map-empty-note">当前筛选下暂无学校，广州轮廓仍可浏览</p> : null}
+            {level === "city" && !activeSchools.length && !loading ? <p className="map-empty-note">当前筛选下暂无学校，校园地图仍可浏览</p> : null}
           </div>
           <CityDirectoryFallback
             cities={cities}

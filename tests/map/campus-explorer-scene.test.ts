@@ -72,19 +72,22 @@ test("province paper map keeps the Guangzhou city entry clickable", () => {
   assert.doesNotMatch(html, /amap-canvas/);
 });
 
-test("province keeps the paper artwork while Guangzhou uses only the AMap outline", () => {
+test("Guangzhou uses the dedicated university-town artwork and keeps school pins", () => {
   const guangzhou = renderToStaticMarkup(createElement(CampusMapFallback, {
     cities,
     level: "city",
     activeCity: "广州",
     onSelectCity: () => undefined,
     onSelectSchool: () => undefined,
-    renderCityMap: () => createElement("div", { className: "amap-canvas", "aria-label": "广州高校共建地图" }),
   } as Parameters<typeof CampusMapFallback>[0]));
 
-  assert.match(guangzhou, /amap-canvas/);
-  assert.match(guangzhou, /aria-label="广州高校共建地图"/);
-  assert.doesNotMatch(guangzhou, /guangdong-paper-clay\.webp|landmark-guangzhou\.webp|campus-explorer-art/);
+  assert.match(guangzhou, /guangzhou-university-regions-v1\.png/);
+  assert.match(guangzhou, /aria-label="广州高校片区纸雕地图"/);
+  assert.match(guangzhou, /中山大学/);
+  assert.match(guangzhou, /华南理工大学/);
+  assert.match(guangzhou, /style="left:46%;top:56%"[^>]*title="中山大学/);
+  assert.match(guangzhou, /style="left:68%;top:31%"[^>]*title="华南理工大学/);
+  assert.doesNotMatch(guangzhou, /amap-canvas|guangdong-paper-clay\.webp|landmark-guangzhou\.webp/);
 });
 
 test("city fallback uses the generated blue and orange marker artwork", () => {

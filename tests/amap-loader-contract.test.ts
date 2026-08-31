@@ -12,10 +12,9 @@ test("AMap loader can discard one failed script request and retry it", () => {
   assert.match(source, /const retry = \(\) =>/);
 });
 
-test("public builder map loads AMap only for the city school network", () => {
-  assert.match(mapSource, /AmapLoader/);
-  assert.match(mapSource, /SemanticMapCanvas/);
+test("public builder map uses the generated campus scene without loading AMap", () => {
   assert.match(mapSource, /CampusMapFallback/);
+  assert.doesNotMatch(mapSource, /AmapLoader|SemanticMapCanvas/);
 });
 
 test("AMap security proxy uses the mandatory _AMapService path", () => {
