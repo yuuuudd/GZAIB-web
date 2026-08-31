@@ -108,7 +108,17 @@ export function CampusMapFallback({ cities, level, activeCity, onSelectCity, onS
         aria-label={`查看${point.name}，${point.count}位共建者`}
         onClick={() => onSelectSchool?.(point.school)}
       >
-        <span>{point.count}位</span><strong>{point.name}</strong>
+        <span className="fallback-pin-visual">
+          <img
+            className="fallback-pin-art"
+            src={index === 0 ? "/map-art/school-pin-orange-v1.png" : "/map-art/school-pin-blue-v1.png"}
+            alt=""
+            width={1254}
+            height={1254}
+          />
+          <b>{point.count}位</b>
+        </span>
+        <strong>{point.name}</strong>
       </button>)}
       {level === "city" && !points.length ? <p className="fallback-first-light"><i>◎</i><strong>等待第一束共建之光</strong><span>学校数据加入后会在这里自动亮起</span></p> : null}
     </div>

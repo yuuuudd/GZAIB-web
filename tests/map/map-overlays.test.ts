@@ -24,8 +24,10 @@ test("school marker pins the exact coordinate with the count inside and escaped 
 
   assert.deepEqual(presentation.position, [113.298, 23.096]);
   assert.equal(presentation.anchor, "bottom-center");
+  assert.match(presentation.content, /<img class="semantic-pin-art" src="\/map-art\/school-pin-blue-v1\.png" alt=""/);
   assert.match(presentation.content, /semantic-pin-count[^>]*>12位</);
   assert.match(presentation.content, /semantic-pin-label[^>]*>中山大学 &lt;南校园&gt;</);
+  assert.doesNotMatch(presentation.content, /semantic-pin-tip/);
   assert.doesNotMatch(presentation.content, /<南校园>/);
 });
 
@@ -33,6 +35,7 @@ test("selected school marker exposes one warm highlighted state", () => {
   const presentation = schoolMarkerPresentation(school, true);
 
   assert.match(presentation.content, /semantic-school-marker is-selected/);
+  assert.match(presentation.content, /<img class="semantic-pin-art" src="\/map-art\/school-pin-orange-v1\.png" alt=""/);
   assert.equal(presentation.title, "中山大学 <南校园>，12 位共建者");
 });
 

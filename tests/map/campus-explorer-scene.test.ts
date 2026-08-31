@@ -86,3 +86,16 @@ test("province keeps the paper artwork while Guangzhou uses only the AMap outlin
   assert.match(guangzhou, /aria-label="广州高校共建地图"/);
   assert.doesNotMatch(guangzhou, /guangdong-paper-clay\.webp|landmark-guangzhou\.webp|campus-explorer-art/);
 });
+
+test("city fallback uses the generated blue and orange marker artwork", () => {
+  const html = renderToStaticMarkup(createElement(CampusMapFallback, {
+    cities,
+    level: "city",
+    activeCity: "广州",
+    onSelectCity: () => undefined,
+    onSelectSchool: () => undefined,
+  }));
+
+  assert.match(html, /\/map-art\/school-pin-orange-v1\.png/);
+  assert.match(html, /\/map-art\/school-pin-blue-v1\.png/);
+});

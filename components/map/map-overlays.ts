@@ -30,11 +30,12 @@ function escapeHtml(value: string): string {
 
 export function schoolMarkerPresentation(school: DirectorySchool, selected: boolean): MarkerPresentation {
   const name = escapeHtml(school.name);
+  const pinAsset = selected ? "/map-art/school-pin-orange-v1.png" : "/map-art/school-pin-blue-v1.png";
   return {
     position: [school.lng, school.lat],
     anchor: "bottom-center",
     title: `${school.name}，${school.memberCount} 位共建者`,
-    content: `<div class="semantic-school-marker${selected ? " is-selected" : ""}"><span class="semantic-pin-count">${school.memberCount}位</span><span class="semantic-pin-tip" aria-hidden="true"></span><span class="semantic-pin-label">${name}</span></div>`,
+    content: `<div class="semantic-school-marker${selected ? " is-selected" : ""}"><span class="semantic-pin-visual"><img class="semantic-pin-art" src="${pinAsset}" alt="" /><span class="semantic-pin-count">${school.memberCount}位</span></span><span class="semantic-pin-label">${name}</span></div>`,
   };
 }
 

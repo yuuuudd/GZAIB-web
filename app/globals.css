@@ -147,11 +147,10 @@ a { color: inherit; }
 .semantic-map-shell .map-live-label { pointer-events:none; }
 .semantic-school-marker { position:relative; display:grid; justify-items:center; min-width:64px; padding-bottom:33px; cursor:pointer; filter:drop-shadow(0 10px 14px rgba(21,62,153,.23)); transform:translateY(0); transition:transform .18s ease,filter .18s ease; }
 .semantic-school-marker:hover,.semantic-school-marker.is-selected { z-index:5; transform:translateY(-3px) scale(1.04); filter:drop-shadow(0 14px 19px rgba(23,58,137,.3)); }
-.semantic-pin-count { position:relative; z-index:2; display:grid; width:56px; height:56px; place-items:center; border:4px solid #fff; border-radius:50%; background:linear-gradient(145deg,#2e68f0,#153db7); color:#fff; font-size:13px; font-weight:900; letter-spacing:-.02em; box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); }
-.semantic-pin-tip { position:absolute; z-index:1; top:43px; width:25px; height:25px; border-right:4px solid #fff; border-bottom:4px solid #fff; border-radius:0 0 6px 0; background:#1947c7; transform:rotate(45deg); }
-.semantic-pin-label { position:absolute; z-index:3; top:62px; left:50%; width:max-content; max-width:210px; overflow:hidden; border:1px solid rgba(197,211,235,.9); border-radius:999px; padding:.36rem .62rem; background:rgba(255,255,255,.96); color:#172d50; font-size:12px; font-weight:850; line-height:1; text-overflow:ellipsis; white-space:nowrap; box-shadow:0 7px 18px rgba(34,56,91,.12); transform:translateX(-50%); }
-.semantic-school-marker.is-selected .semantic-pin-count { background:linear-gradient(145deg,#ff8a46,#e95416); }
-.semantic-school-marker.is-selected .semantic-pin-tip { background:#ed5a19; }
+.semantic-pin-visual { position:relative; display:block; width:64px; height:64px; }
+.semantic-pin-art { display:block; width:100%; height:100%; object-fit:contain; }
+.semantic-pin-count { position:absolute; z-index:2; top:20px; left:50%; color:#19335b; font-size:12px; font-weight:950; letter-spacing:-.04em; line-height:1; white-space:nowrap; transform:translateX(-50%); }
+.semantic-pin-label { position:absolute; z-index:3; top:64px; left:50%; width:max-content; max-width:210px; overflow:hidden; border:1px solid rgba(197,211,235,.9); border-radius:999px; padding:.36rem .62rem; background:rgba(255,255,255,.96); color:#172d50; font-size:12px; font-weight:850; line-height:1; text-overflow:ellipsis; white-space:nowrap; box-shadow:0 7px 18px rgba(34,56,91,.12); transform:translateX(-50%); }
 .semantic-school-marker.is-selected .semantic-pin-label { border-color:#f3a27a; color:#a83d0d; }
 .semantic-city-marker { display:grid; min-width:112px; gap:.16rem; border:1px solid rgba(255,255,255,.92); border-radius:16px; padding:.62rem .74rem; background:rgba(255,255,255,.92); color:#18335c; cursor:pointer; box-shadow:0 10px 25px rgba(26,56,105,.16); backdrop-filter:blur(8px); transition:transform .16s ease,box-shadow .16s ease; }
 .semantic-city-marker:hover,.semantic-city-marker.is-active { transform:translateY(-2px); box-shadow:0 14px 30px rgba(30,78,216,.24); }
@@ -249,10 +248,9 @@ a { color: inherit; }
 .city-directory-list button:hover,.city-directory-list button:focus-visible,.school-list-item:hover,.school-list-item[aria-pressed="true"] { border-color:#f0a36f; background:#fff7e9; }
 .city-directory-mark,.school-list-badge { border-radius:50% 50% 50% 12px; background:linear-gradient(145deg,#4a87f4,#1d56cc); color:#fff; transform:rotate(-7deg); }
 .semantic-school-marker { filter:drop-shadow(0 11px 0 rgba(39,83,145,.13)) drop-shadow(0 17px 16px rgba(28,70,130,.2)); }
-.semantic-pin-count { width:62px; height:62px; border-width:5px; background:linear-gradient(145deg,#4d8cf6,#1654d0); font-size:14px; box-shadow:inset -6px -7px 0 rgba(17,56,155,.12),inset 5px 5px 0 rgba(255,255,255,.18); }
-.semantic-pin-tip { top:47px; width:28px; height:28px; border-width:0 5px 5px 0; background:#1a56cf; }
-.semantic-pin-label { top:69px; border:2px solid #fff; padding:.42rem .7rem; background:#fffdf7; color:#172e52; box-shadow:0 7px 0 rgba(37,82,143,.1),0 13px 20px rgba(33,72,127,.12); }
-.semantic-school-marker.is-selected .semantic-pin-count { background:linear-gradient(145deg,#ffad55,#f26a21); box-shadow:inset -6px -7px 0 rgba(174,62,11,.12),inset 5px 5px 0 rgba(255,255,255,.2); }
+.semantic-pin-visual { width:70px; height:70px; }
+.semantic-pin-count { top:22px; font-size:13px; }
+.semantic-pin-label { top:70px; border:2px solid #fff; padding:.42rem .7rem; background:#fffdf7; color:#172e52; box-shadow:0 7px 0 rgba(37,82,143,.1),0 13px 20px rgba(33,72,127,.12); }
 .semantic-city-marker { border:3px solid #fff; border-radius:20px 20px 20px 7px; background:#fffdf5; box-shadow:0 9px 0 rgba(43,91,151,.1),0 16px 28px rgba(27,65,110,.15); backdrop-filter:none; transform:rotate(-1deg); }
 .semantic-city-marker.is-active { border-color:#fff; background:#fff0c6; box-shadow:0 9px 0 rgba(222,127,32,.15),0 16px 28px rgba(89,76,36,.16); }
 .map-stats { border:2px solid #fff; border-radius:24px; background:#fffaf0; box-shadow:0 12px 0 rgba(34,84,151,.08),0 20px 36px rgba(27,66,112,.11); }
@@ -281,7 +279,7 @@ a { color: inherit; }
   .landmark-hotspot[data-layout="red-frame"] { top:42%; width:16%; min-width:72px; }
   .landmark-hotspot>span { font-size:.62rem; }
   .landmark-guangzhou-city { top:49%; left:46%; transform:scale(1.2); }
-  .semantic-pin-count { width:54px; height:54px; font-size:12px; }.semantic-pin-tip{top:41px}.semantic-pin-label{top:62px}
+  .semantic-pin-visual { width:60px; height:60px; }.semantic-pin-count{top:19px;font-size:11px}.semantic-pin-label{top:60px}
 }
 
 .campus-map-retry { position:relative; display:block; min-height:620px; background:transparent; }
@@ -289,9 +287,10 @@ a { color: inherit; }
 .fallback-map-points { position:absolute; z-index:3; inset:7% 22% 8% 3%; pointer-events:none; }
 .fallback-school-pin { position:absolute; display:grid; justify-items:center; border:0; padding:0; background:transparent; font:inherit; cursor:pointer; filter:drop-shadow(0 8px 0 rgba(40,82,137,.12)) drop-shadow(0 13px 10px rgba(31,71,124,.2)); pointer-events:auto; transform:translate(-50%,-50%); }
 .fallback-school-pin:focus-visible { outline:4px solid #173fae; outline-offset:5px; border-radius:18px; }
-.fallback-school-pin>span { display:grid; width:54px; height:54px; place-items:center; border:5px solid #fff; border-radius:50% 50% 50% 12px; background:linear-gradient(145deg,#4f8df6,#1957d1); color:#fff; font-size:.72rem; font-weight:900; transform:rotate(-45deg); }
-.fallback-school-pin>span::first-line { transform:rotate(45deg); }.fallback-school-pin>strong { margin-top:.35rem; border:2px solid #fff; border-radius:999px; padding:.3rem .55rem; background:#fffdf6; color:#1c3358; font-size:.68rem; white-space:nowrap; box-shadow:0 5px 0 rgba(42,84,139,.09); }
-.fallback-school-pin.is-hot>span { background:linear-gradient(145deg,#ffad59,#ef6b25); }
+.fallback-pin-visual { position:relative; display:block; width:64px; height:64px; }
+.fallback-pin-art { display:block; width:100%; height:100%; object-fit:contain; }
+.fallback-pin-visual>b { position:absolute; top:20px; left:50%; color:#19335b; font-size:.7rem; font-weight:950; line-height:1; white-space:nowrap; transform:translateX(-50%); }
+.fallback-school-pin>strong { margin-top:.15rem; border:2px solid #fff; border-radius:999px; padding:.3rem .55rem; background:#fffdf6; color:#1c3358; font-size:.68rem; white-space:nowrap; box-shadow:0 5px 0 rgba(42,84,139,.09); }
 .fallback-first-light { position:absolute; top:22%; left:57%; display:grid; justify-items:center; width:220px; margin:0; border:3px solid #fff; border-radius:24px 24px 8px; padding:1rem; background:rgba(255,251,231,.94); color:#1d355c; box-shadow:0 12px 0 rgba(50,105,162,.12),0 20px 35px rgba(31,71,111,.14); text-align:center; transform:translate(-50%,-50%) rotate(-1deg); }
 .fallback-first-light i { color:#ffc92f; font-size:1.7rem; font-style:normal; }.fallback-first-light strong { font-size:.9rem; }.fallback-first-light span { margin-top:.25rem; color:#718097; font-size:.66rem; }
 .campus-map-offline-note { position:absolute; z-index:5; left:1rem; bottom:1rem; display:grid; gap:.18rem; border:2px solid #fff; border-radius:18px 18px 18px 6px; padding:.75rem .85rem; background:rgba(255,252,242,.94); box-shadow:0 9px 0 rgba(45,97,156,.1),0 15px 28px rgba(28,67,110,.13); }
