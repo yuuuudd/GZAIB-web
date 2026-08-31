@@ -213,19 +213,18 @@ a { color: inherit; }
 .semantic-map-shell .amap-layer { filter:saturate(.72) contrast(.94); }
 .campus-explorer-art { position:absolute; z-index:2; inset:0; overflow:hidden; pointer-events:none; }
 .paper-art-map { position:absolute; inset:4% 22% 5% 3%; filter:drop-shadow(0 28px 34px rgba(20,72,99,.24)); }
-.paper-art-map-image { width:100%; height:100%; object-fit:contain; }
+.paper-art-map-image { width:100%; height:100%; object-fit:contain; opacity:1; filter:none; }
 .pearl-delta-landmarks { position:absolute; inset:0; }
 .landmark-sticker { position:absolute; height:auto; filter:drop-shadow(0 9px 9px rgba(26,69,90,.22)); transform-origin:50% 100%; }
-.landmark-guangzhou { top:45%; left:40%; width:10.5%; }
-.landmark-shenzhen { top:58%; left:62%; width:10%; }
-.landmark-bridge { top:66%; left:49%; width:12.5%; }
-.landmark-foshan { top:50%; left:31%; width:10.5%; }
-.landmark-dongguan { top:52%; left:53%; width:10%; }
-.landmark-zhongshan { top:63%; left:39%; width:9.5%; }
+.landmark-hotspot { position:absolute; top:48%; left:46%; display:grid; width:14%; min-width:104px; justify-items:center; border:0; padding:0; background:transparent; color:#15325a; font:inherit; cursor:pointer; pointer-events:auto; transform:translate(-50%,-50%); }
+.landmark-hotspot .landmark-sticker { position:relative; width:100%; }
+.landmark-hotspot>span { margin-top:-.35rem; border:3px solid #fff; border-radius:999px; padding:.36rem .65rem; background:#fffdf5; font-size:.72rem; font-weight:900; white-space:nowrap; box-shadow:0 7px 0 rgba(41,85,138,.12),0 12px 20px rgba(34,74,116,.15); }
+.landmark-hotspot>span b { color:#e95f20; }
+.landmark-hotspot:hover,.landmark-hotspot:focus-visible { transform:translate(-50%,-50%) scale(1.07); }
+.landmark-hotspot:focus-visible { outline:4px solid #194fd1; outline-offset:5px; border-radius:24px; }
+.landmark-guangzhou-city { top:48%; left:43%; width:14%; }
 .paper-art-map.is-city { inset:1% 20% 1% 1%; transform:scale(1.08); }
-.paper-art-map.is-city .landmark-sticker { width:16%; transform:translate(-2%,-3%) scale(1.04); }
-.semantic-map-shell .paper-art-map { opacity:.34; mix-blend-mode:multiply; }
-.semantic-map-shell .landmark-sticker { opacity:.9; }
+.paper-art-map.is-city .landmark-guangzhou-city { width:16%; transform:translate(-2%,-3%) scale(1.04); }
 .map-live-label { top:1rem; left:1rem; z-index:4; border:2px solid #fff; border-radius:20px 20px 20px 5px; background:rgba(255,252,241,.94); box-shadow:0 12px 0 rgba(51,110,183,.1),0 19px 35px rgba(28,69,111,.13); backdrop-filter:none; transform:rotate(-1deg); }
 .map-live-label span { border-radius:15px; background:linear-gradient(145deg,#347af0,#1452ce); box-shadow:inset 0 0 0 2px rgba(255,255,255,.24); }
 .map-live-label small { color:#65728a; }
@@ -267,14 +266,17 @@ a { color: inherit; }
   .campus-energy-card>strong { font-size:.78rem; }.energy-orbs { display:none; }
   .campus-explorer-prompt { left:.75rem; bottom:.65rem; max-width:calc(100% - 1.5rem); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .paper-art-map { inset:6% 2% 11%; }.paper-art-map.is-city { inset:5% 0 10%; }
-  .landmark-sticker { transform:scale(1.2); }
+  .landmark-hotspot { top:51%; left:50%; width:22%; min-width:86px; }
+  .landmark-hotspot>span { font-size:.62rem; }
+  .landmark-guangzhou-city { top:49%; left:46%; transform:scale(1.2); }
   .semantic-pin-count { width:54px; height:54px; font-size:12px; }.semantic-pin-tip{top:41px}.semantic-pin-label{top:62px}
 }
 
 .campus-map-retry { position:relative; display:block; min-height:620px; background:transparent; }
 .campus-fallback-map { position:relative; min-height:620px; overflow:hidden; background:radial-gradient(circle at 46% 36%,#e9fbff,#a9ddf5 72%,#79bddd); }
 .fallback-map-points { position:absolute; z-index:3; inset:7% 22% 8% 3%; pointer-events:none; }
-.fallback-school-pin { position:absolute; display:grid; justify-items:center; filter:drop-shadow(0 8px 0 rgba(40,82,137,.12)) drop-shadow(0 13px 10px rgba(31,71,124,.2)); transform:translate(-50%,-50%); }
+.fallback-school-pin { position:absolute; display:grid; justify-items:center; border:0; padding:0; background:transparent; font:inherit; cursor:pointer; filter:drop-shadow(0 8px 0 rgba(40,82,137,.12)) drop-shadow(0 13px 10px rgba(31,71,124,.2)); pointer-events:auto; transform:translate(-50%,-50%); }
+.fallback-school-pin:focus-visible { outline:4px solid #173fae; outline-offset:5px; border-radius:18px; }
 .fallback-school-pin>span { display:grid; width:54px; height:54px; place-items:center; border:5px solid #fff; border-radius:50% 50% 50% 12px; background:linear-gradient(145deg,#4f8df6,#1957d1); color:#fff; font-size:.72rem; font-weight:900; transform:rotate(-45deg); }
 .fallback-school-pin>span::first-line { transform:rotate(45deg); }.fallback-school-pin>strong { margin-top:.35rem; border:2px solid #fff; border-radius:999px; padding:.3rem .55rem; background:#fffdf6; color:#1c3358; font-size:.68rem; white-space:nowrap; box-shadow:0 5px 0 rgba(42,84,139,.09); }
 .fallback-school-pin.is-hot>span { background:linear-gradient(145deg,#ffad59,#ef6b25); }

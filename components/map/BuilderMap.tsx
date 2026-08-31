@@ -11,10 +11,8 @@ import {
 } from "../../features/map/semantic-map";
 import { DirectoryFilters } from "../directory/DirectoryFilters";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
-import { AmapLoader } from "./AmapLoader";
 import { CampusMapFallback } from "./CampusExplorerScene";
 import { CityDirectoryFallback } from "./CityDirectoryFallback";
-import { SemanticMapCanvas } from "./SemanticMapCanvas";
 
 function recordMapView() {
   void fetch("/api/metrics", {
@@ -36,7 +34,7 @@ function directoryUrl(query: DirectoryQuery): string {
   return `/api/directory?${params}`;
 }
 
-export function BuilderMap({ amapKey }: { amapKey?: string }) {
+export function BuilderMap() {
   const [query, setQuery] = useState<DirectoryQuery>({});
   const [schools, setSchools] = useState<DirectorySchool[]>([]);
   const [level, setLevel] = useState<MapLevel>("city");
@@ -44,7 +42,6 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string>();
-  const [canvasFailed, setCanvasFailed] = useState(false);
 
   useEffect(() => { recordMapView(); }, []);
   useEffect(() => {
@@ -105,55 +102,27 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
       </div>
       {notice ? <p className="directory-notice" role="status">{notice}</p> : null}
       <div className={`map-stage ${selected ? "map-stage-drawer-open" : ""}`} aria-busy={loading}>
-        <AmapLoader apiKey={amapKey}>
-          {(state, amap, retry) => state === "ready" && amap && !canvasFailed ? (
-            <div className="map-live-layout">
-              <div className="map-live">
-                <SemanticMapCanvas
-                  amap={amap}
-                  cities={cities}
-                  level={level}
-                  activeCity={activeCity}
-                  selectedId={selectedId}
-                  onLevelChange={changeLevel}
-                  onSelectCity={selectCity}
-                  onSelectSchool={selectSchool}
-                  onFailure={() => setCanvasFailed(true)}
-                />
-                {level === "city" && !activeSchools.length && !loading ? <p className="map-empty-note">当前筛选下暂无学校，城市地图仍然可以浏览</p> : null}
-              </div>
-              <CityDirectoryFallback
-                cities={cities}
-                activeCity={activeCity}
-                level={level}
-                selectedId={selectedId}
-                onSelectCity={selectCity}
-                onBackToProvince={() => changeLevel("province")}
-                onSelectSchool={selectSchool}
-              />
-            </div>
-          ) : state === "idle" || state === "loading" ? (
-            <div className="map-loading" role="status"><span /><strong>正在连接学校地图</strong><small>默认打开广州学校网络</small></div>
-          ) : (
-            <div className="map-retry-state campus-map-retry">
-              <CampusMapFallback
-                cities={cities}
-                level={level}
-                activeCity={activeCity}
-                onRetry={() => { setCanvasFailed(false); retry?.(); }}
-              />
-              <CityDirectoryFallback
-                cities={cities}
-                activeCity={activeCity}
-                level={level}
-                selectedId={selectedId}
-                onSelectCity={selectCity}
-                onBackToProvince={() => changeLevel("province")}
-                onSelectSchool={selectSchool}
-              />
-            </div>
-          )}
-        </AmapLoader>
+        <div className="map-live-layout">
+          <div className="map-live">
+            <CampusMapFallback
+              cities={cities}
+              level={level}
+              activeCity={activeCity}
+              onSelectCity={selectCity}
+              onSelectSchool={selectSchool}
+            />
+            {level === "city" && !activeSchools.length && !loading ? <p className="map-empty-note">当前筛选下暂无学校，城市纸雕仍然可以浏览</p> : null}
+          </div>
+          <CityDirectoryFallback
+            cities={cities}
+            activeCity={activeCity}
+            level={level}
+            selectedId={selectedId}
+            onSelectCity={selectCity}
+            onBackToProvince={() => changeLevel("province")}
+            onSelectSchool={selectSchool}
+          />
+        </div>
         <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} onClose={() => setSelectedId(undefined)} />
       </div>
       <div className="map-stats" aria-label="目录统计">

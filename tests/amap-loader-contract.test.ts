@@ -10,7 +10,11 @@ const mapSource = readFileSync(join(process.cwd(), "components", "map", "Builder
 test("AMap loader can discard one failed script request and retry it", () => {
   assert.match(source, /function resetAmapLoad\(\)/);
   assert.match(source, /const retry = \(\) =>/);
-  assert.match(mapSource, /retry\?\.\(\)/);
+});
+
+test("public builder map uses the paper artwork without mounting a visible AMap canvas", () => {
+  assert.doesNotMatch(mapSource, /AmapLoader|SemanticMapCanvas|amap-canvas/);
+  assert.match(mapSource, /CampusMapFallback/);
 });
 
 test("AMap security proxy uses the mandatory _AMapService path", () => {
