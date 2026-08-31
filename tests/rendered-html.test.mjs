@@ -15,7 +15,7 @@ async function renderRoute(pathname, extraHeaders = {}) {
 
 const renderHomePage = (extraHeaders = {}) => renderRoute("/", extraHeaders);
 
-test("home page renders finished Chinese metadata, CTA, and privacy copy", async () => {
+test("home page renders the clean hero with final punctuation and no duplicate header CTA", async () => {
   const response = await renderHomePage({ host: "localhost" });
   assert.equal(response.status, 200);
   const html = await response.text();
@@ -30,7 +30,9 @@ test("home page renders finished Chinese metadata, CTA, and privacy copy", async
   assert.match(html, /广州AI共创社/);
   assert.match(html, /让广东每一所高校/);
   assert.match(html, /申请点亮我的头像/);
-  assert.match(html, /仅展示审核通过且本人选择公开的信息，不采集个人实时位置/);
+  assert.match(html, /共建的光<\/span>。<\/h1>/);
+  assert.doesNotMatch(html, /class="brand-header-action" href="\/apply"/);
+  assert.doesNotMatch(html, /仅展示审核通过且本人选择公开的信息，不采集个人实时位置/);
   assert.match(html, /探索高校能量，发现同频伙伴/);
   assert.match(html, /像逛校园一样探索广东高校圈/);
   assert.match(html, /广东城市概览/);
