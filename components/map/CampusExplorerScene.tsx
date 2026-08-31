@@ -1,4 +1,14 @@
+/* eslint-disable @next/next/no-img-element -- vinext provides image handling at build time; native images keep this component directly renderable in unit tests. */
 import type { MapCitySummary, MapLevel } from "../../features/map/semantic-map";
+
+const PEARL_DELTA_LANDMARKS = [
+  { city: "广州", slug: "guangzhou", label: "广州塔" },
+  { city: "深圳", slug: "shenzhen", label: "深圳城市天际线" },
+  { city: "珠海", slug: "bridge", label: "港珠澳大桥" },
+  { city: "佛山", slug: "foshan", label: "佛山岭南建筑" },
+  { city: "东莞", slug: "dongguan", label: "东莞科创城区" },
+  { city: "中山", slug: "zhongshan", label: "中山纪念建筑" },
+] as const;
 
 export function CampusExplorerScene({ cities, level, activeCity }: {
   cities: MapCitySummary[];
@@ -16,20 +26,32 @@ export function CampusExplorerScene({ cities, level, activeCity }: {
 
   return <>
     <div className={`campus-explorer-art is-${level}`} aria-hidden="true">
-      <span className="explorer-sun" />
-      <span className="explorer-cloud explorer-cloud-one"><i /><i /><i /></span>
-      <span className="explorer-cloud explorer-cloud-two"><i /><i /><i /></span>
-      <span className="explorer-star explorer-star-one">✦</span>
-      <span className="explorer-star explorer-star-two">★</span>
-      <span className="explorer-star explorer-star-three">✧</span>
-      <span className="explorer-plane">➤</span>
-      <svg className="explorer-flight-path" viewBox="0 0 700 360" preserveAspectRatio="none">
-        <path d="M35 88 C155 5 206 148 328 88 S532 42 666 114" />
-        <path d="M86 310 C182 230 263 354 394 275 S564 201 656 245" />
-      </svg>
+      <div className={`paper-art-map is-${level}`}>
+        <img
+          className="paper-art-map-image"
+          src="/map-art/guangdong-paper-clay.webp"
+          alt=""
+          width={1536}
+          height={1024}
+          fetchPriority="high"
+        />
+        <div className="pearl-delta-landmarks" role="img" aria-label="珠三角城市建筑贴纸">
+          {PEARL_DELTA_LANDMARKS.map((landmark) => level === "province" || landmark.city === activeCity ? (
+            <img
+              className={`landmark-sticker landmark-${landmark.slug}`}
+              src={`/map-art/landmark-${landmark.slug}.webp`}
+              alt=""
+              width={420}
+              height={438}
+              key={landmark.slug}
+              title={landmark.label}
+            />
+          ) : null)}
+        </div>
+      </div>
     </div>
     <aside className="campus-energy-card" aria-label="共建能量">
-      <span><i aria-hidden="true">✦</i> 共建能量</span>
+      <span><i aria-hidden="true">+</i> 共建能量</span>
       <strong>{place}已有{memberCount}位伙伴点亮{schoolCount}所学校</strong>
       <div className="energy-orbs" aria-hidden="true"><i>AI</i><i>创</i><i>学</i><i>+</i></div>
     </aside>
@@ -74,12 +96,6 @@ export function CampusMapFallback({ cities, level, activeCity, onRetry }: {
 
   return <div className="campus-fallback-map" aria-label={`${level === "province" ? "广东" : activeCity}校园探索板块`}>
     <CampusExplorerScene cities={cities} level={level} activeCity={activeCity} />
-    <div className={`paper-map-board is-${level}`} aria-hidden="true">
-      <span className="paper-map-layer paper-map-layer-back" />
-      <span className="paper-map-layer paper-map-layer-mid" />
-      <span className="paper-map-layer paper-map-layer-top" />
-      <b>{level === "province" ? "广东高校圈" : `${activeCity}高校圈`}</b>
-    </div>
     <div className="fallback-map-points">
       {points.map((point, index) => <div
         className={`fallback-school-pin${index === 0 ? " is-hot" : ""}`}
@@ -89,7 +105,7 @@ export function CampusMapFallback({ cities, level, activeCity, onRetry }: {
       >
         <span>{point.count}位</span><strong>{point.name}</strong>
       </div>)}
-      {!points.length ? <p className="fallback-first-light"><i>✦</i><strong>等待第一束共建之光</strong><span>学校数据加入后会在这里自动亮起</span></p> : null}
+      {!points.length ? <p className="fallback-first-light"><i>◎</i><strong>等待第一束共建之光</strong><span>学校数据加入后会在这里自动亮起</span></p> : null}
     </div>
     <div className="campus-map-offline-note">
       <span>探索板块仍可浏览</span>

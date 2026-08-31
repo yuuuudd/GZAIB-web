@@ -48,6 +48,11 @@ test("province explorer scene summarizes the current public Guangdong directory"
 
   assert.match(html, /广东已有17位伙伴点亮3所学校/);
   assert.match(html, /探索城市，看看高校能量在哪里汇聚/);
+  assert.match(html, /\/map-art\/guangdong-paper-clay\.webp/);
+  assert.match(html, /珠三角城市建筑贴纸/);
+  assert.match(html, /\/map-art\/landmark-guangzhou\.webp/);
+  assert.match(html, /\/map-art\/landmark-shenzhen\.webp/);
+  assert.doesNotMatch(html, /explorer-cloud|explorer-star|explorer-plane/);
 });
 
 test("fallback keeps a real campus exploration board visible when AMap is unavailable", () => {
@@ -63,4 +68,6 @@ test("fallback keeps a real campus exploration board visible when AMap is unavai
   assert.match(html, />7位</);
   assert.match(html, /华南理工大学/);
   assert.match(html, /重新连接精确地图/);
+  assert.match(html, /class="paper-art-map/);
+  assert.doesNotMatch(html, /paper-map-layer/);
 });
