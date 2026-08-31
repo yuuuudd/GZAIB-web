@@ -52,6 +52,7 @@ test("province explorer scene summarizes the current public Guangdong directory"
   assert.match(html, /珠三角城市建筑贴纸/);
   assert.match(html, /\/map-art\/landmark-guangzhou\.webp/);
   assert.match(html, /aria-label="进入广州学校网络，12位共建者"/);
+  assert.match(html, /data-layout="red-frame"/);
   assert.doesNotMatch(html, /\/map-art\/landmark-shenzhen\.webp/);
   assert.doesNotMatch(html, /explorer-cloud|explorer-star|explorer-plane/);
 });

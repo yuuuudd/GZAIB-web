@@ -224,6 +224,7 @@ a { color: inherit; }
 .pearl-delta-landmarks { position:absolute; inset:0; }
 .landmark-sticker { position:absolute; height:auto; filter:drop-shadow(0 9px 9px rgba(26,69,90,.22)); transform-origin:50% 100%; }
 .landmark-hotspot { position:absolute; top:48%; left:46%; display:grid; width:14%; min-width:104px; justify-items:center; border:0; padding:0; background:transparent; color:#15325a; font:inherit; cursor:pointer; pointer-events:auto; transform:translate(-50%,-50%); }
+.landmark-hotspot[data-layout="red-frame"] { top:35%; width:9%; min-width:72px; }
 .landmark-hotspot .landmark-sticker { position:relative; width:100%; }
 .landmark-hotspot>span { margin-top:-.35rem; border:3px solid #fff; border-radius:999px; padding:.36rem .65rem; background:#fffdf5; font-size:.72rem; font-weight:900; white-space:nowrap; box-shadow:0 7px 0 rgba(41,85,138,.12),0 12px 20px rgba(34,74,116,.15); }
 .landmark-hotspot>span b { color:#e95f20; }
@@ -277,6 +278,7 @@ a { color: inherit; }
   .campus-explorer-prompt { left:.75rem; bottom:.65rem; max-width:calc(100% - 1.5rem); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .paper-art-map { inset:6% 2% 11%; }.paper-art-map.is-city { inset:5% 0 10%; }
   .landmark-hotspot { top:51%; left:50%; width:22%; min-width:86px; }
+  .landmark-hotspot[data-layout="red-frame"] { top:42%; width:16%; min-width:72px; }
   .landmark-hotspot>span { font-size:.62rem; }
   .landmark-guangzhou-city { top:49%; left:46%; transform:scale(1.2); }
   .semantic-pin-count { width:54px; height:54px; font-size:12px; }.semantic-pin-tip{top:41px}.semantic-pin-label{top:62px}

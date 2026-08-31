@@ -33,6 +33,7 @@ export function CampusExplorerScene({ cities, level, activeCity, onSelectCity }:
         <div className="pearl-delta-landmarks" role="img" aria-label="珠三角城市建筑贴纸">
           {level === "province" ? <button
             className="landmark-hotspot landmark-guangzhou-hotspot"
+            data-layout="red-frame"
             type="button"
             aria-label={`进入广州学校网络，${guangzhou?.memberCount ?? 0}位共建者`}
             onClick={() => onSelectCity?.("广州")}
