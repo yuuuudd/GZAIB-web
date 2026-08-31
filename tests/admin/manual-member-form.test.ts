@@ -16,3 +16,14 @@ test("manual member form provides an in-place school search rather than requirin
   const html = renderToStaticMarkup(createElement(ManualMemberForm, { schools: [], amapKey: "test-key" }));
   assert.match(html, /搜索高德学校/);
 });
+
+test("manual member form constrains skills and roles to values accepted by the API", () => {
+  const html = renderToStaticMarkup(createElement(ManualMemberForm, { schools: [] }));
+
+  assert.match(html, /type="checkbox" name="skills" value="AI应用"/);
+  assert.match(html, /type="checkbox" name="skills" value="机器学习"/);
+  assert.match(html, /type="checkbox" name="roles" value="活动共建者"/);
+  assert.match(html, /type="checkbox" name="roles" value="校园连接者"/);
+  assert.doesNotMatch(html, /<input name="skills"/);
+  assert.doesNotMatch(html, /<input name="roles"/);
+});
