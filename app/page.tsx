@@ -17,7 +17,7 @@ export default function Home() {
       <section className="brand-hero" id="top" aria-labelledby="hero-title">
         <div className="hero-glow hero-glow-blue" aria-hidden="true" /><div className="hero-glow hero-glow-orange" aria-hidden="true" />
         <p className="brand-eyebrow">广东高校 · 青年共建网络</p>
-        <h1 id="hero-title">让广东每一所高校，<br />都亮起一束<span>共建的光</span>。</h1>
+        <h1 id="hero-title"><span className="hero-title-line">让广东每一所高校，</span><span className="hero-title-line">都亮起一束<span className="hero-title-accent">共建的光</span>。</span></h1>
         <p className="brand-intro">看见彼此，连接不同学校、不同城市里愿意分享、愿意行动的年轻人。</p>
         <div className="brand-hero-actions"><a className="brand-primary-action" href="/apply">申请点亮我的头像 <span>→</span></a><a className="brand-secondary-action" href="#map">看看谁已加入 <span>↓</span></a></div>
       </section>

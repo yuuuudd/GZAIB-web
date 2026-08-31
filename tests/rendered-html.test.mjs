@@ -30,7 +30,8 @@ test("home page renders the clean hero with final punctuation and no duplicate h
   assert.match(html, /广州AI共创社/);
   assert.match(html, /让广东每一所高校/);
   assert.match(html, /申请点亮我的头像/);
-  assert.match(html, /共建的光<\/span>。<\/h1>/);
+  assert.match(html, /共建的光<\/span>。<\/span><\/h1>/);
+  assert.equal((html.match(/class="hero-title-line"/g) ?? []).length, 2);
   assert.doesNotMatch(html, /class="brand-header-action" href="\/apply"/);
   assert.doesNotMatch(html, /仅展示审核通过且本人选择公开的信息，不采集个人实时位置/);
   assert.match(html, /探索高校能量，发现同频伙伴/);
