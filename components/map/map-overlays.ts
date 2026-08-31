@@ -1,11 +1,22 @@
 import type { DirectorySchool } from "../../features/directory/service";
-import type { MapCitySummary } from "../../features/map/semantic-map";
+import { GUANGDONG_CENTER, type MapCitySummary, type MapLevel } from "../../features/map/semantic-map";
 
 export type MarkerPresentation = {
   position: [number, number];
   anchor: "bottom-center" | "center";
   title: string;
   content: string;
+};
+
+export type RoutePresentation = {
+  path: [[number, number], [number, number]];
+  strokeColor: string;
+  strokeWeight: number;
+  strokeOpacity: number;
+  strokeStyle: "dashed";
+  lineJoin: "round";
+  lineCap: "round";
+  zIndex: number;
 };
 
 function escapeHtml(value: string): string {
@@ -35,4 +46,24 @@ export function cityMarkerPresentation(city: MapCitySummary, active: boolean): M
     title: `${city.city}，${city.memberCount} 位共建者，${city.schoolCount} 所学校`,
     content: `<div class="semantic-city-marker${active ? " is-active" : ""}"><strong>${name}</strong><span>${city.memberCount} 位共建者 · ${city.schoolCount} 所学校</span></div>`,
   };
+}
+
+export function collaborationRoutePresentations(level: MapLevel, cities: MapCitySummary[], activeCity: string): RoutePresentation[] {
+  const start = level === "province"
+    ? GUANGDONG_CENTER
+    : cities.find((city) => city.city === activeCity)?.center;
+  if (!start) return [];
+  const destinations = level === "province"
+    ? cities.map((city) => city.center)
+    : cities.find((city) => city.city === activeCity)?.schools.map((school) => ({ lng: school.lng, lat: school.lat })) ?? [];
+  return destinations.map((destination) => ({
+    path: [[start.lng, start.lat], [destination.lng, destination.lat]],
+    strokeColor: "#fff3a6",
+    strokeWeight: 3,
+    strokeOpacity: 0.92,
+    strokeStyle: "dashed",
+    lineJoin: "round",
+    lineCap: "round",
+    zIndex: 14,
+  }));
 }

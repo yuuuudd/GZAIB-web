@@ -11,7 +11,8 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import type { AmapDistrict, AmapMap, AmapNamespace, AmapOverlay } from "./AmapLoader";
-import { cityMarkerPresentation, schoolMarkerPresentation } from "./map-overlays";
+import { CampusExplorerScene } from "./CampusExplorerScene";
+import { cityMarkerPresentation, collaborationRoutePresentations, schoolMarkerPresentation } from "./map-overlays";
 
 const GUANGDONG_CITIES = [
   "广州", "深圳", "珠海", "汕头", "佛山", "韶关", "湛江", "肇庆", "江门", "茂名", "惠州",
@@ -41,11 +42,11 @@ function polygonsForDistrict(amap: AmapNamespace, district: AmapDistrict | undef
   if (!district?.boundaries?.length) return [];
   return district.boundaries.map((path) => new amap.Polygon({
     path,
-    strokeColor: active ? "#1e4ed8" : "#7691b9",
-    strokeWeight: active ? 2.2 : 1.15,
-    strokeOpacity: active ? 0.82 : 0.58,
-    fillColor: active && provinceLevel ? "#a9c0ff" : "#dce7f7",
-    fillOpacity: active && provinceLevel ? 0.12 : 0.025,
+    strokeColor: active ? "#f3a34f" : "#96bd7e",
+    strokeWeight: active ? 3.2 : 1.7,
+    strokeOpacity: active ? 0.95 : 0.78,
+    fillColor: active ? "#f8d785" : "#dceebd",
+    fillOpacity: active && provinceLevel ? 0.72 : provinceLevel ? 0.48 : 0.58,
     bubble: true,
     zIndex: active ? 12 : 8,
   }));
@@ -141,6 +142,9 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
           next.push(marker);
         }
       }
+      const routes = collaborationRoutePresentations(level, cities, activeCity)
+        .map((presentation) => new amap.Polyline(presentation));
+      next.unshift(...routes);
       if (generation !== generationRef.current) return;
       overlaysRef.current = next;
       if (next.length) map.add(next);
@@ -153,6 +157,7 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
   }, [activeCity, amap, cities, level, onSelectCity, onSelectSchool, selectedId]);
 
   return <div className="semantic-map-shell">
+    <CampusExplorerScene cities={cities} level={level} activeCity={activeCity} />
     <div ref={containerRef} className="amap-canvas" aria-label={`${level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`}`} />
     <div className="map-live-label">
       <span>{level === "province" ? "GD" : activeCity.slice(0, 1)}</span>

@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { DirectorySchool } from "../../features/directory/service";
 import type { MapCitySummary } from "../../features/map/semantic-map";
-import { cityMarkerPresentation, schoolMarkerPresentation } from "../../components/map/map-overlays";
+import {
+  cityMarkerPresentation,
+  collaborationRoutePresentations,
+  schoolMarkerPresentation,
+} from "../../components/map/map-overlays";
 
 const school: DirectorySchool = {
   id: "sysu",
@@ -48,4 +52,27 @@ test("city marker summarizes members and schools without exposing school details
   assert.match(presentation.content, />广州</);
   assert.match(presentation.content, /18 位共建者 · 4 所学校/);
   assert.doesNotMatch(presentation.content, /中山大学/);
+});
+
+test("city exploration routes connect the live city center to each school coordinate", () => {
+  const routes = collaborationRoutePresentations(
+    "city",
+    [{
+      city: "广州",
+      memberCount: 12,
+      schoolCount: 2,
+      center: { lng: 113.2644, lat: 23.1291 },
+      schools: [
+        school,
+        { ...school, id: "scut", name: "华南理工大学", lng: 113.344, lat: 23.157, memberCount: 8 },
+      ],
+    }],
+    "广州",
+  );
+
+  assert.deepEqual(routes.map((route) => route.path), [
+    [[113.2644, 23.1291], [113.298, 23.096]],
+    [[113.2644, 23.1291], [113.344, 23.157]],
+  ]);
+  assert.ok(routes.every((route) => route.strokeStyle === "dashed"));
 });

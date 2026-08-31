@@ -12,6 +12,7 @@ import {
 import { DirectoryFilters } from "../directory/DirectoryFilters";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
 import { AmapLoader } from "./AmapLoader";
+import { CampusMapFallback } from "./CampusExplorerScene";
 import { CityDirectoryFallback } from "./CityDirectoryFallback";
 import { SemanticMapCanvas } from "./SemanticMapCanvas";
 
@@ -91,16 +92,17 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
   return (
     <section className="builder-map-section" id="map" aria-labelledby="map-title">
       <div className="map-heading-row">
-        <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">从一所学校开始，看见城市里的共建网络</h2></div>
-        <p>默认聚焦广州，缩小查看广东城市概况。只展示学校坐标，不采集成员实时位置。</p>
+        <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
+        <p>像逛校园一样探索广东高校圈。每一枚图钉，都是正在发生的共建故事。</p>
       </div>
-      <DirectoryFilters query={query} onChange={setQuery} />
-      <nav className="semantic-level-switcher" aria-label="共建地图层级">
-        <button type="button" aria-pressed={level === "province"} onClick={() => changeLevel("province")}>广东城市概览</button>
-        <span aria-hidden="true">/</span>
-        <button type="button" aria-pressed={level === "city"} onClick={() => selectCity(activeCity)}>{activeCity}学校网络</button>
-        <small>{level === "province" ? "点击城市进入学校层" : `${activeSchools.length} 所学校 · 图钉内显示成员数`}</small>
-      </nav>
+      <div className="map-explorer-controls">
+        <DirectoryFilters query={query} onChange={setQuery} />
+        <nav className="semantic-level-switcher" aria-label="共建地图层级">
+          <button type="button" aria-pressed={level === "province"} onClick={() => changeLevel("province")}><span aria-hidden="true">⌘</span> 广东城市概览</button>
+          <button type="button" aria-pressed={level === "city"} onClick={() => selectCity(activeCity)}><span aria-hidden="true">✦</span> {activeCity}学校网络</button>
+          <small>{level === "province" ? "点击城市继续探索" : `${activeSchools.length} 所学校正在发光`}</small>
+        </nav>
+      </div>
       {notice ? <p className="directory-notice" role="status">{notice}</p> : null}
       <div className={`map-stage ${selected ? "map-stage-drawer-open" : ""}`} aria-busy={loading}>
         <AmapLoader apiKey={amapKey}>
@@ -133,13 +135,13 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
           ) : state === "idle" || state === "loading" ? (
             <div className="map-loading" role="status"><span /><strong>正在连接学校地图</strong><small>默认打开广州学校网络</small></div>
           ) : (
-            <div className="map-retry-state">
-              <div className="map-retry-copy">
-                <p className="map-section-kicker">轻量目录模式</p>
-                <strong>地图暂时没有连上</strong>
-                <p>城市和学校目录仍可完整浏览，点击学校同样能查看公开成员。</p>
-                <button type="button" onClick={() => { setCanvasFailed(false); retry?.(); }}>重新加载地图</button>
-              </div>
+            <div className="map-retry-state campus-map-retry">
+              <CampusMapFallback
+                cities={cities}
+                level={level}
+                activeCity={activeCity}
+                onRetry={() => { setCanvasFailed(false); retry?.(); }}
+              />
               <CityDirectoryFallback
                 cities={cities}
                 activeCity={activeCity}
@@ -148,7 +150,6 @@ export function BuilderMap({ amapKey }: { amapKey?: string }) {
                 onSelectCity={selectCity}
                 onBackToProvince={() => changeLevel("province")}
                 onSelectSchool={selectSchool}
-                prominent
               />
             </div>
           )}
