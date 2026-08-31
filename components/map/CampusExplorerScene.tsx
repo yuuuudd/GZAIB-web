@@ -24,7 +24,7 @@ export function CampusExplorerScene({ cities, level, activeCity, onSelectCity }:
       {isGuangzhouCity ? <div className="guangzhou-region-art" role="img" aria-label="广州高校片区纸雕地图">
         <img
           className="guangzhou-region-art-image"
-          src="/map-art/guangzhou-university-regions-v1.png"
+          src="/map-art/guangzhou-university-regions-cutout-v1.png"
           alt=""
           width={1536}
           height={1024}
@@ -33,7 +33,7 @@ export function CampusExplorerScene({ cities, level, activeCity, onSelectCity }:
       </div> : <div className={`paper-art-map is-${level}`}>
         <img
           className="paper-art-map-image"
-          src="/map-art/guangdong-paper-clay.webp"
+          src="/map-art/guangdong-paper-clay-cutout-v1.png"
           alt=""
           width={1536}
           height={1024}

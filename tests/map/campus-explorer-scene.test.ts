@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
@@ -25,6 +27,8 @@ const cities: MapCitySummary[] = [
   },
 ];
 
+const globalCss = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+
 test("city explorer scene turns live directory totals into a playful accessible energy card", () => {
   const html = renderToStaticMarkup(createElement(CampusExplorerScene, {
     cities,
@@ -48,7 +52,7 @@ test("province explorer scene summarizes the current public Guangdong directory"
 
   assert.match(html, /广东已有17位伙伴点亮3所学校/);
   assert.match(html, /探索城市，看看高校能量在哪里汇聚/);
-  assert.match(html, /\/map-art\/guangdong-paper-clay\.webp/);
+  assert.match(html, /\/map-art\/guangdong-paper-clay-cutout-v1\.png/);
   assert.match(html, /珠三角城市建筑贴纸/);
   assert.match(html, /\/map-art\/landmark-guangzhou\.webp/);
   assert.match(html, /aria-label="进入广州学校网络，12位共建者"/);
@@ -81,13 +85,20 @@ test("Guangzhou uses the dedicated university-town artwork and keeps school pins
     onSelectSchool: () => undefined,
   } as Parameters<typeof CampusMapFallback>[0]));
 
-  assert.match(guangzhou, /guangzhou-university-regions-v1\.png/);
+  assert.match(guangzhou, /guangzhou-university-regions-cutout-v1\.png/);
   assert.match(guangzhou, /aria-label="广州高校片区纸雕地图"/);
   assert.match(guangzhou, /中山大学/);
   assert.match(guangzhou, /华南理工大学/);
   assert.match(guangzhou, /style="left:46%;top:56%"[^>]*title="中山大学/);
   assert.match(guangzhou, /style="left:68%;top:31%"[^>]*title="华南理工大学/);
   assert.doesNotMatch(guangzhou, /amap-canvas|guangdong-paper-clay\.webp|landmark-guangzhou\.webp/);
+});
+
+test("paper maps float directly on the page without a framed canvas", () => {
+  assert.match(globalCss, /\.map-stage \{[^}]*border:0;[^}]*border-radius:0;[^}]*background:transparent;[^}]*box-shadow:none;/);
+  assert.match(globalCss, /\.map-live \{[^}]*background:transparent;/);
+  assert.match(globalCss, /\.campus-fallback-map \{[^}]*background:transparent;/);
+  assert.match(globalCss, /\.guangzhou-region-art \{[^}]*background:transparent;/);
 });
 
 test("city fallback uses the generated blue and orange marker artwork", () => {

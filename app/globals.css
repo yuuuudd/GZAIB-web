@@ -209,18 +209,17 @@ a { color: inherit; }
 .map-overview-row .map-stats>div:last-child { border-right:0; }
 .map-overview-row .map-stats>div span { width:32px; height:32px; }
 .map-overview-row .map-stats>div strong { font-size:1.15rem; }
-.map-stage { min-height:500px; border:4px solid #fffdf6; border-radius:38px; background:#cceeff; box-shadow:0 28px 70px rgba(24,66,103,.17),0 0 0 1px #d8e4df; }
+.map-stage { min-height:500px; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .map-live-layout { position:relative; display:block; min-height:500px; }
-.map-live { min-height:500px; background:radial-gradient(circle at 42% 40%,#e5f8ff 0,#bfe8fb 58%,#9dd7f2 100%); }
-.map-live::before { content:""; position:absolute; z-index:0; inset:0; background:repeating-radial-gradient(ellipse at 50% 115%,transparent 0 34px,rgba(255,255,255,.28) 35px 37px,transparent 38px 68px); pointer-events:none; }
-.map-live::after { z-index:2; box-shadow:inset 0 0 80px rgba(255,253,244,.52); }
+.map-live { min-height:500px; background:transparent; }
+.map-live::before,.map-live::after { content:none; }
 .semantic-map-shell { background:radial-gradient(circle at 48% 42%,#e8f8ff 0,#bee8fb 66%,#96d2ef 100%); }
 .amap-canvas { z-index:1; }
 .semantic-map-shell .amap-layer { filter:saturate(.72) contrast(.94); }
 .campus-explorer-art { position:absolute; z-index:2; inset:0; overflow:hidden; pointer-events:none; }
 .paper-art-map { position:absolute; inset:4% 22% 5% 3%; filter:drop-shadow(0 28px 34px rgba(20,72,99,.24)); }
 .paper-art-map-image { width:100%; height:100%; object-fit:contain; opacity:1; filter:none; }
-.guangzhou-region-art { position:absolute; inset:0 320px 0 0; overflow:hidden; background:#a8e5f4; }
+.guangzhou-region-art { position:absolute; inset:0 320px 0 0; overflow:hidden; background:transparent; }
 .guangzhou-region-art-image { display:block; width:100%; height:100%; object-fit:cover; object-position:center; }
 .pearl-delta-landmarks { position:absolute; inset:0; }
 .landmark-sticker { position:absolute; height:auto; filter:drop-shadow(0 9px 9px rgba(26,69,90,.22)); transform-origin:50% 100%; }
@@ -286,7 +285,7 @@ a { color: inherit; }
 }
 
 .campus-map-retry { position:relative; display:block; min-height:620px; background:transparent; }
-.campus-fallback-map { position:relative; min-height:620px; overflow:hidden; background:radial-gradient(circle at 46% 36%,#e9fbff,#a9ddf5 72%,#79bddd); }
+.campus-fallback-map { position:relative; min-height:620px; overflow:hidden; background:transparent; }
 .fallback-map-points { position:absolute; z-index:3; inset:7% 22% 8% 3%; pointer-events:none; }
 .fallback-school-pin { position:absolute; display:grid; justify-items:center; border:0; padding:0; background:transparent; font:inherit; cursor:pointer; filter:drop-shadow(0 8px 0 rgba(40,82,137,.12)) drop-shadow(0 13px 10px rgba(31,71,124,.2)); pointer-events:auto; transform:translate(-50%,-50%); }
 .fallback-school-pin:focus-visible { outline:4px solid #173fae; outline-offset:5px; border-radius:18px; }
