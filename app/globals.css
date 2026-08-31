@@ -193,7 +193,8 @@ a { color: inherit; }
 /* Youthful campus-explorer skin: AMap remains the coordinate engine, not the visible product language. */
 .builder-map-section { position:relative; }
 .builder-map-section::before { content:""; position:absolute; z-index:-1; inset:-3.5rem -7vw -2rem; background:radial-gradient(circle at 12% 16%,rgba(255,206,92,.16),transparent 18%),radial-gradient(circle at 88% 60%,rgba(72,198,183,.13),transparent 22%); pointer-events:none; }
-.map-heading-row h2 { max-width:690px; color:#12254b; font-size:clamp(2.35rem,4.5vw,4.2rem); line-height:1.02; letter-spacing:-.075em; }
+.map-heading-row h2 { max-width:none; color:#12254b; font-family:var(--font-source-han-serif),"Source Han Serif SC","Noto Serif CJK SC",serif; font-size:clamp(2.2rem,3.6vw,3.6rem); font-weight:600; line-height:1.12; letter-spacing:.02em; white-space:nowrap; }
+@media (max-width:720px) { .map-heading-row h2 { white-space:normal; } }
 .map-heading-row>p { max-width:350px; color:#63718a; font-size:.9rem; }
 .map-section-kicker { display:inline-flex; align-items:center; gap:.4rem; color:#f07832; letter-spacing:.1em; }
 .map-section-kicker::before { content:"✦"; color:#f6ba27; font-size:1rem; }
