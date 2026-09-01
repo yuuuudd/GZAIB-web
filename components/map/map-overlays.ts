@@ -35,6 +35,17 @@ export type DistrictPolygonPresentation = {
   zIndex: number;
 };
 
+export type CampusHighlightPresentation = {
+  center: [number, number];
+  radius: 420;
+  strokeColor: string;
+  strokeWeight: 3;
+  strokeOpacity: 0.9;
+  fillColor: string;
+  fillOpacity: number;
+  zIndex: 10;
+};
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -61,6 +72,20 @@ export function districtPolygonPresentation(active: boolean, provinceLevel: bool
     fillOpacity: provinceLevel ? active ? 0.72 : 0.48 : 0.08,
     bubble: true,
     zIndex: active ? 12 : 8,
+  };
+}
+
+export function campusHighlightPresentation(school: DirectorySchool, selected: boolean): CampusHighlightPresentation {
+  // ponytail: fixed campus halo; replace with stored campus polygons when exact boundaries are available.
+  return {
+    center: [school.lng, school.lat],
+    radius: 420,
+    strokeColor: selected ? "#f07832" : "#2465e8",
+    strokeWeight: 3,
+    strokeOpacity: 0.9,
+    fillColor: selected ? "#ffb36f" : "#72a7ff",
+    fillOpacity: selected ? 0.24 : 0.16,
+    zIndex: 10,
   };
 }
 

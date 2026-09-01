@@ -3,6 +3,7 @@ import test from "node:test";
 import type { DirectorySchool } from "../../features/directory/service";
 import type { MapCitySummary } from "../../features/map/semantic-map";
 import {
+  campusHighlightPresentation,
   cityMarkerPresentation,
   collaborationRoutePresentations,
   cityBasemapPresentation,
@@ -39,6 +40,14 @@ test("selected school marker exposes one warm highlighted state", () => {
   assert.match(presentation.content, /semantic-school-marker is-selected/);
   assert.match(presentation.content, /<img class="semantic-pin-art" src="\/map-art\/school-pin-orange-v1\.png" alt=""/);
   assert.equal(presentation.title, "中山大学 <南校园>，12 位共建者");
+});
+
+test("school highlight is centered on the exact campus point", () => {
+  const highlight = campusHighlightPresentation(school, false);
+
+  assert.deepEqual(highlight.center, [113.298, 23.096]);
+  assert.equal(highlight.radius, 420);
+  assert.ok(highlight.fillOpacity > 0);
 });
 
 test("city marker summarizes members and schools without exposing school details", () => {

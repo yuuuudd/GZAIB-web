@@ -12,6 +12,7 @@ import {
 } from "../../features/map/semantic-map";
 import type { AmapDistrict, AmapMap, AmapNamespace, AmapOverlay } from "./AmapLoader";
 import {
+  campusHighlightPresentation,
   cityBasemapPresentation,
   cityMarkerPresentation,
   collaborationRoutePresentations,
@@ -115,36 +116,44 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
     overlaysRef.current = [];
 
     const render = async () => {
-      const next: AmapOverlay[] = [];
+      const immediate: AmapOverlay[] = [];
       if (level === "province") {
-        const districts = await Promise.all(GUANGDONG_CITIES.map(async (city) => ({ city, district: await loadDistrict(amap, city) })));
-        if (generation !== generationRef.current) return;
-        for (const { city, district } of districts) {
-          next.push(...polygonsForDistrict(amap, district, city === activeCity, true));
-        }
         for (const city of cities) {
           const presentation = cityMarkerPresentation(city, city.city === activeCity);
           const marker = new amap.Marker(presentation);
           marker.on("click", () => onSelectCity(city.city));
-          next.push(marker);
+          immediate.push(marker);
         }
       } else {
-        const district = await loadDistrict(amap, activeCity);
-        if (generation !== generationRef.current) return;
-        next.push(...polygonsForDistrict(amap, district, true, false));
         for (const school of schoolsForCity(cities, activeCity)) {
+          immediate.push(new amap.Circle(campusHighlightPresentation(school, school.id === selectedId)));
           const presentation = schoolMarkerPresentation(school, school.id === selectedId);
           const marker = new amap.Marker(presentation);
           marker.on("click", () => onSelectSchool(school));
-          next.push(marker);
+          immediate.push(marker);
         }
       }
       const routes = collaborationRoutePresentations(level, cities, activeCity)
         .map((presentation) => new amap.Polyline(presentation));
-      next.unshift(...routes);
+      immediate.unshift(...routes);
       if (generation !== generationRef.current) return;
-      overlaysRef.current = next;
-      if (next.length) map.add(next);
+      overlaysRef.current = immediate;
+      if (immediate.length) map.add(immediate);
+
+      if (level === "province") {
+        const litCities = new Set(cities.map((city) => city.city));
+        await Promise.all(GUANGDONG_CITIES.map(async (city) => {
+          const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), litCities.has(city), true);
+          if (generation !== generationRef.current || !outlines.length) return;
+          overlaysRef.current.push(...outlines);
+          map.add(outlines);
+        }));
+      } else {
+        const outlines = polygonsForDistrict(amap, await loadDistrict(amap, activeCity), true, false);
+        if (generation !== generationRef.current || !outlines.length) return;
+        overlaysRef.current.push(...outlines);
+        map.add(outlines);
+      }
     };
 
     void render().catch(() => {

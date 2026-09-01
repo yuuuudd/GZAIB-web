@@ -10,10 +10,11 @@ export type AmapNamespace = {
   MarkerCluster: new (map: AmapMap, markers: AmapMarker[], options?: Record<string, unknown>) => { setMap(map: null): void };
   PlaceSearch: new (options: Record<string, unknown>) => { search(keyword: string, callback: (status: string, result: unknown) => void): void };
   DistrictSearch: new (options: Record<string, unknown>) => AmapDistrictSearch;
+  Circle: new (options: Record<string, unknown>) => AmapCircle;
   Polygon: new (options: Record<string, unknown>) => AmapPolygon;
   Polyline: new (options: Record<string, unknown>) => AmapPolyline;
 };
-export type AmapOverlay = AmapMarker | AmapPolygon | AmapPolyline;
+export type AmapOverlay = AmapMarker | AmapCircle | AmapPolygon | AmapPolyline;
 export type AmapMap = {
   destroy(): void;
   add(overlays: AmapOverlay[]): void;
@@ -29,6 +30,7 @@ export type AmapMarker = {
   setMap(map: AmapMap | null): void;
 };
 export type AmapPolygon = { setMap(map: AmapMap | null): void };
+export type AmapCircle = { setMap(map: AmapMap | null): void };
 export type AmapPolyline = { setMap(map: AmapMap | null): void };
 export type AmapDistrict = {
   name?: string;
