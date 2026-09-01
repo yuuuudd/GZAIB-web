@@ -34,7 +34,16 @@ export function CityDirectoryFallback({ cities, activeCity, level, selectedId, o
     </section>;
   }
 
-  const place = level === "country" ? "全国" : "广东";
+  if (level === "country") {
+    const memberCount = cities.reduce((sum, city) => sum + city.memberCount, 0);
+    const schoolCount = cities.reduce((sum, city) => sum + city.schoolCount, 0);
+    return <section className={`city-directory city-directory-overview ${prominent ? "city-directory-prominent" : ""}`} aria-labelledby="city-directory-title">
+      <div className="school-fallback-heading"><div><p className="map-section-kicker">全国省份网络</p><h2 id="city-directory-title">全国共建概览</h2></div><span>{cities.length ? 1 : 0} 个省份</span></div>
+      {cities.length ? <ul className="city-directory-list"><li><button type="button" onClick={onBackToProvince}><span className="city-directory-mark" aria-hidden="true">粤</span><span><strong>广东</strong><small>{memberCount} 位共建者 · {schoolCount} 所学校 · {cities.length} 座城市</small></span><b aria-hidden="true">→</b></button></li></ul> : <div className="directory-empty"><strong>全国共建地图等待第一个省份</strong><p>提交申请后，点亮将从一所学校开始。</p></div>}
+    </section>;
+  }
+
+  const place = "广东";
   return <section className={`city-directory city-directory-overview ${prominent ? "city-directory-prominent" : ""}`} aria-labelledby="city-directory-title">
     <div className="school-fallback-heading">
       <div>

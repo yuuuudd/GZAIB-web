@@ -18,18 +18,19 @@ import {
   cityMarkerPresentation,
   collaborationRoutePresentations,
   districtPolygonPresentation,
+  provinceMarkerPresentation,
   schoolMarkerPresentation,
 } from "./map-overlays";
 
 const districtCache = new Map<string, Promise<AmapDistrict | undefined>>();
 
-function loadDistrict(amap: AmapNamespace, city: string): Promise<AmapDistrict | undefined> {
-  const key = `city:${city}`;
+function loadDistrict(amap: AmapNamespace, area: string, level: "city" | "province" = "city"): Promise<AmapDistrict | undefined> {
+  const key = `${level}:${area}`;
   const cached = districtCache.get(key);
   if (cached) return cached;
   const request = new Promise<AmapDistrict | undefined>((resolve) => {
-    const search = new amap.DistrictSearch({ level: "city", subdistrict: 0, extensions: "all" });
-    search.search(`${city}市`, (status, result) => {
+    const search = new amap.DistrictSearch({ level, subdistrict: 0, extensions: "all" });
+    search.search(`${area}${level === "province" ? "省" : "市"}`, (status, result) => {
       resolve(status === "complete" && typeof result !== "string" ? result.districtList?.[0] : undefined);
     });
   }).catch((error) => {
@@ -115,7 +116,16 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
 
     const render = async () => {
       const immediate: AmapOverlay[] = [];
-      if (level !== "city") {
+      if (level === "country" && cities.length) {
+        // ponytail: the public directory is Guangdong-only until school records gain a province field.
+        const marker = new amap.Marker(provinceMarkerPresentation({
+          memberCount: cities.reduce((sum, city) => sum + city.memberCount, 0),
+          schoolCount: cities.reduce((sum, city) => sum + city.schoolCount, 0),
+          cityCount: cities.length,
+        }));
+        marker.on("click", () => onLevelChange("province"));
+        immediate.push(marker);
+      } else if (level === "province") {
         for (const city of cities) {
           const presentation = cityMarkerPresentation(city, city.city === activeCity);
           const marker = new amap.Marker(presentation);
@@ -138,7 +148,12 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
       overlaysRef.current = immediate;
       if (immediate.length) map.add(immediate);
 
-      if (level !== "city") {
+      if (level === "country" && cities.length) {
+        const outlines = polygonsForDistrict(amap, await loadDistrict(amap, "广东", "province"), true, true);
+        if (generation !== generationRef.current || !outlines.length) return;
+        overlaysRef.current.push(...outlines);
+        map.add(outlines);
+      } else if (level === "province") {
         await Promise.all(cities.map(async ({ city }) => {
           const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), true, true);
           if (generation !== generationRef.current || !outlines.length) return;
@@ -157,14 +172,14 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
       if (generation === generationRef.current) overlaysRef.current = [];
     });
     return () => { generationRef.current += 1; };
-  }, [activeCity, amap, cities, level, onSelectCity, onSelectSchool, selectedId]);
+  }, [activeCity, amap, cities, level, onLevelChange, onSelectCity, onSelectSchool, selectedId]);
 
   return <div className="semantic-map-shell">
-    <div ref={containerRef} className="amap-canvas" aria-label={level === "country" ? "全国城市共建概览" : level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`} />
+    <div ref={containerRef} className="amap-canvas" aria-label={level === "country" ? "全国省份共建概览" : level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`} />
     <div className="map-live-label">
       <span>{level === "country" ? "CN" : level === "province" ? "GD" : activeCity.slice(0, 1)}</span>
       <strong>{level === "country" ? "全国" : level === "province" ? "广东" : activeCity}</strong>
-      <small>{level !== "city" ? "缩放或点击城市进入学校网络" : "图钉内为成员数，点击查看学校"}</small>
+      <small>{level === "country" ? "点击省份进入城市网络" : level === "province" ? "缩放或点击城市进入学校网络" : "图钉内为成员数，点击查看学校"}</small>
     </div>
   </div>;
 }

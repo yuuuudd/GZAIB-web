@@ -111,6 +111,15 @@ export function cityMarkerPresentation(city: MapCitySummary, active: boolean): M
   };
 }
 
+export function provinceMarkerPresentation({ memberCount, schoolCount, cityCount }: { memberCount: number; schoolCount: number; cityCount: number }): MarkerPresentation {
+  return {
+    position: [GUANGDONG_CENTER.lng, GUANGDONG_CENTER.lat],
+    anchor: "bottom-center",
+    title: `广东，${memberCount} 位共建者，${schoolCount} 所学校，${cityCount} 座城市`,
+    content: `<div class="semantic-school-marker semantic-city-pin is-selected"><span class="semantic-pin-visual"><img class="semantic-pin-art" src="/map-art/school-pin-orange-v1.png" alt="" /><span class="semantic-pin-count">${memberCount}位</span></span><span class="semantic-pin-label">广东 · ${cityCount}城</span></div>`,
+  };
+}
+
 export function collaborationRoutePresentations(level: MapLevel, cities: MapCitySummary[], activeCity: string): RoutePresentation[] {
   const start = level === "province"
     ? GUANGDONG_CENTER

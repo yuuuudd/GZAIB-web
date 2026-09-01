@@ -118,7 +118,11 @@ test("home page renders the clean hero with final punctuation and no duplicate h
   assert.doesNotMatch(html, /class="brand-header-action" href="\/apply"/);
   assert.doesNotMatch(html, /仅展示审核通过且本人选择公开的信息，不采集个人实时位置/);
   assert.match(html, /探索高校能量，发现同频伙伴/);
-  assert.match(html, /像逛校园一样探索广东高校圈/);
+  assert.match(html, /青年共建 · 连接创造力/);
+  assert.match(html, /让愿意分享的人被看见，让想做的事找到同行者，让高校里的创造力彼此连接/);
+  assert.match(html, /高校共建者 · 行动连接地图/);
+  assert.match(html, /每一枚图钉，不只是一个地点，也是一份愿意分享、愿意行动的共建回应/);
+  assert.match(html, /看见彼此，连接行动/);
   assert.match(html, /aria-label="共建地图层级"/);
   assert.doesNotMatch(html, /aria-label="切换地图风格"|>彩绘版<\/button>|>标准版<\/button>/);
   assert.match(html, />广州<\/button>/);

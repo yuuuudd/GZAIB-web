@@ -42,7 +42,7 @@ test("province fallback presents city totals as drill-down controls", () => {
   assert.match(html, /深圳/);
 });
 
-test("country fallback presents the lit national city network", () => {
+test("country fallback presents Guangdong as province data", () => {
   const html = renderToStaticMarkup(createElement(CityDirectoryFallback, {
     cities,
     activeCity: "广州",
@@ -52,10 +52,11 @@ test("country fallback presents the lit national city network", () => {
     onSelectSchool: () => undefined,
   }));
 
-  assert.match(html, /全国城市网络/);
+  assert.match(html, /全国省份网络/);
   assert.match(html, /全国共建概览/);
-  assert.match(html, /广州/);
-  assert.match(html, /深圳/);
+  assert.match(html, /广东/);
+  assert.match(html, /16 位共建者 · 3 所学校 · 2 座城市/);
+  assert.doesNotMatch(html, />广州<|>深圳</);
 });
 
 test("city fallback keeps a Guangdong back control and presents full school names", () => {

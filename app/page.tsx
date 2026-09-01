@@ -3,7 +3,7 @@ import { PrimaryNavigation } from "../components/navigation/PrimaryNavigation";
 import Image from "next/image";
 
 const homeChannels = [
-  { href: "#map", title: "共建地图", subtitle: "点亮高校，连接广东", artwork: "/brand/home-map.webp", tone: "map" },
+  { href: "#map", title: "共建地图", subtitle: "看见彼此，连接行动", artwork: "/brand/home-map.webp", tone: "map" },
   { href: "/communities", title: "AI 社区", subtitle: "连接同频，共创未来", artwork: "/brand/home-community.webp", tone: "community" },
   { href: "/news", title: "AI 资讯", subtitle: "洞察前沿，启发更多", artwork: "/brand/home-news.webp", tone: "news" },
   { href: "/events", title: "活动赛事", subtitle: "发现活动，参与共建", artwork: "/brand/home-events.webp", tone: "events" },
@@ -21,9 +21,9 @@ export default function Home() {
       </header>
       <section className="brand-home-hero" id="top" aria-labelledby="hero-title">
         <div className="brand-home-copy">
-          <p className="brand-eyebrow">广东高校 · 青年共建网络</p>
+          <p className="brand-eyebrow">青年共建 · 连接创造力</p>
           <h1 id="hero-title"><span className="hero-title-line">让广东每一所高校，</span><span className="hero-title-line">都亮起一束<span className="hero-title-accent">共建的光</span>。</span></h1>
-          <p className="brand-intro">看见彼此，连接不同学校、不同城市里愿意分享、愿意行动的年轻人。</p>
+          <p className="brand-intro">让愿意分享的人被看见，让想做的事找到同行者，让高校里的创造力彼此连接。</p>
           <div className="brand-hero-actions">
             <a className="brand-primary-action" href="/apply">申请点亮我的头像 <span>→</span></a>
             <a className="brand-secondary-action" href="#map">探索地图 <span>↓</span></a>

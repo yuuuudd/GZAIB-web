@@ -91,8 +91,8 @@ export function BuilderMap() {
   return (
     <section className="builder-map-section" id="map" aria-labelledby="map-title">
       <div className="map-heading-row">
-        <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
-        <p>像逛校园一样探索广东高校圈。每一枚图钉，都是正在发生的共建故事。</p>
+        <div><p className="map-section-kicker">高校共建者 · 行动连接地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
+        <p>每一枚图钉，不只是一个地点，也是一份愿意分享、愿意行动的共建回应。</p>
       </div>
       <div className="map-overview-row">
         <nav className="semantic-level-switcher" aria-label="共建地图层级">

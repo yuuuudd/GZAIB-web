@@ -28,13 +28,14 @@ async function renderMap(level: "country" | "province" | "city", mapCities = cit
   return { added, districtQueries, views, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
 }
 
-test("country view shows lit city pins and frames all of China", async () => {
-  const beijing = [{ ...cities[0]!, city: "北京", center: { lng: 116.3109, lat: 39.9928 } }];
-  const mounted = await renderMap("country", beijing);
+test("country view shows Guangdong province data and frames all of China", async () => {
+  const mounted = await renderMap("country");
   try {
-    assert.ok(mounted.added.flat().some((overlay) => overlay.constructor.name === "Marker"));
+    const markers = mounted.added.flat().filter((overlay) => overlay.constructor.name === "Marker") as Array<{ options: Record<string, unknown> }>;
+    assert.equal(markers.length, 1);
+    assert.match(String(markers[0]?.options.content), /广东/);
     assert.ok(!mounted.added.flat().some((overlay) => overlay.constructor.name === "Polyline"));
-    assert.deepEqual(mounted.districtQueries, ["北京市"]);
+    assert.deepEqual(mounted.districtQueries, ["广东省"]);
     assert.deepEqual(mounted.views.at(-1), { zoom: 4.3, center: [104.1954, 35.8617] });
   } finally { await mounted.cleanup(); }
 });
