@@ -23,6 +23,23 @@ function assertChannelLink(document, href, text) {
   return link;
 }
 
+test("non-home navigation uses the current horizontal brand logo", async () => {
+  const responses = await Promise.all([
+    renderRoute("/communities", { host: "localhost" }),
+    renderRoute("/news", { host: "localhost" }),
+  ]);
+
+  for (const response of responses) {
+    assert.equal(response.status, 200);
+    const dom = new JSDOM(await response.text());
+    try {
+      assert.ok(dom.window.document.querySelector('a.brand-mark[href="/"] img[src="/brand/gzaib-horizontal.png"]'));
+    } finally {
+      dom.window.close();
+    }
+  }
+});
+
 test("public home and community routes link to the live news and events channels", async () => {
   const [homeResponse, communitiesResponse] = await Promise.all([
     renderRoute("/", { host: "localhost" }),
@@ -31,13 +48,14 @@ test("public home and community routes link to the live news and events channels
   assert.equal(homeResponse.status, 200);
   assert.equal(communitiesResponse.status, 200);
 
-  for (const [response, current] of [
-    [homeResponse, "location"],
+  for (const [response, homeCurrent] of [
+    [homeResponse, "page"],
     [communitiesResponse, null],
   ]) {
     const dom = new JSDOM(await response.text());
     try {
-      assert.equal(assertChannelLink(dom.window.document, "/#map", "共建地图").getAttribute("aria-current"), current);
+      assert.equal(assertChannelLink(dom.window.document, "/", "首页").getAttribute("aria-current"), homeCurrent);
+      assert.equal(assertChannelLink(dom.window.document, "/#map", "共建地图").getAttribute("aria-current"), null);
       assertChannelLink(dom.window.document, "/communities", "AI 社群");
       assertChannelLink(dom.window.document, "/news", "AI 资讯");
       assertChannelLink(dom.window.document, "/events", "活动赛事");

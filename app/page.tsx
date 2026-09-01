@@ -16,7 +16,7 @@ export default function Home() {
         <a className="brand-mark" href="#top" aria-label="广州AI共创社首页">
           <Image src="/brand/gzaib-horizontal.png" alt="广州 AI 共创社 GZAIB" width={276} height={106} priority unoptimized />
         </a>
-        <PrimaryNavigation active="map" />
+        <PrimaryNavigation active="home" />
         <a className="brand-header-action" href="/admin">管理员入口</a>
       </header>
       <section className="brand-home-hero" id="top" aria-labelledby="hero-title">

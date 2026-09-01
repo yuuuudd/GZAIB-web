@@ -1,6 +1,7 @@
-type PrimaryChannel = "map" | "communities" | "news" | "events";
+type PrimaryChannel = "home" | "map" | "communities" | "news" | "events";
 
 const channels: Array<{ id: PrimaryChannel; href: string; label: string }> = [
+  { id: "home", href: "/", label: "首页" },
   { id: "map", href: "/#map", label: "共建地图" },
   { id: "communities", href: "/communities", label: "AI 社群" },
   { id: "news", href: "/news", label: "AI 资讯" },
