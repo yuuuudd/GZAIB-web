@@ -23,15 +23,15 @@ export function NewsEditorial({ items }: { items: NewsItem[] }) {
   const latestItems = filterNews(items.filter((item) => !item.featured), category);
 
   return (
-    <section className="news-editorial" aria-labelledby="news-editorial-title">
-      <p className="content-preview-notice">页面设计预览 · 以下为示例内容</p>
-      <header className="news-editorial-heading">
+    <section className="news-editorial news-directory" aria-labelledby="news-editorial-title">
+      <p className="content-preview-notice content-preview-note">页面设计预览 · 以下为示例内容</p>
+      <header className="news-editorial-heading content-hub-heading">
         <p className="content-hub-kicker">AI 资讯</p>
         <h1 id="news-editorial-title">值得关注的 AI 新进展</h1>
         <p>少一点噪音，多一点真正值得了解的变化。</p>
       </header>
 
-      <section className="news-featured" aria-label="重点资讯">
+      <section className="news-featured news-feature-grid" aria-label="重点资讯">
         {leadItem ? (
           <article className="news-lead-card">
             <div className="news-card-art" aria-hidden="true" />
@@ -59,7 +59,7 @@ export function NewsEditorial({ items }: { items: NewsItem[] }) {
         ) : null}
       </section>
 
-      <div className="news-category-filters" aria-label="按分类筛选资讯">
+      <div className="news-category-filters content-filter-pills" role="group" aria-label="按分类筛选资讯">
         {NEWS_CATEGORIES.map((value) => (
           <button
             key={value}
@@ -72,7 +72,7 @@ export function NewsEditorial({ items }: { items: NewsItem[] }) {
         ))}
       </div>
 
-      <section className="news-latest" aria-labelledby="news-latest-title">
+      <section className="news-latest news-latest-list" aria-labelledby="news-latest-title">
         <h2 id="news-latest-title">最新资讯</h2>
         {latestItems.length ? latestItems.map((item) => (
           <article key={item.id} className="news-latest-row" data-news-category={item.category}>

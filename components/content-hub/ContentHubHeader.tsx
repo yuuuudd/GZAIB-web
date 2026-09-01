@@ -12,8 +12,8 @@ export function ContentHubHeader({ active }: { active: "news" | "events" }) {
       <nav className="brand-nav" aria-label="主导航">
         <a href="/#map">共建地图</a>
         <Link href="/communities">AI 社群</Link>
-        <Link className={active === "news" ? "brand-nav-active" : undefined} href="/news">AI 资讯</Link>
-        <Link className={active === "events" ? "brand-nav-active" : undefined} href="/events">活动赛事</Link>
+        <Link className={active === "news" ? "brand-nav-active" : undefined} href="/news" aria-current={active === "news" ? "page" : undefined}>AI 资讯</Link>
+        <Link className={active === "events" ? "brand-nav-active" : undefined} href="/events" aria-current={active === "events" ? "page" : undefined}>活动赛事</Link>
       </nav>
       <Link className="brand-header-action" href="/apply">申请加入</Link>
     </header>

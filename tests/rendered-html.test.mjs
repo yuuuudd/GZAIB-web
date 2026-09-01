@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { JSDOM } from "jsdom";
 import test from "node:test";
 
 async function renderRoute(pathname, extraHeaders = {}) {
@@ -14,6 +15,64 @@ async function renderRoute(pathname, extraHeaders = {}) {
 }
 
 const renderHomePage = (extraHeaders = {}) => renderRoute("/", extraHeaders);
+
+function assertChannelLink(document, href, text) {
+  const link = [...document.querySelectorAll("a")]
+    .find((candidate) => candidate.getAttribute("href") === href && candidate.textContent?.trim() === text);
+  assert.ok(link, `Expected ${text} link to ${href}`);
+  return link;
+}
+
+test("public home and community routes link to the live news and events channels", async () => {
+  const [homeResponse, communitiesResponse] = await Promise.all([
+    renderRoute("/", { host: "localhost" }),
+    renderRoute("/communities", { host: "localhost" }),
+  ]);
+  assert.equal(homeResponse.status, 200);
+  assert.equal(communitiesResponse.status, 200);
+
+  for (const response of [homeResponse, communitiesResponse]) {
+    const dom = new JSDOM(await response.text());
+    try {
+      assertChannelLink(dom.window.document, "/news", "AI 资讯");
+      assertChannelLink(dom.window.document, "/events", "活动赛事");
+    } finally {
+      dom.window.close();
+    }
+  }
+});
+
+test("news route renders its editorial hierarchy and links to events", async () => {
+  const response = await renderRoute("/news", { host: "localhost" });
+  assert.equal(response.status, 200);
+  const dom = new JSDOM(await response.text());
+  try {
+    const document = dom.window.document;
+    assert.match(document.body.textContent ?? "", /值得关注的 AI 新进展/);
+    assert.match(document.body.textContent ?? "", /页面设计预览 · 以下为示例内容/);
+    assert.equal(document.querySelectorAll(".news-lead-card").length, 1);
+    assert.equal(assertChannelLink(document, "/news", "AI 资讯").getAttribute("aria-current"), "page");
+    assertChannelLink(document, "/events", "活动赛事");
+    assert.ok(document.querySelector('[role="group"][aria-label="按分类筛选资讯"]'));
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("events route renders its responsibility boundary and links to news", async () => {
+  const response = await renderRoute("/events", { host: "localhost" });
+  assert.equal(response.status, 200);
+  const dom = new JSDOM(await response.text());
+  try {
+    const document = dom.window.document;
+    assert.match(document.body.textContent ?? "", /找到下一场值得参加的 AI 活动/);
+    assert.match(document.body.textContent ?? "", /报名及结果通知由主办方负责/);
+    assertChannelLink(document, "/news", "AI 资讯");
+    assert.equal(assertChannelLink(document, "/events", "活动赛事").getAttribute("aria-current"), "page");
+  } finally {
+    dom.window.close();
+  }
+});
 
 test("home page renders the clean hero with final punctuation and no duplicate header CTA", async () => {
   const response = await renderHomePage({ host: "localhost" });
