@@ -127,7 +127,7 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
         immediate.push(marker);
       } else if (level === "province") {
         for (const city of cities) {
-          const presentation = cityMarkerPresentation(city, city.city === activeCity);
+          const presentation = cityMarkerPresentation(city, true);
           const marker = new amap.Marker(presentation);
           marker.on("click", () => onSelectCity(city.city));
           immediate.push(marker);

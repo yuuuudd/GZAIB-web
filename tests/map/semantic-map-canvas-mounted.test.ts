@@ -48,6 +48,19 @@ test("province city pins render before any district boundary request completes",
   } finally { await mounted.cleanup(); }
 });
 
+test("province view lights every city with a school instead of only the stale active city", async () => {
+  const chaozhouSchool = { ...school, id: "hanshan", name: "韩山师范学院", city: "潮州", lng: 116.63, lat: 23.68, memberCount: 1 };
+  const mounted = await renderMap("province", [
+    ...cities,
+    { city: "潮州", memberCount: 1, schoolCount: 1, center: { lng: 116.63, lat: 23.68 }, schools: [chaozhouSchool] },
+  ]);
+  try {
+    const markers = mounted.added.flat().filter((overlay) => overlay.constructor.name === "Marker") as Array<{ options: Record<string, unknown> }>;
+    assert.equal(markers.length, 2);
+    assert.ok(markers.every(({ options }) => String(options.content).includes("school-pin-orange-v1.png")));
+  } finally { await mounted.cleanup(); }
+});
+
 test("each school pin receives a campus highlight without waiting for the city boundary", async () => {
   const mounted = await renderMap("city");
   try {
