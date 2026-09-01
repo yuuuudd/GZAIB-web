@@ -62,7 +62,7 @@ const GUANGDONG_CITY_BY_ADCODE: Record<string, string> = {
 export function parseAmapLocation(value: unknown): AmapLocation | null {
   if (!value || typeof value !== "object") return null;
   const item = value as { name?: unknown; adcode?: unknown; adname?: unknown; address?: unknown; location?: unknown };
-  const city = typeof item.adcode === "string" ? GUANGDONG_CITY_BY_ADCODE[item.adcode.slice(0, 4)] : undefined;
+  const city = GUANGDONG_CITY_BY_ADCODE[String(item.adcode ?? "").slice(0, 4)];
   if (typeof item.name !== "string" || !city || !item.location || typeof item.location !== "object") return null;
   const location = item.location as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
   const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);

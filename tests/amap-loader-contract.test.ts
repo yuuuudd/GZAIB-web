@@ -42,6 +42,6 @@ test("school search stays inside Guangdong and never invents Guangzhou", async (
   assert.deepEqual(options, { city: "广东" });
   assert.equal(typeof parse, "function");
   if (typeof parse !== "function") return;
-  assert.equal(parse({ name: "韩山师范学院", adcode: "445102", adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州");
+  assert.equal(parse({ name: "韩山师范学院", adcode: 445102, adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州");
   assert.equal(parse({ name: "韩山师范学院", adcode: "610100", location: { lng: 116.61, lat: 23.65 } }), null);
 });
