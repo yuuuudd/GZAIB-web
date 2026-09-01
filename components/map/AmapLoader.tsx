@@ -51,7 +51,7 @@ export type AmapLocation = {
   latitude: number;
 };
 
-export const GUANGDONG_PLACE_SEARCH_OPTIONS = { city: "广东" } as const;
+export const GUANGDONG_PLACE_SEARCH_OPTIONS = { city: "广东", extensions: "all" } as const;
 
 const GUANGDONG_CITY_BY_ADCODE: Record<string, string> = {
   "4401": "广州", "4402": "韶关", "4403": "深圳", "4404": "珠海", "4405": "汕头", "4406": "佛山", "4407": "江门", "4408": "湛江", "4409": "茂名",
