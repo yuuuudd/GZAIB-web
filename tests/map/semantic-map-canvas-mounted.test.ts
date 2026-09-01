@@ -16,7 +16,8 @@ async function renderMap(level: "country" | "province" | "city", mapCities = cit
   const added: AmapOverlay[][] = [];
   const districtQueries: string[] = [];
   const views: Array<{ zoom: number; center: [number, number] }> = [];
-  class Map { add(overlays: AmapOverlay[]) { added.push(overlays); } remove() {} destroy() {} getZoom() { return level === "country" ? 4 : level === "province" ? 7 : 10; } setZoomAndCenter(zoom: number, center: [number, number]) { views.push({ zoom, center }); } on() {} off() {} setFitView() {} }
+  let mapOptions: Record<string, unknown> | undefined;
+  class Map { constructor(_container: HTMLElement, options: Record<string, unknown>) { mapOptions = options; } add(overlays: AmapOverlay[]) { added.push(overlays); } remove() {} destroy() {} getZoom() { return level === "country" ? 4 : level === "province" ? 7 : 10; } setZoomAndCenter(zoom: number, center: [number, number]) { views.push({ zoom, center }); } on() {} off() {} setFitView() {} }
   class Marker { constructor(readonly options: Record<string, unknown>) {} on() {} setMap() {} }
   class Circle { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
   class Polyline { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
@@ -25,7 +26,7 @@ async function renderMap(level: "country" | "province" | "city", mapCities = cit
   const amap = { Map, Marker, Circle, Polyline, Polygon, DistrictSearch } as unknown as AmapNamespace;
   const root = createRoot(dom.window.document.querySelector("#root")!);
   await act(async () => { root.render(createElement(SemanticMapCanvas, { amap, cities: mapCities, level, activeCity: mapCities[0]?.city ?? "广州", onLevelChange: () => undefined, onSelectCity: () => undefined, onSelectSchool: () => undefined, onFailure: () => undefined })); });
-  return { added, districtQueries, views, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
+  return { added, districtQueries, views, mapOptions, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
 }
 
 test("country view shows Guangdong province data and frames all of China", async () => {
@@ -67,5 +68,12 @@ test("each school pin receives a campus highlight without waiting for the city b
     const overlays = mounted.added.flat();
     assert.ok(overlays.some((overlay) => overlay.constructor.name === "Marker"));
     assert.ok(overlays.some((overlay) => overlay.constructor.name === "Circle"));
+  } finally { await mounted.cleanup(); }
+});
+
+test("standard map leaves the page wheel scroll available", async () => {
+  const mounted = await renderMap("city");
+  try {
+    assert.equal(mounted.mapOptions?.scrollWheel, false);
   } finally { await mounted.cleanup(); }
 });

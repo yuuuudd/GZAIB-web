@@ -76,6 +76,7 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
         viewMode: "2D",
         pitch: 0,
         animateEnable: true,
+        scrollWheel: false,
       });
       mapRef.current = map;
       const handleZoom = () => onLevelChange(semanticLevelForZoom(map.getZoom()));
