@@ -10,8 +10,10 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
+import { AmapLoader } from "./AmapLoader";
 import { CampusMapFallback } from "./CampusExplorerScene";
 import { CityDirectoryFallback } from "./CityDirectoryFallback";
+import { SemanticMapCanvas } from "./SemanticMapCanvas";
 
 function recordMapView() {
   void fetch("/api/metrics", {
@@ -41,6 +43,7 @@ export function BuilderMap() {
   const [level, setLevel] = useState<MapLevel>("city");
   const [activeCity, setActiveCity] = useState(DEFAULT_CITY);
   const [selectedId, setSelectedId] = useState<string>();
+  const [style, setStyle] = useState<"illustrated" | "standard">("illustrated");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string>();
 
@@ -93,6 +96,10 @@ export function BuilderMap() {
         <div><p className="map-section-kicker">广东高校共建者地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
         <p>像逛校园一样探索广东高校圈。每一枚图钉，都是正在发生的共建故事。</p>
       </div>
+      <nav className="builder-map-style-switcher" aria-label="切换地图风格">
+        <button type="button" aria-pressed={style === "illustrated"} onClick={() => setStyle("illustrated")}>彩绘版</button>
+        <button type="button" aria-pressed={style === "standard"} onClick={() => setStyle("standard")}>标准版</button>
+      </nav>
       <div className="map-overview-row">
         <nav className="semantic-level-switcher" aria-label="共建地图层级">
           <button type="button" aria-pressed={level === "city" && activeCity === DEFAULT_CITY} onClick={() => selectCity(DEFAULT_CITY)}>广州</button>
@@ -109,13 +116,18 @@ export function BuilderMap() {
       <div className={`map-stage ${selected ? "map-stage-drawer-open" : ""}`} aria-busy={loading}>
         <div className="map-live-layout">
           <div className="map-live">
-            <CampusMapFallback
-              cities={cities}
-              level={level}
-              activeCity={activeCity}
-              onSelectCity={selectCity}
-              onSelectSchool={selectSchool}
-            />
+            {style === "illustrated" ? <CampusMapFallback
+                cities={cities}
+                level={level}
+                activeCity={activeCity}
+                onSelectCity={selectCity}
+                onSelectSchool={selectSchool}
+              /> : <AmapLoader>{(state, amap, retry) => state === "ready" && amap
+                ? <SemanticMapCanvas amap={amap} cities={cities} level={level} activeCity={activeCity} selectedId={selectedId} onLevelChange={changeLevel} onSelectCity={selectCity} onSelectSchool={selectSchool} onFailure={() => retry?.()} />
+                : state === "failed"
+                  ? <div className="map-unavailable" role="status"><strong>标准地图暂时不可用</strong><p>学校目录仍可正常浏览。</p><button type="button" onClick={retry}>重新加载标准地图</button></div>
+                  : <div className="map-loading" role="status"><span aria-hidden="true" /><small>正在加载标准地图…</small></div>
+              }</AmapLoader>}
             {level === "city" && !activeSchools.length && !loading ? <p className="map-empty-note">当前筛选下暂无学校，校园地图仍可浏览</p> : null}
           </div>
           <CityDirectoryFallback
