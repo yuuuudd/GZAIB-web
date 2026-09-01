@@ -111,6 +111,35 @@ test("home page renders the clean hero with final punctuation and no duplicate h
   assert.doesNotMatch(html, /site-creator-vinext-starter|vinext-starter|loading skeleton/i);
 });
 
+test("home hero exposes the approved brand and all four visual channels in the first surface", async () => {
+  const response = await renderHomePage({ host: "localhost" });
+  assert.equal(response.status, 200);
+  const dom = new JSDOM(await response.text());
+  try {
+    const document = dom.window.document;
+    const hero = document.querySelector(".brand-home-hero");
+    assert.ok(hero);
+    assert.match(hero.textContent ?? "", /让广东每一所高校，都亮起一束共建的光。/);
+
+    const lockup = document.querySelector('.brand-mark img[src="/brand/gzaib-horizontal.png"]');
+    assert.ok(lockup);
+
+    const channels = [...hero.querySelectorAll("a.hero-channel-card")].map((card) => ({
+      href: card.getAttribute("href"),
+      title: card.querySelector("h2")?.textContent?.trim(),
+      artwork: card.querySelector("img")?.getAttribute("src"),
+    }));
+    assert.deepEqual(channels, [
+      { href: "#map", title: "共建地图", artwork: "/brand/home-map.webp" },
+      { href: "/communities", title: "AI 社区", artwork: "/brand/home-community.webp" },
+      { href: "/news", title: "AI 资讯", artwork: "/brand/home-news.webp" },
+      { href: "/events", title: "活动赛事", artwork: "/brand/home-events.webp" },
+    ]);
+  } finally {
+    dom.window.close();
+  }
+});
+
 test("home page omits social URLs and images when the Host header is missing", async () => {
   const response = await renderHomePage({ host: "" });
   assert.equal(response.status, 200);
