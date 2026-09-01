@@ -39,9 +39,9 @@ test("school search stays inside Guangdong and never invents Guangzhou", async (
   const options = (amapModule as Record<string, unknown>).GUANGDONG_PLACE_SEARCH_OPTIONS;
   const parse = (amapModule as Record<string, unknown>).parseAmapLocation;
 
-  assert.deepEqual(options, { city: "440000", citylimit: true });
+  assert.deepEqual(options, { city: "广东" });
   assert.equal(typeof parse, "function");
   if (typeof parse !== "function") return;
-  assert.equal(parse({ name: "韩山师范学院", cityname: "潮州市", adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州市");
-  assert.equal(parse({ name: "韩山师范学院", location: { lng: 116.61, lat: 23.65 } }), null);
+  assert.equal(parse({ name: "韩山师范学院", adcode: "445102", adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州");
+  assert.equal(parse({ name: "韩山师范学院", adcode: "610100", location: { lng: 116.61, lat: 23.65 } }), null);
 });

@@ -51,17 +51,24 @@ export type AmapLocation = {
   latitude: number;
 };
 
-export const GUANGDONG_PLACE_SEARCH_OPTIONS = { city: "440000", citylimit: true } as const;
+export const GUANGDONG_PLACE_SEARCH_OPTIONS = { city: "广东" } as const;
+
+const GUANGDONG_CITY_BY_ADCODE: Record<string, string> = {
+  "4401": "广州", "4402": "韶关", "4403": "深圳", "4404": "珠海", "4405": "汕头", "4406": "佛山", "4407": "江门", "4408": "湛江", "4409": "茂名",
+  "4412": "肇庆", "4413": "惠州", "4414": "梅州", "4415": "汕尾", "4416": "河源", "4417": "阳江", "4418": "清远", "4419": "东莞", "4420": "中山",
+  "4451": "潮州", "4452": "揭阳", "4453": "云浮",
+};
 
 export function parseAmapLocation(value: unknown): AmapLocation | null {
   if (!value || typeof value !== "object") return null;
-  const item = value as { name?: unknown; cityname?: unknown; adname?: unknown; address?: unknown; location?: unknown };
-  if (typeof item.name !== "string" || typeof item.cityname !== "string" || !item.cityname.trim() || !item.location || typeof item.location !== "object") return null;
+  const item = value as { name?: unknown; adcode?: unknown; adname?: unknown; address?: unknown; location?: unknown };
+  const city = typeof item.adcode === "string" ? GUANGDONG_CITY_BY_ADCODE[item.adcode.slice(0, 4)] : undefined;
+  if (typeof item.name !== "string" || !city || !item.location || typeof item.location !== "object") return null;
   const location = item.location as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
   const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
   const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
-  return { name: item.name, city: item.cityname.trim(), district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) };
+  return { name: item.name, city, district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) };
 }
 
 declare global {
