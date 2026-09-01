@@ -190,7 +190,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       <section className="application-section">
         <h2>让大家快速认识你</h2>
         <label>一句话介绍<textarea name="intro" required minLength={10} maxLength={160} placeholder="正在探索 AI 如何帮助校园里的真实协作。" /></label>
-        <fieldset><legend>技能点（选择 1–3 项）</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} checked={selectedSkills.includes(skill)} disabled={selectedSkills.length >= 3 && !selectedSkills.includes(skill)} onChange={(event) => setSelectedSkills((current) => event.currentTarget.checked ? [...current, skill] : current.filter((item) => item !== skill))} />{skill}</label>)}</div></fieldset>
+        <fieldset><legend>技能点（选择 1–3 项）</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} checked={selectedSkills.includes(skill)} disabled={selectedSkills.length >= 3 && !selectedSkills.includes(skill)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedSkills((current) => checked ? [...current, skill] : current.filter((item) => item !== skill)); }} />{skill}</label>)}</div></fieldset>
       </section>
       <details className="application-optional">
         <summary>更多资料（全部选填）</summary>
