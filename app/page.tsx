@@ -11,7 +11,7 @@ export default function Home() {
           <span>广州AI共创社</span>
         </a>
         <nav className="brand-nav" aria-label="主导航">
-          <a className="brand-nav-active" href="#map" aria-current="page">共建地图</a>
+          <a className="brand-nav-active" href="#map" aria-current="location">共建地图</a>
           <Link href="/communities">AI 社群</Link>
           <Link href="/news">AI 资讯</Link>
           <Link href="/events">活动赛事</Link>
