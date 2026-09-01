@@ -1,4 +1,5 @@
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -197,3 +198,35 @@ export const auditLogs = sqliteTable("audit_logs", {
   diffJson: text("diff_json").notNull().default("{}"),
   createdAt: integer("created_at").notNull(),
 }, (t) => [index("idx_audit_target_created").on(t.targetType, t.targetId, t.createdAt)]);
+
+export const communities = sqliteTable("communities", {
+  id: text("id").primaryKey(), slug: text("slug").notNull(), name: text("name").notNull(), summary: text("summary").notNull(),
+  primaryCity: text("primary_city"), locationMode: text("location_mode", { enum: ["city", "hybrid", "online"] }).notNull(),
+  focusTagsJson: text("focus_tags_json").notNull().default("[]"), officialUrl: text("official_url").notNull(), sourceUrl: text("source_url").notNull(), sourceLabel: text("source_label").notNull(),
+  publishStatus: text("publish_status", { enum: ["draft", "published", "archived"] }).notNull().default("draft"), publishedAt: integer("published_at"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [uniqueIndex("ux_communities_slug").on(t.slug), index("idx_communities_status_city").on(t.publishStatus, t.primaryCity)]);
+
+export const communityProfileSubmissions = sqliteTable("community_profile_submissions", {
+  id: text("id").primaryKey(), communityId: text("community_id").references(() => communities.id), submitterUserId: text("submitter_user_id").notNull().references(() => users.id),
+  kind: text("kind", { enum: ["create", "update"] }).notNull(), name: text("name").notNull(), summary: text("summary").notNull(), primaryCity: text("primary_city"), locationMode: text("location_mode", { enum: ["city", "hybrid", "online"] }).notNull(), focusTagsJson: text("focus_tags_json").notNull(), officialUrl: text("official_url").notNull(), sourceUrl: text("source_url").notNull(), sourceLabel: text("source_label").notNull(),
+  status: text("status", { enum: ["pending", "changes_requested", "approved", "rejected"] }).notNull(), submittedAt: integer("submitted_at").notNull(), reviewedAt: integer("reviewed_at"), reviewedBy: text("reviewed_by").references(() => users.id), reviewReason: text("review_reason"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("idx_community_submissions_status").on(t.status, t.submittedAt)]);
+
+export const communityClaims = sqliteTable("community_claims", {
+  id: text("id").primaryKey(), communityId: text("community_id").notNull().references(() => communities.id), applicantUserId: text("applicant_user_id").notNull().references(() => users.id), evidence: text("evidence").notNull(), evidenceUrl: text("evidence_url"), status: text("status", { enum: ["pending", "changes_requested", "approved", "rejected"] }).notNull(), submittedAt: integer("submitted_at").notNull(), reviewedAt: integer("reviewed_at"), reviewedBy: text("reviewed_by").references(() => users.id), reviewReason: text("review_reason"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [
+  index("idx_community_claims_status").on(t.status, t.submittedAt),
+  uniqueIndex("ux_community_claims_pending_applicant").on(t.applicantUserId, t.communityId).where(sql`${t.status} = 'pending'`),
+]);
+
+export const communityManagers = sqliteTable("community_managers", {
+  communityId: text("community_id").notNull().references(() => communities.id), userId: text("user_id").notNull().references(() => users.id), role: text("role", { enum: ["owner", "editor"] }).notNull().default("owner"), createdAt: integer("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.communityId, t.userId] }), index("idx_community_managers_user").on(t.userId)]);
+
+export const communityUpdates = sqliteTable("community_updates", {
+  id: text("id").primaryKey(), communityId: text("community_id").notNull().references(() => communities.id), submitterUserId: text("submitter_user_id").notNull().references(() => users.id), title: text("title").notNull(), summary: text("summary").notNull(), occurredAt: integer("occurred_at").notNull(), sourceUrl: text("source_url"), status: text("status", { enum: ["pending", "changes_requested", "published", "rejected", "archived"] }).notNull(), submittedAt: integer("submitted_at").notNull(), reviewedAt: integer("reviewed_at"), reviewedBy: text("reviewed_by").references(() => users.id), reviewReason: text("review_reason"), createdAt: integer("created_at").notNull(), updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("idx_community_updates_public").on(t.communityId, t.status, t.occurredAt)]);
+
+export const communityFollows = sqliteTable("community_follows", {
+  communityId: text("community_id").notNull().references(() => communities.id), userId: text("user_id").notNull().references(() => users.id), createdAt: integer("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.communityId, t.userId] }), index("idx_community_follows_user").on(t.userId, t.createdAt)]);

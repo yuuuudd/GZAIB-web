@@ -17,6 +17,16 @@ export const AUDIT_ACTIONS = [
   "member.manually_created_published",
   "report.dismissed",
   "report.warned",
+  "community.profile_approved",
+  "community.profile_changes_requested",
+  "community.profile_rejected",
+  "community.claim_approved",
+  "community.claim_changes_requested",
+  "community.claim_rejected",
+  "community.update_published",
+  "community.update_changes_requested",
+  "community.update_rejected",
+  "community.archived",
   "demo.seeded",
 ] as const;
 
@@ -25,7 +35,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditRecord = {
   id: string;
   actorUserId: string;
-  targetType: "application" | "school" | "contribution" | "member" | "demo";
+  targetType: "application" | "school" | "contribution" | "member" | "community" | "community_submission" | "community_claim" | "community_update" | "demo";
   targetId: string;
   action: AuditAction;
   diffJson: string;

@@ -1,4 +1,16 @@
-import { applications, auditLogs, contributions, memberProfiles, profileVisibility, schools, users } from "./schema";
+import type { getDb } from ".";
+import {
+  applications,
+  auditLogs,
+  communities,
+  communityManagers,
+  communityUpdates,
+  contributions,
+  memberProfiles,
+  profileVisibility,
+  schools,
+  users,
+} from "./schema";
 
 type DemoSeed = {
   schools: (typeof schools.$inferInsert)[];
@@ -7,6 +19,9 @@ type DemoSeed = {
   profiles: (typeof memberProfiles.$inferInsert)[];
   visibility: (typeof profileVisibility.$inferInsert)[];
   contributions: (typeof contributions.$inferInsert)[];
+  communities: (typeof communities.$inferInsert)[];
+  communityManagers: (typeof communityManagers.$inferInsert)[];
+  communityUpdates: (typeof communityUpdates.$inferInsert)[];
   audit: typeof auditLogs.$inferInsert;
 };
 
@@ -17,6 +32,9 @@ export type DemoSeedCounts = {
   profiles: number;
   visibility: number;
   contributions: number;
+  communities: number;
+  managers: number;
+  updates: number;
   audits: number;
 };
 
@@ -211,7 +229,7 @@ const demoProfiles: DemoSeed["profiles"] = memberUsers.map((user, index) => ({
 const connectionDemoProfiles: DemoSeed["profiles"] = connectionDemoUsers.map((user, index) => ({
   id: `demo-connection-profile-${index + 1}`,
   userId: user.id,
-  slug: index === 0 ? "demo-member" : "peer",
+  slug: index === 0 ? "demo-fictional-community-owner" : "peer",
   nickname: connectionDemoApplications[index]!.nickname,
   realName: null,
   avatarKey: null,
@@ -264,6 +282,81 @@ const demoContributions: DemoSeed["contributions"] = activityPairs.flatMap(([act
   updatedAt: seedTime,
 })));
 
+const demoCommunities: DemoSeed["communities"] = [
+  {
+    id: "demo-community-guangzhou-ai-builders",
+    slug: "demo-guangzhou-ai-builders",
+    name: "广州 AI 共建者社群（演示虚构）",
+    summary: "演示虚构：用于演练广州 AI 共建、社群关注与审核流程。",
+    primaryCity: "广州",
+    locationMode: "hybrid",
+    focusTagsJson: JSON.stringify(["AI 应用", "产品共创"]),
+    officialUrl: "https://demo-guangzhou-ai-builders.invalid",
+    sourceUrl: "https://demo-guangzhou-ai-builders.invalid/about",
+    sourceLabel: "演示虚构官方页",
+    publishStatus: "published",
+    publishedAt: seedTime,
+    createdAt: seedTime,
+    updatedAt: seedTime,
+  },
+  {
+    id: "demo-community-shenzhen-agent-lab",
+    slug: "demo-shenzhen-agent-lab",
+    name: "深圳 Agent 实验室（演示虚构）",
+    summary: "演示虚构：用于展示深圳城市级 Agent 实验与开发者交流。",
+    primaryCity: "深圳",
+    locationMode: "city",
+    focusTagsJson: JSON.stringify(["Agent", "开发者"]),
+    officialUrl: "https://demo-shenzhen-agent-lab.invalid",
+    sourceUrl: "https://demo-shenzhen-agent-lab.invalid/about",
+    sourceLabel: "演示虚构官方页",
+    publishStatus: "published",
+    publishedAt: seedTime,
+    createdAt: seedTime,
+    updatedAt: seedTime,
+  },
+  {
+    id: "demo-community-online-ai-makers",
+    slug: "demo-online-ai-makers",
+    name: "线上 AI 制作者社群（演示虚构）",
+    summary: "演示虚构：用于展示不生成城市点位的纯线上 AI 制作者社群。",
+    primaryCity: null,
+    locationMode: "online",
+    focusTagsJson: JSON.stringify(["AI 创作", "开源"]),
+    officialUrl: "https://demo-online-ai-makers.invalid",
+    sourceUrl: "https://demo-online-ai-makers.invalid/about",
+    sourceLabel: "演示虚构官方页",
+    publishStatus: "published",
+    publishedAt: seedTime,
+    createdAt: seedTime,
+    updatedAt: seedTime,
+  },
+];
+
+const demoCommunityManagers: DemoSeed["communityManagers"] = demoCommunities.map((community) => ({
+  communityId: community.id,
+  userId: "demo-member",
+  role: "owner",
+  createdAt: community.createdAt,
+}));
+
+const demoCommunityUpdates: DemoSeed["communityUpdates"] = demoCommunities.map((community, index) => ({
+  id: `demo-community-update-${index + 1}`,
+  communityId: community.id,
+  submitterUserId: "demo-member",
+  title: `${community.name}首条动态`,
+  summary: "演示虚构：这是一条经审核公开的社群动态，仅供本地演练。",
+  occurredAt: seedTime - index * 86_400_000,
+  sourceUrl: `${community.officialUrl}/updates/demo-1`,
+  status: "published",
+  submittedAt: seedTime,
+  reviewedAt: seedTime,
+  reviewedBy: "demo-admin",
+  reviewReason: null,
+  createdAt: seedTime,
+  updatedAt: seedTime,
+}));
+
 export const DEMO_SEED: DemoSeed = {
   schools: demoSchools,
   users: [{
@@ -274,6 +367,9 @@ export const DEMO_SEED: DemoSeed = {
   profiles: [...connectionDemoProfiles, ...demoProfiles],
   visibility: demoVisibility,
   contributions: demoContributions,
+  communities: demoCommunities,
+  communityManagers: demoCommunityManagers,
+  communityUpdates: demoCommunityUpdates,
   audit: {
     id: "demo-seed-audit-initialized", actorUserId: "demo-admin", targetType: "demo", targetId: "builder-map-demo-v1",
     action: "demo.seeded", diffJson: JSON.stringify({ dataset: "builder-map-demo-v1" }), createdAt: seedTime,
@@ -285,18 +381,21 @@ export async function seedDemoData(adminId: string, repository: DemoSeedReposito
   return repository.seed({ ...DEMO_SEED, audit: { ...DEMO_SEED.audit, actorUserId: adminId, createdAt: now } });
 }
 
-export async function createRuntimeDemoSeedRepository(): Promise<DemoSeedRepository> {
-  const { getDb } = await import(".");
-  const db = getDb();
+type Db = ReturnType<typeof getDb>;
+
+export function createDemoSeedRepository(db: Db): DemoSeedRepository {
   return {
     async seed(seed) {
       const statements = [
         ...chunkRowsByD1ParameterLimit(seed.schools).map((rows) => db.insert(schools).values(rows).onConflictDoNothing()),
         ...chunkRowsByD1ParameterLimit(seed.users).map((rows) => db.insert(users).values(rows).onConflictDoNothing()),
+        ...chunkRowsByD1ParameterLimit(seed.communities).map((rows) => db.insert(communities).values(rows).onConflictDoNothing()),
         ...chunkRowsByD1ParameterLimit(seed.applications).map((rows) => db.insert(applications).values(rows).onConflictDoNothing()),
         ...chunkRowsByD1ParameterLimit(seed.profiles).map((rows) => db.insert(memberProfiles).values(rows).onConflictDoNothing()),
         ...chunkRowsByD1ParameterLimit(seed.visibility).map((rows) => db.insert(profileVisibility).values(rows).onConflictDoNothing()),
         ...chunkRowsByD1ParameterLimit(seed.contributions).map((rows) => db.insert(contributions).values(rows).onConflictDoNothing()),
+        ...chunkRowsByD1ParameterLimit(seed.communityManagers).map((rows) => db.insert(communityManagers).values(rows).onConflictDoNothing()),
+        ...chunkRowsByD1ParameterLimit(seed.communityUpdates).map((rows) => db.insert(communityUpdates).values(rows).onConflictDoNothing()),
         db.insert(auditLogs).values(seed.audit).onConflictDoNothing(),
       ];
       await db.batch(statements as [typeof statements[number], ...typeof statements[number][]]);
@@ -307,8 +406,16 @@ export async function createRuntimeDemoSeedRepository(): Promise<DemoSeedReposit
         profiles: seed.profiles.length,
         visibility: seed.visibility.length,
         contributions: seed.contributions.length,
+        communities: seed.communities.length,
+        managers: seed.communityManagers.length,
+        updates: seed.communityUpdates.length,
         audits: 1,
       };
     },
   };
+}
+
+export async function createRuntimeDemoSeedRepository(): Promise<DemoSeedRepository> {
+  const { getDb } = await import(".");
+  return createDemoSeedRepository(getDb());
 }

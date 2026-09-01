@@ -21,10 +21,10 @@ test("home page renders the clean hero with final punctuation and no duplicate h
   const html = await response.text();
 
   assert.match(html, /<html[^>]+lang="zh-CN"/);
-  assert.match(html, /<title>广东高校共建者地图｜广州AI共创社<\/title>/);
-  assert.match(html, /<meta[^>]+name="description"[^>]+content="看见广东不同学校与城市中愿意分享、愿意行动的青年共建者。"/);
-  assert.match(html, /<meta[^>]+property="og:title"[^>]+content="广东高校共建者地图｜广州AI共创社"/);
-  assert.match(html, /<meta[^>]+property="og:description"[^>]+content="看见广东不同学校与城市中愿意分享、愿意行动的青年共建者。"/);
+  assert.match(html, /<title>广州 AI 共创社｜共建者与 AI 社群地图<\/title>/);
+  assert.match(html, /<meta[^>]+name="description"[^>]+content="看见广东高校共建者，发现正在行动的 AI 社群与共创网络。"/);
+  assert.match(html, /<meta[^>]+property="og:title"[^>]+content="广州 AI 共创社｜共建者与 AI 社群地图"/);
+  assert.match(html, /<meta[^>]+property="og:description"[^>]+content="看见广东高校共建者，发现正在行动的 AI 社群与共创网络。"/);
   assert.match(html, /<meta[^>]+property="og:image"[^>]+content="http:\/\/localhost\/og\.png"/);
   assert.match(html, /<meta[^>]+name="twitter:card"[^>]+content="summary_large_image"/);
   assert.match(html, /广州AI共创社/);

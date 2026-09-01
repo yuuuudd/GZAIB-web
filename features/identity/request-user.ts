@@ -1,11 +1,11 @@
 import { isDemoMode } from "./demo-auth";
-import { requireActiveSession } from "./active-account";
+import { resolveOptionalActiveSession } from "./active-account";
 
 export type ChatGPTAccount = { id: string; email: string };
 
 export type RequestUserDependencies = {
   isDemoMode(): boolean;
-  requireDemoSession(request: Request): Promise<{ identity: { id: string } }>;
+  requireDemoSession(request: Request): Promise<{ identity: { id: string } } | null>;
   ensureChatGPTAccount(account: ChatGPTAccount): Promise<void>;
 };
 
@@ -28,10 +28,10 @@ export async function ensureRuntimeChatGPTAccount(account: ChatGPTAccount, now =
 
 export async function resolveRequestUserId(request: Request, dependencies: RequestUserDependencies = {
   isDemoMode,
-  requireDemoSession: requireActiveSession,
+  requireDemoSession: resolveOptionalActiveSession,
   ensureChatGPTAccount: ensureRuntimeChatGPTAccount,
 }): Promise<string | null> {
-  if (dependencies.isDemoMode()) return (await dependencies.requireDemoSession(request)).identity.id;
+  if (dependencies.isDemoMode()) return (await dependencies.requireDemoSession(request))?.identity.id ?? null;
   const account = chatGPTAccountFromHeaders(request.headers);
   if (!account) return null;
   await dependencies.ensureChatGPTAccount(account);

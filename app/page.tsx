@@ -1,5 +1,6 @@
-import { BuilderMap } from "../components/map/BuilderMap";
+import { EcosystemMapSwitcher } from "../components/map/EcosystemMapSwitcher";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -10,7 +11,7 @@ export default function Home() {
           <span>广州AI共创社</span>
         </a>
         <nav className="brand-nav" aria-label="主导航">
-          <a className="brand-nav-active" href="#map">共建地图</a><a href="#how-it-works">如何点亮</a><a href="#about">关于我们</a>
+          <a className="brand-nav-active" href="#map">共建地图</a><Link href="/communities">AI 社群</Link><a href="#how-it-works">如何点亮</a><a href="#about">关于我们</a>
         </nav>
         <a className="brand-header-action" href="/admin">管理员入口</a>
       </header>
@@ -21,7 +22,7 @@ export default function Home() {
         <p className="brand-intro">看见彼此，连接不同学校、不同城市里愿意分享、愿意行动的年轻人。</p>
         <div className="brand-hero-actions"><a className="brand-primary-action" href="/apply">申请点亮我的头像 <span>→</span></a><a className="brand-secondary-action" href="#map">看看谁已加入 <span>↓</span></a></div>
       </section>
-      <BuilderMap />
+      <EcosystemMapSwitcher initialView="builders" />
       <section className="approval-flow" id="how-it-works" aria-labelledby="approval-title">
         <div className="approval-heading"><p className="map-section-kicker">一束光如何亮起</p><h2 id="approval-title">真实、本人选择、经过审核</h2><p>四个步骤，把公开边界和共建信任讲清楚。</p></div>
         <ol>

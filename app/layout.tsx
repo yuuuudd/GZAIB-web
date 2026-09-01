@@ -10,8 +10,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const sourceHanSerif = Noto_Serif_SC({ variable: "--font-source-han-serif", weight: "600", subsets: ["latin"], display: "swap" });
 
-const siteTitle = "广东高校共建者地图｜广州AI共创社";
-const siteDescription = "看见广东不同学校与城市中愿意分享、愿意行动的青年共建者。";
+const siteTitle = "广州 AI 共创社｜共建者与 AI 社群地图";
+const siteDescription = "看见广东高校共建者，发现正在行动的 AI 社群与共创网络。";
 
 export async function generateMetadata(): Promise<Metadata> {
   const origin = canonicalMetadataOrigin(await headers());

@@ -1,5 +1,5 @@
 import type { Session } from "./types";
-import { requireSession } from "./session";
+import { DemoSessionCredentialError, requireSession } from "./session";
 
 export class InactiveAccountError extends Error {
   constructor() {
@@ -32,4 +32,14 @@ export async function requireActiveSession(request: Request): Promise<Session> {
   const [account] = await db.select({ status: schema.users.status }).from(schema.users).where(eq(schema.users.id, session.identity.id));
   if (!account || account.status === "suspended" || account.status === "deleted") throw new InactiveAccountError();
   return session;
+}
+
+/** Missing, malformed, or expired credentials are anonymous; runtime and account failures still surface. */
+export async function resolveOptionalActiveSession(request: Request): Promise<Session | null> {
+  try {
+    return await requireActiveSession(request);
+  } catch (error) {
+    if (error instanceof DemoSessionCredentialError) return null;
+    throw error;
+  }
 }

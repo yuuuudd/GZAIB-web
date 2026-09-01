@@ -16,6 +16,13 @@ type CookieOptions = { production?: boolean };
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+export class DemoSessionCredentialError extends Error {
+  constructor(message = "Invalid demo session") {
+    super(message);
+    this.name = "DemoSessionCredentialError";
+  }
+}
+
 function toBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -23,7 +30,7 @@ function toBase64Url(bytes: Uint8Array): string {
 }
 
 function fromBase64Url(value: string): Uint8Array {
-  if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error("Invalid demo session");
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new DemoSessionCredentialError();
   const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
   const binary = atob(padded);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -48,11 +55,11 @@ function sameSignature(left: string, right: string): boolean {
 }
 
 function sessionTokenFromCookie(cookie: string): string {
-  if (!cookie) throw new Error("Invalid demo session");
+  if (!cookie) throw new DemoSessionCredentialError();
   if (!cookie.includes("=")) return cookie;
 
   const pair = cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${DEMO_SESSION_COOKIE}=`));
-  if (!pair) throw new Error("Invalid demo session");
+  if (!pair) throw new DemoSessionCredentialError();
   return pair.slice(DEMO_SESSION_COOKIE.length + 1);
 }
 
@@ -60,7 +67,7 @@ function identityInputFromSubject(subject: SessionPayload["sub"]): DemoIdentityI
   if (subject === "demo-member") return "member";
   if (subject === "demo-peer") return "peer";
   if (subject === "demo-admin") return "admin";
-  throw new Error("Invalid demo session");
+  throw new DemoSessionCredentialError();
 }
 
 function cookieParts(value: string, now: number, options: CookieOptions = {}): string[] {
@@ -95,24 +102,24 @@ export async function verifyDemoSession(
 ): Promise<Session> {
   const token = sessionTokenFromCookie(cookie);
   const [encodedPayload, signature, ...remaining] = token.split(".");
-  if (!encodedPayload || !signature || remaining.length > 0) throw new Error("Invalid demo session");
+  if (!encodedPayload || !signature || remaining.length > 0) throw new DemoSessionCredentialError();
 
   const expectedSignature = await sign(encodedPayload, requireDemoSessionSecret(providedSecret));
-  if (!sameSignature(signature, expectedSignature)) throw new Error("Invalid demo session");
+  if (!sameSignature(signature, expectedSignature)) throw new DemoSessionCredentialError();
 
   let payload: unknown;
   try {
     payload = JSON.parse(decoder.decode(fromBase64Url(encodedPayload)));
   } catch {
-    throw new Error("Invalid demo session");
+    throw new DemoSessionCredentialError();
   }
 
-  if (!payload || typeof payload !== "object") throw new Error("Invalid demo session");
+  if (!payload || typeof payload !== "object") throw new DemoSessionCredentialError();
   const { v, sub, exp } = payload as Partial<SessionPayload>;
   if (v !== 1 || (sub !== "demo-member" && sub !== "demo-peer" && sub !== "demo-admin") || !Number.isSafeInteger(exp)) {
-    throw new Error("Invalid demo session");
+    throw new DemoSessionCredentialError();
   }
-  if (now >= exp) throw new Error("Demo session expired");
+  if (now >= exp) throw new DemoSessionCredentialError("Demo session expired");
 
   return { identity: resolveDemoIdentity(identityInputFromSubject(sub)), expiresAt: exp };
 }
