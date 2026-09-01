@@ -1,24 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { AmapLoader, AmapLocationPreview, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
+import { AmapLoader, AmapLocationPreview, GUANGDONG_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
 type School = { id: string; name: string; campus: string; city: string; longitude: number; latitude: number; coordinateStatus: string };
 type Candidate = AmapLocation;
 
-function locationOf(value: unknown): { longitude: number; latitude: number } | null {
-  if (!value || typeof value !== "object") return null;
-  const location = value as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
-  const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
-  const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
-  return Number.isFinite(longitude) && Number.isFinite(latitude) ? { longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) } : null;
-}
-
 function SchoolSearch({ amap, onSelect, pending }: { amap: AmapNamespace; onSelect: (candidate: Candidate) => void; pending: boolean }) {
   const [query, setQuery] = useState(""); const [results, setResults] = useState<Candidate[]>([]); const [preview, setPreview] = useState<Candidate>(); const [message, setMessage] = useState("");
-  function search() { const keyword = query.trim(); if (!keyword) return; setMessage("正在搜索高德地图…"); setPreview(undefined); new amap.PlaceSearch({ city: "广东" }).search(keyword, (status, value) => {
+  function search() { const keyword = query.trim(); if (!keyword) return; setMessage("正在搜索高德地图…"); setPreview(undefined); new amap.PlaceSearch(GUANGDONG_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
     const pois = status === "complete" && value && typeof value === "object" ? ((value as { poiList?: { pois?: unknown[] } }).poiList?.pois ?? []) : [];
-    const next = pois.flatMap((poi) => { if (!poi || typeof poi !== "object") return []; const row = poi as { name?: unknown; cityname?: unknown; adname?: unknown; address?: unknown; location?: unknown }; const coordinate = locationOf(row.location); return coordinate && typeof row.name === "string" ? [{ name: row.name, city: typeof row.cityname === "string" && row.cityname ? row.cityname : "广州", district: typeof row.adname === "string" ? row.adname : "", address: typeof row.address === "string" ? row.address : "", ...coordinate }] : []; }).slice(0, 8);
+    const next = pois.flatMap((poi) => parseAmapLocation(poi) ?? []).slice(0, 8);
     setResults(next); setMessage(next.length ? "请选择一个高德搜索结果" : "没有找到可用地点，可在下方手动填写坐标");
   }); }
   function confirm(candidate: Candidate) { onSelect(candidate); setPreview(undefined); }

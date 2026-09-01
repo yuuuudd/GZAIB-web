@@ -51,6 +51,19 @@ export type AmapLocation = {
   latitude: number;
 };
 
+export const GUANGDONG_PLACE_SEARCH_OPTIONS = { city: "440000", citylimit: true } as const;
+
+export function parseAmapLocation(value: unknown): AmapLocation | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as { name?: unknown; cityname?: unknown; adname?: unknown; address?: unknown; location?: unknown };
+  if (typeof item.name !== "string" || typeof item.cityname !== "string" || !item.cityname.trim() || !item.location || typeof item.location !== "object") return null;
+  const location = item.location as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
+  const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
+  const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+  return { name: item.name, city: item.cityname.trim(), district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) };
+}
+
 declare global {
   interface Window {
     AMap?: AmapNamespace;

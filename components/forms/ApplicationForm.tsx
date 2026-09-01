@@ -7,18 +7,10 @@ import {
   ROLE_OPTIONS,
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
-import { AmapLoader, AmapLocationPreview, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
+import { AmapLoader, AmapLocationPreview, GUANGDONG_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
-
-function coordinate(value: unknown): { longitude: number; latitude: number } | null {
-  if (!value || typeof value !== "object") return null;
-  const location = value as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
-  const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
-  const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
-  return Number.isFinite(longitude) && Number.isFinite(latitude) ? { longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) } : null;
-}
 
 function normalizedSchoolName(value: string): string {
   return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
@@ -45,14 +37,9 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
     if (!keyword) return;
     setMessage("正在搜索高德地图…");
     setPreview(undefined);
-    new amap.PlaceSearch({ city: "广东" }).search(keyword, (status, value) => {
+    new amap.PlaceSearch(GUANGDONG_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
       const pois = status === "complete" && value && typeof value === "object" ? ((value as { poiList?: { pois?: unknown[] } }).poiList?.pois ?? []) : [];
-      const next = pois.flatMap((poi) => {
-        if (!poi || typeof poi !== "object") return [];
-        const item = poi as { name?: unknown; cityname?: unknown; adname?: unknown; address?: unknown; location?: unknown };
-        const point = coordinate(item.location);
-        return point && typeof item.name === "string" ? [{ name: item.name, city: typeof item.cityname === "string" && item.cityname ? item.cityname : "广州", district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", ...point }] : [];
-      }).slice(0, 8);
+      const next = pois.flatMap((poi) => parseAmapLocation(poi) ?? []).slice(0, 8);
       setResults(next);
       setMessage(next.length ? "请选择学校地点" : "未找到地点，请尝试输入学校全称或校区名称。");
     });

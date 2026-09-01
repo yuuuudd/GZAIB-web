@@ -33,3 +33,15 @@ test("AMap script requests the administrative-boundary service needed by semanti
     "AMap.DistrictSearch",
   ]);
 });
+
+test("school search stays inside Guangdong and never invents Guangzhou", async () => {
+  const amapModule = await import("../components/map/AmapLoader");
+  const options = (amapModule as Record<string, unknown>).GUANGDONG_PLACE_SEARCH_OPTIONS;
+  const parse = (amapModule as Record<string, unknown>).parseAmapLocation;
+
+  assert.deepEqual(options, { city: "440000", citylimit: true });
+  assert.equal(typeof parse, "function");
+  if (typeof parse !== "function") return;
+  assert.equal(parse({ name: "韩山师范学院", cityname: "潮州市", adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州市");
+  assert.equal(parse({ name: "韩山师范学院", location: { lng: 116.61, lat: 23.65 } }), null);
+});
