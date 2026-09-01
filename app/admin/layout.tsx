@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <a href="/admin/members/new">＋<span>手动录入成员</span></a>
             <a href="/admin">⌂ <span>概览</span></a>
             <a href="/admin/applications">● <span>成员申请</span></a>
+            <a href="/admin/activities">✦ <span>活动申请</span></a>
             <a href="/admin/communities">◈ <span>AI 社群审核</span></a>
             <a href="/admin/schools">⌖ <span>学校坐标</span></a>
             <a href="/admin/contributions">◇ <span>贡献确认</span></a>

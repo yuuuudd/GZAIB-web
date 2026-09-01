@@ -42,6 +42,13 @@ test("rejects invalid public data instead of accepting a client-controlled profi
   assert.equal(validateApplication({ ...validInput, visibility: { currentFocus: "team" } }).ok, false);
 });
 
+test("requires one to three skill points for a minimal member application", () => {
+  assert.equal(validateApplication({ ...validInput, skills: [] }).ok, false);
+  assert.equal(validateApplication({ ...validInput, skills: ["AI应用"] }).ok, true);
+  assert.equal(validateApplication({ ...validInput, skills: ["AI应用", "产品设计", "内容创作"] }).ok, true);
+  assert.equal(validateApplication({ ...validInput, skills: ["AI应用", "产品设计", "内容创作", "活动策划"] }).ok, false);
+});
+
 test("defaults every map-required output to public and every optional field to private", () => {
   assert.deepEqual(DEFAULT_APPLICATION_VISIBILITY, {
     nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public", skills: "public", roles: "public",

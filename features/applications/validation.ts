@@ -87,7 +87,7 @@ export function validateApplication(value: unknown): ApplicationValidation {
   if (!isText(input.currentFocus, 1, 500, true) || !isText(input.canOffer, 1, 500, true) || !isText(input.wantsToMeet, 1, 500, true)) {
     errors.push("方向资料不能超过 500 个字符");
   }
-  if (!isStringArray(input.skills, 8, SKILL_OPTIONS)) errors.push("请选择不超过 8 项已支持的技能");
+  if (!isStringArray(input.skills, 3, SKILL_OPTIONS) || input.skills.length === 0) errors.push("请选择 1–3 项已支持的技能");
   if (!isStringArray(input.interests, 6)) errors.push("兴趣最多 6 项");
   if (!isStringArray(input.roles, 4, ROLE_OPTIONS)) errors.push("请选择不超过 4 个已支持的参与角色");
   if (!isStringArray(input.workLinks, 5) || input.workLinks.some((link) => !isHttpsUrl(link))) errors.push("作品链接仅支持 HTTPS，最多 5 条");

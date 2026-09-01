@@ -71,6 +71,21 @@ export const applications = sqliteTable("applications", {
   updatedAt: integer("updated_at").notNull(),
 }, (t) => [uniqueIndex("ux_applications_user").on(t.userId), index("idx_applications_status_submitted").on(t.status, t.submittedAt)]);
 
+export const activityProposals = sqliteTable("activity_proposals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  stage: text("stage", { enum: ["idea", "preparing", "scheduled"] }).notNull(),
+  timeNote: text("time_note"),
+  location: text("location"),
+  supportNeeded: text("support_needed"),
+  linksJson: text("links_json").notNull().default("[]"),
+  status: text("status", { enum: ["pending", "changes_requested", "accepted", "declined"] }).notNull().default("pending"),
+  submittedAt: integer("submitted_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("idx_activity_proposals_user_submitted").on(t.userId, t.submittedAt), index("idx_activity_proposals_status_submitted").on(t.status, t.submittedAt)]);
+
 export const memberProfiles = sqliteTable("member_profiles", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
-import { auditLogs, blocks, connectionRequests, contactCards, reports } from "../../db/schema";
+import { activityProposals, auditLogs, blocks, connectionRequests, contactCards, reports } from "../../db/schema";
 import { createAccountDeletionRepository } from "../../features/identity/account-deletion";
 import { createSafetyRepository } from "../../lib/db/repositories/safety";
 
@@ -102,11 +102,12 @@ test("account deletion keeps connection cleanup inside the guarded batch", async
   });
   assert.equal(result.deleted, true);
   const operations = capture.latestBatch();
-  assert.equal(operations.length, 8);
-  assert.equal(operations[5]?.table, contactCards);
-  assert.equal(operations[6]?.table, connectionRequests);
-  assert.equal(operations[6]?.values?.status, "cancelled_by_block");
-  assert.equal(operations[7]?.table, blocks);
+  assert.equal(operations.length, 9);
+  assert.equal(operations[5]?.table, activityProposals);
+  assert.equal(operations[6]?.table, contactCards);
+  assert.equal(operations[7]?.table, connectionRequests);
+  assert.equal(operations[7]?.values?.status, "cancelled_by_block");
+  assert.equal(operations[8]?.table, blocks);
   for (const operation of operations.slice(1)) {
     const predicate = query(operation.condition);
     assert.ok(predicate.params.includes("audit-delete"), "every cleanup mutation is gated by this deletion audit");

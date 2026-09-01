@@ -16,7 +16,7 @@ export function EventDirectory({ items }: { items: EventItem[] }) {
   const featured = filtered.find((item) => item.featured) ?? filtered[0];
 
   return <section className="event-directory" aria-labelledby="events-title">
-    <header className="content-hub-heading"><p className="community-kicker">AI 活动与赛事</p><h1 id="events-title">找到下一场值得参加的 AI 活动</h1><p>比赛、黑客松、分享会与工作坊，从近期时间开始发现。信息最后核验于 2026-09-01。</p></header>
+    <header className="content-hub-heading"><p className="community-kicker">AI 活动与赛事</p><h1 id="events-title">找到下一场值得参加的 AI 活动</h1><p>比赛、黑客松、分享会与工作坊，从近期时间开始发现。信息最后核验于 2026-09-01。</p><a className="content-hub-submit-link" href="/events/submit">我想发起 / 共建活动 →</a></header>
     <div className="event-filter-bar"><div aria-label="活动类型">{EVENT_TYPES.map((value) => <button key={value} type="button" aria-pressed={type === value} onClick={() => setType(value)}>{value}</button>)}</div><div aria-label="活动地区">{EVENT_LOCATIONS.map((value) => <button key={value} type="button" aria-pressed={location === value} onClick={() => setLocation(value)}>{value}</button>)}</div></div>
     <div className="event-content-grid">
       <div>

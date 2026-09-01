@@ -24,10 +24,10 @@ export default async function MemberCenterPage() {
     db.select({ id: schools.id, name: schools.name, campus: schools.campus, city: schools.city }).from(schools).where(eq(schools.coordinateStatus, "confirmed")).orderBy(asc(schools.name)),
   ]);
   return <main className="member-center-shell">
-    <header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation /><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
+    <header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="me" /><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
     <div className="member-center-content">{profile && profileRow
       ? <ProfileEditor profile={profile} visibility={await loadProfileVisibility(db, profileRow.id)} schools={schoolOptions} currentSchoolId={profileRow.schoolId} published={profileRow.publishStatus === "published"} />
-      : <section className="status-card"><p className="section-kicker">成员中心</p><h1>资料尚未通过审核</h1><p>提交申请并通过运营审核后，你可以在这里编辑成员资料、调整公开范围或即时隐藏地图资料。</p><a className="brand-primary-action" href="/apply">填写或查看申请 →</a></section>}
+      : <section className="status-card"><p className="section-kicker">我的共创空间</p><h1>资料尚未通过审核</h1><p>提交申请并通过运营审核后，你可以在这里编辑成员资料、调整公开范围或即时隐藏地图资料。</p><div className="brand-hero-actions"><a className="brand-primary-action" href="/apply">填写或查看申请 →</a><a className="brand-secondary-action" href="/events/submit">申请共建活动 →</a></div></section>}
     </div>
   </main>;
 }

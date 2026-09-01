@@ -20,6 +20,16 @@ test("member application offers AMap school search before choosing a school", ()
   assert.doesNotMatch(html, /坐标确认|确认坐标|已由管理员确认/);
 });
 
+test("member application keeps only identity, school, intro, skills, and consent in the main flow", () => {
+  const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
+
+  assert.match(html, /统一极简申请/);
+  assert.match(html, /技能点（选择 1–3 项）/);
+  assert.match(html, /<details[^>]*class="application-optional"/);
+  assert.match(html, /更多资料（全部选填）/);
+  assert.doesNotMatch(html, /01 \/ 身份|02 \/ 学校|03 \/ 方向|04 \/ 参与|05 \/ 作品/);
+});
+
 test("AMap results can select only a matching confirmed school", async () => {
   const module = await import("../../components/forms/ApplicationForm");
   const matchConfirmedSchool = (module as Record<string, unknown>).matchConfirmedSchool;

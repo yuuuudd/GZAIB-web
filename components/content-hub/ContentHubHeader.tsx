@@ -7,7 +7,7 @@ export function ContentHubHeader({ active }: { active: "news" | "events" }) {
     <header className="brand-header content-hub-header">
       <BrandHomeLink />
       <PrimaryNavigation active={active} />
-      <Link className="brand-header-action" href="/apply">申请加入</Link>
+      <Link className="brand-header-action" href="/me">我的</Link>
     </header>
   );
 }

@@ -14,5 +14,5 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   const community = await service.getBySlug(resolvedParams.slug, viewerId);
   if (!community) notFound();
 
-  return <main className="community-shell"><header className="brand-header community-header"><BrandHomeLink /><PrimaryNavigation active="communities" /><Link className="brand-header-action" href="/apply">申请加入</Link></header><div className="community-page-content"><nav className="community-breadcrumb" aria-label="面包屑"><Link href="/communities">AI 社群</Link><span aria-hidden="true">/</span><strong>{community.name}</strong></nav><CommunityProfile community={community} isLoggedIn={Boolean(viewerId)} /></div></main>;
+  return <main className="community-shell"><header className="brand-header community-header"><BrandHomeLink /><PrimaryNavigation active="communities" /><Link className="brand-header-action" href="/me">我的</Link></header><div className="community-page-content"><nav className="community-breadcrumb" aria-label="面包屑"><Link href="/communities">AI 社群</Link><span aria-hidden="true">/</span><strong>{community.name}</strong></nav><CommunityProfile community={community} isLoggedIn={Boolean(viewerId)} /></div></main>;
 }

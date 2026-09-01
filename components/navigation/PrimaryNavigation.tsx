@@ -1,4 +1,4 @@
-type PrimaryChannel = "home" | "map" | "communities" | "news" | "events";
+type PrimaryChannel = "home" | "map" | "communities" | "news" | "events" | "me";
 
 const channels: Array<{ id: PrimaryChannel; href: string; label: string }> = [
   { id: "home", href: "/", label: "首页" },
@@ -6,6 +6,7 @@ const channels: Array<{ id: PrimaryChannel; href: string; label: string }> = [
   { id: "communities", href: "/communities", label: "AI 社群" },
   { id: "news", href: "/news", label: "AI 资讯" },
   { id: "events", href: "/events", label: "活动赛事" },
+  { id: "me", href: "/me", label: "我的" },
 ];
 
 export function PrimaryNavigation({ active }: { active?: PrimaryChannel }) {

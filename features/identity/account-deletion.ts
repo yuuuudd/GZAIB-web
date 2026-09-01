@@ -114,6 +114,7 @@ export function createAccountDeletionRepository(db: ReturnType<typeof getDb>): A
           drizzle.isNull(schema.sessions.revokedAt),
           auditExists,
         )),
+        db.delete(schema.activityProposals).where(drizzle.and(drizzle.eq(schema.activityProposals.userId, input.userId), auditExists)),
         // These connection-era records are private capability state, not moderation history.
         db.delete(schema.contactCards).where(drizzle.and(drizzle.eq(schema.contactCards.userId, input.userId), auditExists)),
         db.update(schema.connectionRequests).set({ status: "cancelled_by_block", resolvedAt: input.deletedAt, updatedAt: input.deletedAt }).where(drizzle.and(

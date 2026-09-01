@@ -122,6 +122,13 @@ test("member center editor exposes profile-level map hiding and exact account de
   assert.match(html, /删除我的账号/);
   assert.match(html, /地图必需资料在展示期间必须保持“所有访客可见”/);
   assert.match(html, /name="schoolId"/);
+  assert.match(html, /我的共创空间/);
+  assert.match(html, /更换头像/);
+  assert.match(html, /type="file"/);
+  assert.match(html, /href="\/me\/contact-card"/);
+  assert.match(html, /href="\/me\/connections"/);
+  assert.match(html, /href="\/me\/communities"/);
+  assert.match(html, /href="\/me\/activities"/);
   assert.match(html, /<select(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*>/);
 
   const hiddenHtml = renderToStaticMarkup(createElement(ProfileEditor, {
