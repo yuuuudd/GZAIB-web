@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContactCardEditor } from "../../../components/connections/ContactCardEditor";
+import { PrimaryNavigation } from "../../../components/navigation/PrimaryNavigation";
 import { getDb } from "../../../db";
 import { createContactCardService } from "../../../features/connections/contact-card";
 import { requireActiveSession } from "../../../features/identity/active-account";
@@ -23,7 +24,7 @@ export default async function ContactCardPage() {
     return <main className="member-center-shell"><section className="status-card"><p className="section-kicker">联系名片</p><h1>联系方式暂时不可用</h1><p>请稍后再试。你的联系方式不会被公开展示。</p><Link className="brand-primary-action" href="/me">返回成员中心</Link></section></main>;
   }
   return <main className="member-center-shell">
-    <header className="brand-header member-page-header"><Link className="brand-mark" href="/" aria-label="广州 AI 共创社首页"><Image src="/logo.png" alt="广州 AI 共创社" width={44} height={44} /><span>广州 AI 共创社</span></Link><nav className="brand-nav" aria-label="主导航"><Link href="/">共建地图</Link><Link className="brand-nav-active" href="/me">成员中心</Link></nav><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
+    <header className="brand-header member-page-header"><Link className="brand-mark" href="/" aria-label="广州 AI 共创社首页"><Image src="/logo.png" alt="广州 AI 共创社" width={44} height={44} /><span>广州 AI 共创社</span></Link><PrimaryNavigation /><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
     <div className="member-center-content"><ContactCardEditor initialCard={card} /></div>
   </main>;
 }

@@ -31,13 +31,14 @@ test("public home and community routes link to the live news and events channels
   assert.equal(homeResponse.status, 200);
   assert.equal(communitiesResponse.status, 200);
 
-  for (const [response, mapHref, current] of [
-    [homeResponse, "#map", "location"],
-    [communitiesResponse, "/#map", null],
+  for (const [response, current] of [
+    [homeResponse, "location"],
+    [communitiesResponse, null],
   ]) {
     const dom = new JSDOM(await response.text());
     try {
-      assert.equal(assertChannelLink(dom.window.document, mapHref, "共建地图").getAttribute("aria-current"), current);
+      assert.equal(assertChannelLink(dom.window.document, "/#map", "共建地图").getAttribute("aria-current"), current);
+      assertChannelLink(dom.window.document, "/communities", "AI 社群");
       assertChannelLink(dom.window.document, "/news", "AI 资讯");
       assertChannelLink(dom.window.document, "/events", "活动赛事");
     } finally {

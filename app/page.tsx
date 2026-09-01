@@ -1,6 +1,6 @@
 import { EcosystemMapSwitcher } from "../components/map/EcosystemMapSwitcher";
+import { PrimaryNavigation } from "../components/navigation/PrimaryNavigation";
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Home() {
   return (
@@ -10,12 +10,7 @@ export default function Home() {
           <Image src="/logo.png" alt="广州AI共创社" width={44} height={44} priority />
           <span>广州AI共创社</span>
         </a>
-        <nav className="brand-nav" aria-label="主导航">
-          <a className="brand-nav-active" href="#map" aria-current="location">共建地图</a>
-          <Link href="/communities">AI 社群</Link>
-          <Link href="/news">AI 资讯</Link>
-          <Link href="/events">活动赛事</Link>
-        </nav>
+        <PrimaryNavigation active="map" />
         <a className="brand-header-action" href="/admin">管理员入口</a>
       </header>
       <section className="brand-hero" id="top" aria-labelledby="hero-title">
