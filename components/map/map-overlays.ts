@@ -102,11 +102,12 @@ export function schoolMarkerPresentation(school: DirectorySchool, selected: bool
 
 export function cityMarkerPresentation(city: MapCitySummary, active: boolean): MarkerPresentation {
   const name = escapeHtml(city.city);
+  const pinAsset = active ? "/map-art/school-pin-orange-v1.png" : "/map-art/school-pin-blue-v1.png";
   return {
     position: [city.center.lng, city.center.lat],
-    anchor: "center",
+    anchor: "bottom-center",
     title: `${city.city}，${city.memberCount} 位共建者，${city.schoolCount} 所学校`,
-    content: `<div class="semantic-city-marker${active ? " is-active" : ""}"><strong>${name}</strong><span>${city.memberCount} 位共建者 · ${city.schoolCount} 所学校</span></div>`,
+    content: `<div class="semantic-school-marker semantic-city-pin${active ? " is-selected" : ""}"><span class="semantic-pin-visual"><img class="semantic-pin-art" src="${pinAsset}" alt="" /><span class="semantic-pin-count">${city.memberCount}位</span></span><span class="semantic-pin-label">${name} · ${city.schoolCount}所</span></div>`,
   };
 }
 

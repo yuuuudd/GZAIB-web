@@ -14,22 +14,24 @@ async function renderMap(level: "province" | "city") {
   const dom = new JSDOM("<!doctype html><html><body><div id=\"root\"></div></body></html>");
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   const added: AmapOverlay[][] = [];
+  const districtQueries: string[] = [];
   class Map { add(overlays: AmapOverlay[]) { added.push(overlays); } remove() {} destroy() {} getZoom() { return level === "province" ? 7 : 10; } setZoomAndCenter() {} on() {} off() {} setFitView() {} }
   class Marker { constructor(readonly options: Record<string, unknown>) {} on() {} setMap() {} }
   class Circle { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
   class Polyline { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
   class Polygon { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
-  class DistrictSearch { search() {} }
+  class DistrictSearch { search(keyword: string) { districtQueries.push(keyword); } }
   const amap = { Map, Marker, Circle, Polyline, Polygon, DistrictSearch } as unknown as AmapNamespace;
   const root = createRoot(dom.window.document.querySelector("#root")!);
   await act(async () => { root.render(createElement(SemanticMapCanvas, { amap, cities, level, activeCity: "广州", onLevelChange: () => undefined, onSelectCity: () => undefined, onSelectSchool: () => undefined, onFailure: () => undefined })); });
-  return { added, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
+  return { added, districtQueries, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
 }
 
 test("province city pins render before any district boundary request completes", async () => {
   const mounted = await renderMap("province");
   try {
     assert.ok(mounted.added.flat().some((overlay) => overlay.constructor.name === "Marker"));
+    assert.deepEqual(mounted.districtQueries, ["广州市"]);
   } finally { await mounted.cleanup(); }
 });
 

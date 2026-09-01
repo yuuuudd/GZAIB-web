@@ -20,11 +20,6 @@ import {
   schoolMarkerPresentation,
 } from "./map-overlays";
 
-const GUANGDONG_CITIES = [
-  "广州", "深圳", "珠海", "汕头", "佛山", "韶关", "湛江", "肇庆", "江门", "茂名", "惠州",
-  "梅州", "汕尾", "河源", "阳江", "清远", "东莞", "中山", "潮州", "揭阳", "云浮",
-] as const;
-
 const districtCache = new Map<string, Promise<AmapDistrict | undefined>>();
 
 function loadDistrict(amap: AmapNamespace, city: string): Promise<AmapDistrict | undefined> {
@@ -141,9 +136,8 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
       if (immediate.length) map.add(immediate);
 
       if (level === "province") {
-        const litCities = new Set(cities.map((city) => city.city));
-        await Promise.all(GUANGDONG_CITIES.map(async (city) => {
-          const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), litCities.has(city), true);
+        await Promise.all(cities.map(async ({ city }) => {
+          const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), true, true);
           if (generation !== generationRef.current || !outlines.length) return;
           overlaysRef.current.push(...outlines);
           map.add(outlines);

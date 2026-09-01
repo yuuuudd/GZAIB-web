@@ -50,7 +50,7 @@ test("school highlight is centered on the exact campus point", () => {
   assert.ok(highlight.fillOpacity > 0);
 });
 
-test("city marker summarizes members and schools without exposing school details", () => {
+test("city marker uses the map pin visual and summarizes the lit city", () => {
   const city: MapCitySummary = {
     city: "广州",
     memberCount: 18,
@@ -62,9 +62,10 @@ test("city marker summarizes members and schools without exposing school details
   const presentation = cityMarkerPresentation(city, true);
 
   assert.deepEqual(presentation.position, [113.2644, 23.1291]);
-  assert.match(presentation.content, /semantic-city-marker is-active/);
-  assert.match(presentation.content, />广州</);
-  assert.match(presentation.content, /18 位共建者 · 4 所学校/);
+  assert.match(presentation.content, /semantic-city-pin/);
+  assert.match(presentation.content, /school-pin-orange-v1\.png/);
+  assert.match(presentation.content, /semantic-pin-count[^>]*>18位</);
+  assert.match(presentation.content, /semantic-pin-label[^>]*>广州 · 4所</);
   assert.doesNotMatch(presentation.content, /中山大学/);
 });
 
