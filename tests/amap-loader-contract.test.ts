@@ -12,10 +12,9 @@ test("AMap loader can discard one failed script request and retry it", () => {
   assert.match(source, /const retry = \(\) =>/);
 });
 
-test("public builder map offers both illustrated and standard map styles", () => {
-  assert.match(mapSource, /CampusMapFallback/);
-  assert.match(mapSource, /AmapLoader/);
-  assert.match(mapSource, /SemanticMapCanvas/);
+test("public builder map exposes the national standard map without the illustrated switcher", () => {
+  assert.doesNotMatch(mapSource, /彩绘版|筹备中/);
+  assert.match(mapSource, /aria-pressed=\{level === "country"\}/);
 });
 
 test("AMap security proxy uses the mandatory _AMapService path", () => {

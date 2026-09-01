@@ -34,11 +34,12 @@ export function CityDirectoryFallback({ cities, activeCity, level, selectedId, o
     </section>;
   }
 
+  const place = level === "country" ? "全国" : "广东";
   return <section className={`city-directory city-directory-overview ${prominent ? "city-directory-prominent" : ""}`} aria-labelledby="city-directory-title">
     <div className="school-fallback-heading">
       <div>
-        <p className="map-section-kicker">广东城市网络</p>
-        <h2 id="city-directory-title">广东共建概览</h2>
+        <p className="map-section-kicker">{place}城市网络</p>
+        <h2 id="city-directory-title">{place}共建概览</h2>
       </div>
       <span>{cities.length} 座城市</span>
     </div>
@@ -52,7 +53,7 @@ export function CityDirectoryFallback({ cities, activeCity, level, selectedId, o
         </button>
       </li>)}
     </ul> : <div className="directory-empty">
-      <strong>广东共建地图等待第一所学校</strong>
+      <strong>{place}共建地图等待第一所学校</strong>
       <p>你可以先进入广州，或提交申请点亮学校。</p>
       <button type="button" onClick={() => onSelectCity("广州")}>进入广州</button>
     </div>}

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { DirectorySchool } from "../../features/directory/service";
 import {
   centerForCity,
+  COUNTRY_CENTER,
   GUANGDONG_CENTER,
   semanticLevelForZoom,
   schoolsForCity,
@@ -95,7 +96,9 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
     const viewKey = `${level}:${activeCity}`;
     if (viewRef.current === viewKey) return;
     viewRef.current = viewKey;
-    if (level === "province") {
+    if (level === "country") {
+      map.setZoomAndCenter(4.3, [COUNTRY_CENTER.lng, COUNTRY_CENTER.lat]);
+    } else if (level === "province") {
       map.setZoomAndCenter(7.35, [GUANGDONG_CENTER.lng, GUANGDONG_CENTER.lat]);
     } else {
       const center = centerForCity(cities, activeCity);
@@ -112,7 +115,7 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
 
     const render = async () => {
       const immediate: AmapOverlay[] = [];
-      if (level === "province") {
+      if (level !== "city") {
         for (const city of cities) {
           const presentation = cityMarkerPresentation(city, city.city === activeCity);
           const marker = new amap.Marker(presentation);
@@ -128,14 +131,14 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
           immediate.push(marker);
         }
       }
-      const routes = collaborationRoutePresentations(level, cities, activeCity)
+      const routes = level === "country" ? [] : collaborationRoutePresentations(level, cities, activeCity)
         .map((presentation) => new amap.Polyline(presentation));
       immediate.unshift(...routes);
       if (generation !== generationRef.current) return;
       overlaysRef.current = immediate;
       if (immediate.length) map.add(immediate);
 
-      if (level === "province") {
+      if (level !== "city") {
         await Promise.all(cities.map(async ({ city }) => {
           const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), true, true);
           if (generation !== generationRef.current || !outlines.length) return;
@@ -157,11 +160,11 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
   }, [activeCity, amap, cities, level, onSelectCity, onSelectSchool, selectedId]);
 
   return <div className="semantic-map-shell">
-    <div ref={containerRef} className="amap-canvas" aria-label={`${level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`}`} />
+    <div ref={containerRef} className="amap-canvas" aria-label={level === "country" ? "全国城市共建概览" : level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`} />
     <div className="map-live-label">
-      <span>{level === "province" ? "GD" : activeCity.slice(0, 1)}</span>
-      <strong>{level === "province" ? "广东" : activeCity}</strong>
-      <small>{level === "province" ? "缩放或点击城市进入学校网络" : "图钉内为成员数，点击查看学校"}</small>
+      <span>{level === "country" ? "CN" : level === "province" ? "GD" : activeCity.slice(0, 1)}</span>
+      <strong>{level === "country" ? "全国" : level === "province" ? "广东" : activeCity}</strong>
+      <small>{level !== "city" ? "缩放或点击城市进入学校网络" : "图钉内为成员数，点击查看学校"}</small>
     </div>
   </div>;
 }

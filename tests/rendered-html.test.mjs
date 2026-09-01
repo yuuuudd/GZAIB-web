@@ -120,12 +120,10 @@ test("home page renders the clean hero with final punctuation and no duplicate h
   assert.match(html, /探索高校能量，发现同频伙伴/);
   assert.match(html, /像逛校园一样探索广东高校圈/);
   assert.match(html, /aria-label="共建地图层级"/);
-  assert.match(html, /aria-label="切换地图风格"/);
-  assert.match(html, />彩绘版<\/button>/);
-  assert.match(html, />标准版<\/button>/);
+  assert.doesNotMatch(html, /aria-label="切换地图风格"|>彩绘版<\/button>|>标准版<\/button>/);
   assert.match(html, />广州<\/button>/);
   assert.match(html, />广东<\/button>/);
-  assert.match(html, /<button[^>]*disabled[^>]*>全国<small>筹备中<\/small><\/button>/);
+  assert.match(html, /<button[^>]*aria-pressed="false"[^>]*>全国<\/button>/);
   assert.match(html, /class="map-overview-row"[\s\S]*aria-label="目录统计"[\s\S]*class="map-stage/);
   assert.doesNotMatch(html, /aria-label="筛选共建者"|搜索学校、昵称或方向|仅看认证共建者/);
   assert.doesNotMatch(html, /codex-preview/);

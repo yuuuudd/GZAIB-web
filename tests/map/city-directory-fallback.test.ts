@@ -42,6 +42,22 @@ test("province fallback presents city totals as drill-down controls", () => {
   assert.match(html, /深圳/);
 });
 
+test("country fallback presents the lit national city network", () => {
+  const html = renderToStaticMarkup(createElement(CityDirectoryFallback, {
+    cities,
+    activeCity: "广州",
+    level: "country",
+    onSelectCity: () => undefined,
+    onBackToProvince: () => undefined,
+    onSelectSchool: () => undefined,
+  }));
+
+  assert.match(html, /全国城市网络/);
+  assert.match(html, /全国共建概览/);
+  assert.match(html, /广州/);
+  assert.match(html, /深圳/);
+});
+
 test("city fallback keeps a Guangdong back control and presents full school names", () => {
   const html = renderToStaticMarkup(createElement(CityDirectoryFallback, {
     cities,

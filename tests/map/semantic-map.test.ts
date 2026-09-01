@@ -43,6 +43,14 @@ test("uses a stable fallback center when a city school coordinate is invalid", (
   assert.deepEqual(summary?.center, { lng: 113.3928, lat: 22.5176 });
 });
 
+test("keeps valid school coordinates across China for national city pins", () => {
+  const [summary] = groupSchoolsByCity([
+    school({ id: "pku", name: "北京大学", city: "北京市", lng: 116.3109, lat: 39.9928 }),
+  ]);
+
+  assert.deepEqual(summary?.center, { lng: 116.3109, lat: 39.9928 });
+});
+
 test("keeps Guangzhou as the default and preserves an explicitly selected empty city", () => {
   const summaries = groupSchoolsByCity([
     school({ id: "szu", name: "深圳大学", city: "深圳市" }),
@@ -59,4 +67,5 @@ test("switches to the Guangdong overview only after zooming out past the semanti
   assert.equal(semanticLevelForZoom(9.25), "city");
   assert.equal(semanticLevelForZoom(9.24), "province");
   assert.equal(semanticLevelForZoom(7), "province");
+  assert.equal(semanticLevelForZoom(4.8), "country");
 });

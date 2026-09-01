@@ -1,6 +1,6 @@
 import type { DirectorySchool } from "../directory/service";
 
-export type MapLevel = "province" | "city";
+export type MapLevel = "country" | "province" | "city";
 
 export type MapPoint = {
   lng: number;
@@ -16,8 +16,10 @@ export type MapCitySummary = {
 };
 
 export const DEFAULT_CITY = "广州";
+export const COUNTRY_CENTER: MapPoint = { lng: 104.1954, lat: 35.8617 };
 export const GUANGDONG_CENTER: MapPoint = { lng: 113.2665, lat: 23.1322 };
 export const CITY_ZOOM_THRESHOLD = 9.25;
+export const PROVINCE_ZOOM_THRESHOLD = 5.5;
 
 const CITY_CENTERS: Record<string, MapPoint> = {
   广州: { lng: 113.2644, lat: 23.1291 },
@@ -50,10 +52,10 @@ export function normalizeCity(value: string): string {
 function usableCoordinate(school: DirectorySchool): boolean {
   return Number.isFinite(school.lng)
     && Number.isFinite(school.lat)
-    && school.lng >= 109
-    && school.lng <= 118
-    && school.lat >= 20
-    && school.lat <= 26;
+    && school.lng >= 73
+    && school.lng <= 135
+    && school.lat >= 3
+    && school.lat <= 54;
 }
 
 function cityCenter(city: string, schools: DirectorySchool[]): MapPoint {
@@ -86,10 +88,11 @@ export function groupSchoolsByCity(schools: DirectorySchool[]): MapCitySummary[]
 }
 
 export function semanticLevelForZoom(zoom: number): MapLevel {
-  return zoom >= CITY_ZOOM_THRESHOLD ? "city" : "province";
+  return zoom >= CITY_ZOOM_THRESHOLD ? "city" : zoom >= PROVINCE_ZOOM_THRESHOLD ? "province" : "country";
 }
 
 export function resolveActiveCity(activeCity: string | undefined, _summaries: MapCitySummary[]): string {
+  void _summaries;
   return activeCity ? normalizeCity(activeCity) : DEFAULT_CITY;
 }
 

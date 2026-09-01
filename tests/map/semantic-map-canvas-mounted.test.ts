@@ -10,12 +10,13 @@ import type { MapCitySummary } from "../../features/map/semantic-map";
 const school = { id: "sysu", name: "中山大学", campus: "南校园", city: "广州", lng: 113.298, lat: 23.096, memberCount: 3, previewMembers: [] };
 const cities: MapCitySummary[] = [{ city: "广州", memberCount: 3, schoolCount: 1, center: { lng: 113.298, lat: 23.096 }, schools: [school] }];
 
-async function renderMap(level: "province" | "city") {
+async function renderMap(level: "country" | "province" | "city", mapCities = cities) {
   const dom = new JSDOM("<!doctype html><html><body><div id=\"root\"></div></body></html>");
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   const added: AmapOverlay[][] = [];
   const districtQueries: string[] = [];
-  class Map { add(overlays: AmapOverlay[]) { added.push(overlays); } remove() {} destroy() {} getZoom() { return level === "province" ? 7 : 10; } setZoomAndCenter() {} on() {} off() {} setFitView() {} }
+  const views: Array<{ zoom: number; center: [number, number] }> = [];
+  class Map { add(overlays: AmapOverlay[]) { added.push(overlays); } remove() {} destroy() {} getZoom() { return level === "country" ? 4 : level === "province" ? 7 : 10; } setZoomAndCenter(zoom: number, center: [number, number]) { views.push({ zoom, center }); } on() {} off() {} setFitView() {} }
   class Marker { constructor(readonly options: Record<string, unknown>) {} on() {} setMap() {} }
   class Circle { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
   class Polyline { constructor(readonly options: Record<string, unknown>) {} setMap() {} }
@@ -23,9 +24,20 @@ async function renderMap(level: "province" | "city") {
   class DistrictSearch { search(keyword: string) { districtQueries.push(keyword); } }
   const amap = { Map, Marker, Circle, Polyline, Polygon, DistrictSearch } as unknown as AmapNamespace;
   const root = createRoot(dom.window.document.querySelector("#root")!);
-  await act(async () => { root.render(createElement(SemanticMapCanvas, { amap, cities, level, activeCity: "广州", onLevelChange: () => undefined, onSelectCity: () => undefined, onSelectSchool: () => undefined, onFailure: () => undefined })); });
-  return { added, districtQueries, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
+  await act(async () => { root.render(createElement(SemanticMapCanvas, { amap, cities: mapCities, level, activeCity: mapCities[0]?.city ?? "广州", onLevelChange: () => undefined, onSelectCity: () => undefined, onSelectSchool: () => undefined, onFailure: () => undefined })); });
+  return { added, districtQueries, views, cleanup: async () => { await act(async () => root.unmount()); dom.window.close(); } };
 }
+
+test("country view shows lit city pins and frames all of China", async () => {
+  const beijing = [{ ...cities[0]!, city: "北京", center: { lng: 116.3109, lat: 39.9928 } }];
+  const mounted = await renderMap("country", beijing);
+  try {
+    assert.ok(mounted.added.flat().some((overlay) => overlay.constructor.name === "Marker"));
+    assert.ok(!mounted.added.flat().some((overlay) => overlay.constructor.name === "Polyline"));
+    assert.deepEqual(mounted.districtQueries, ["北京市"]);
+    assert.deepEqual(mounted.views.at(-1), { zoom: 4.3, center: [104.1954, 35.8617] });
+  } finally { await mounted.cleanup(); }
+});
 
 test("province city pins render before any district boundary request completes", async () => {
   const mounted = await renderMap("province");
