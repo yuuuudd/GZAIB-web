@@ -9,6 +9,14 @@ const homeChannels = [
   { href: "/events", title: "活动赛事", subtitle: "发现活动，参与共建", artwork: "/brand/home-events.webp", tone: "events" },
 ] as const;
 
+const communityLoop = [
+  { label: "发现", marker: "见", description: "发现议题、活动与真实需求", href: "/events" },
+  { label: "连接", marker: "联", description: "在共建地图找到同行者", href: "/#map" },
+  { label: "共创", marker: "创", description: "加入网络，发起双向连接", href: "/apply" },
+  { label: "落地", marker: "行", description: "组队协作，把想法变成行动" },
+  { label: "沉淀", marker: "留", description: "让作品、经验与贡献持续可见" },
+] as const;
+
 export default function Home() {
   return (
     <main className="brand-shell">
@@ -45,14 +53,15 @@ export default function Home() {
         </div>
       </section>
       <EcosystemMapSwitcher initialView="builders" />
-      <section className="approval-flow" id="how-it-works" aria-labelledby="approval-title">
-        <div className="approval-heading"><p className="map-section-kicker">一束光如何亮起</p><h2 id="approval-title">真实、本人选择、经过审核</h2><p>四个步骤，把公开边界和共建信任讲清楚。</p></div>
+      <section className="community-loop" id="how-it-works" aria-labelledby="community-loop-title">
+        <div className="approval-heading"><p className="map-section-kicker">共创如何发生</p><h2 id="community-loop-title">从连接，到创造</h2><p>让议题找到同行，让行动沉淀成果。</p></div>
         <ol>
-          <li><span>01</span><i aria-hidden="true">填</i><div><strong>提交资料</strong><p>填写学校与个人简介</p></div></li>
-          <li><span>02</span><i aria-hidden="true">选</i><div><strong>本人选择公开内容</strong><p>逐项选择头像与可见信息</p></div></li>
-          <li><span>03</span><i aria-hidden="true">审</i><div><strong>运营审核</strong><p>人工确认资料真实可靠</p></div></li>
-          <li><span>04</span><i aria-hidden="true">亮</i><div><strong>学校点亮</strong><p>通过后在目录与地图出现</p></div></li>
+          {communityLoop.map((step, index) => <li className="community-loop-step" key={step.label}>
+            <span>{String(index + 1).padStart(2, "0")}</span><i aria-hidden="true">{step.marker}</i>
+            <div>{"href" in step ? <a href={step.href}><strong>{step.label}</strong></a> : <strong>{step.label}</strong>}<p>{step.description}</p></div>
+          </li>)}
         </ol>
+        <p className="community-loop-return"><span aria-hidden="true">↺</span> 成果沉淀，进入下一轮发现</p>
       </section>
       <section className="brand-about" id="about"><div><p className="map-section-kicker">广州AI共创社</p><h2>连接创造力，也尊重每一条边界</h2></div><p>这不是成员实时位置地图，而是一份由本人授权、学校聚合、运营审核的公开共建目录。</p><a href="/apply">申请加入共建网络 →</a></section>
     </main>

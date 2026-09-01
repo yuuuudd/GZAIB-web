@@ -163,6 +163,31 @@ test("home hero exposes the approved brand and all four visual channels in the f
   }
 });
 
+test("home page presents the five-stage community action loop", async () => {
+  const response = await renderHomePage({ host: "localhost" });
+  assert.equal(response.status, 200);
+  const dom = new JSDOM(await response.text());
+  try {
+    const document = dom.window.document;
+    const loop = document.querySelector(".community-loop");
+    assert.ok(loop);
+    assert.match(loop.textContent ?? "", /从连接，到创造/);
+    assert.match(loop.textContent ?? "", /让议题找到同行，让行动沉淀成果。/);
+    assert.deepEqual(
+      [...loop.querySelectorAll(".community-loop-step strong")].map((node) => node.textContent?.trim()),
+      ["发现", "连接", "共创", "落地", "沉淀"],
+    );
+    assert.equal(loop.querySelectorAll(".community-loop-step").length, 5);
+    assert.match(loop.querySelector(".community-loop-return")?.textContent ?? "", /进入下一轮发现/);
+    assert.equal(loop.querySelector('a[href="/events"]')?.textContent?.trim(), "发现");
+    assert.equal(loop.querySelector('a[href="/#map"]')?.textContent?.trim(), "连接");
+    assert.equal(loop.querySelector('a[href="/apply"]')?.textContent?.trim(), "共创");
+    assert.doesNotMatch(loop.textContent ?? "", /真实、本人选择、经过审核|一束光如何亮起/);
+  } finally {
+    dom.window.close();
+  }
+});
+
 test("home page omits social URLs and images when the Host header is missing", async () => {
   const response = await renderHomePage({ host: "" });
   assert.equal(response.status, 200);
