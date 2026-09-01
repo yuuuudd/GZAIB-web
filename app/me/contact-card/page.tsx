@@ -6,16 +6,18 @@ import { BrandHomeLink } from "../../../components/navigation/BrandHomeLink";
 import { PrimaryNavigation } from "../../../components/navigation/PrimaryNavigation";
 import { getDb } from "../../../db";
 import { createContactCardService } from "../../../features/connections/contact-card";
-import { requireActiveSession } from "../../../features/identity/active-account";
+import { resolveRequestUserId } from "../../../features/identity/request-user";
 import { createContactCardRepository } from "../../../lib/db/repositories/contact-cards";
+import { chatGPTSignInPath } from "../../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactCardPage() {
   const requestHeaders = await headers();
-  let userId: string;
-  try { userId = (await requireActiveSession(new Request("https://demo.local/me/contact-card", { headers: requestHeaders }))).identity.id; }
+  let userId: string | null;
+  try { userId = await resolveRequestUserId(new Request("https://demo.local/me/contact-card", { headers: requestHeaders })); }
   catch { redirect("/"); }
+  if (!userId) redirect(chatGPTSignInPath("/me/contact-card"));
   let card;
   try {
     // This settings page is the only server-rendered surface that deliberately receives plaintext.

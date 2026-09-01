@@ -30,9 +30,9 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
 
 /** Defers platform/D1 imports until an API request is handled, keeping route-module import safe in non-Worker tooling. */
 export async function createDefaultRuntimeConnectionRouteAdapter() {
-  const identity = await import("../identity/active-account");
+  const identity = await import("../identity/request-user");
   return createRuntimeConnectionRouteAdapter({
-    requireActiveSession: identity.requireActiveSession,
+    requireActiveSession: identity.requireRequestUserSession,
     createRuntimeService: async () => (await import("./service")).createRuntimeConnectionService(),
     resolveRecipientId: async (slug) => (await import("./recipient-resolver")).resolvePublicConnectionRecipientId(slug),
     resolvePublicSlug: async (userId) => (await import("./recipient-resolver")).resolvePublicConnectionSlug(userId),

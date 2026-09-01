@@ -37,3 +37,12 @@ export async function resolveRequestUserId(request: Request, dependencies: Reque
   await dependencies.ensureChatGPTAccount(account);
   return account.id;
 }
+
+export async function requireRequestUserSession(
+  request: Request,
+  dependencies?: RequestUserDependencies,
+): Promise<{ identity: { id: string } }> {
+  const userId = await resolveRequestUserId(request, dependencies);
+  if (!userId) throw new Error("Authentication required");
+  return { identity: { id: userId } };
+}

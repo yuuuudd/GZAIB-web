@@ -6,14 +6,15 @@ import { BrandHomeLink } from "../../../components/navigation/BrandHomeLink";
 import { PrimaryNavigation } from "../../../components/navigation/PrimaryNavigation";
 import { createRuntimeCommunityMutationService } from "../../../features/communities/service";
 import { resolveRequestUserId } from "../../../features/identity/request-user";
+import { chatGPTSignInPath } from "../../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function ManagedCommunitiesPage() {
   const requestHeaders = await headers();
   let userId: string | null = null;
-  try { userId = await resolveRequestUserId(new Request("https://demo.local/me/communities", { headers: requestHeaders })); } catch { userId = null; }
-  if (!userId) redirect("/apply");
+  try { userId = await resolveRequestUserId(new Request("https://demo.local/me/communities", { headers: requestHeaders })); } catch { redirect("/"); }
+  if (!userId) redirect(chatGPTSignInPath("/me/communities"));
   const managed = await (await createRuntimeCommunityMutationService()).listManagedCommunities(userId).catch(() => []);
 
   return <main className="member-center-shell">

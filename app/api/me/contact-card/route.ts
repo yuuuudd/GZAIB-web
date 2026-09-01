@@ -1,11 +1,11 @@
 import { getDb } from "../../../../db";
 import { createContactCardService } from "../../../../features/connections/contact-card";
 import { createContactCardRouteHandlers } from "../../../../features/connections/contact-card-route";
-import { requireActiveSession } from "../../../../features/identity/active-account";
+import { requireRequestUserSession } from "../../../../features/identity/request-user";
 import { createContactCardRepository } from "../../../../lib/db/repositories/contact-cards";
 
 const handlers = createContactCardRouteHandlers({
-  requireActiveSession,
+  requireActiveSession: requireRequestUserSession,
   createService: () => createContactCardService(createContactCardRepository(getDb())),
 });
 

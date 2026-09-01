@@ -1,6 +1,7 @@
 import { projectProfile } from "./public-profile";
 import type { MemberProfileRecord, ProjectedProfile, Viewer, VisibilityRules } from "./types";
-import type { Session } from "../identity/types";
+
+type ViewerSession = { identity: { id: string; role?: string } };
 
 export type ProfileAccessCandidate = {
   accountStatus: string;
@@ -17,7 +18,7 @@ export type ProfileAccessRepository = {
 
 /** Converts only durable server session/membership state into a viewer capability. */
 export async function deriveProfileViewer(
-  session: Session | undefined,
+  session: ViewerSession | undefined,
   isApprovedMember: (userId: string) => Promise<boolean>,
 ): Promise<Viewer> {
   if (!session) return { kind: "visitor" };
@@ -60,9 +61,9 @@ export async function createRuntimeProfileAccessService() {
 }
 
 export async function resolveRuntimeProfileViewer(request: Request): Promise<Viewer> {
-  let session: Session | undefined;
+  let session: ViewerSession | undefined;
   try {
-    session = await (await import("../identity/active-account")).requireActiveSession(request);
+    session = await (await import("../identity/request-user")).requireRequestUserSession(request);
   } catch {
     return { kind: "visitor" };
   }

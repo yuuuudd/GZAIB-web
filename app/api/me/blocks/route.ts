@@ -1,8 +1,8 @@
 import { createRuntimeSafetyService, SafetyServiceError } from "../../../../features/safety/service";
-import { requireActiveSession } from "../../../../features/identity/active-account";
+import { requireRequestUserSession } from "../../../../features/identity/request-user";
 
 const headers = { "Cache-Control": "private, no-store" };
-async function actor(request: Request) { try { return (await requireActiveSession(request)).identity.id; } catch { return undefined; } }
+async function actor(request: Request) { try { return (await requireRequestUserSession(request)).identity.id; } catch { return undefined; } }
 function failure(error: unknown) {
   if (error instanceof SafetyServiceError) return Response.json({ error: error.code === "not_found" ? "成员不可用" : "请求无效" }, { status: error.code === "not_found" ? 404 : error.code === "invalid_target" ? 400 : 409, headers });
   return Response.json({ error: "暂时无法处理请求" }, { status: 503, headers });

@@ -3,7 +3,6 @@ import type { getDb } from "../../db";
 import * as schema from "../../db/schema";
 import * as drizzle from "drizzle-orm";
 import { clearSession } from "./session";
-import type { Session } from "./types";
 
 export const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 
@@ -49,7 +48,7 @@ export function createAccountDeletionService(
 }
 
 export type AccountDeletionRequestDependencies = {
-  requireActiveSession(request: Request): Promise<Session>;
+  requireActiveSession(request: Request): Promise<{ identity: { id: string } }>;
   deleteOwnAccount(userId: string, confirmation: unknown, now: number): Promise<void>;
   now(): number;
 };
@@ -59,7 +58,7 @@ export async function handleAccountDeletionRequest(
   request: Request,
   dependencies: AccountDeletionRequestDependencies,
 ): Promise<Response> {
-  let session: Session;
+  let session: { identity: { id: string } };
   try {
     session = await dependencies.requireActiveSession(request);
   } catch {

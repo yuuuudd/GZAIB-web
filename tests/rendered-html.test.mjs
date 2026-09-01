@@ -221,13 +221,12 @@ test("home page ignores a syntactically valid hostile forwarded host and keeps d
   assert.doesNotMatch(html, /attacker\.test/);
 });
 
-test("connections inbox page renders its consent UI without server-rendering contact plaintext", async () => {
+test("anonymous connections inbox redirects to ChatGPT sign-in without exposing private data", async () => {
   const response = await renderRoute("/me/connections?box=accepted", { host: "localhost" });
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "/signin-with-chatgpt?return_to=%2Fme%2Fconnections");
   const html = await response.text();
 
-  assert.match(html, /已连接|已连接/);
-  assert.match(html, /收到的|发出的/);
   assert.doesNotMatch(html, /member-a-v[12]|member-b@example\.test|CONTACT_ENCRYPTION_KEY|encryptedPayload/i);
   assert.doesNotMatch(html, /reviewNotes|reporterId|sessionId/i);
 });

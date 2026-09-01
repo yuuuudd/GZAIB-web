@@ -7,16 +7,18 @@ import { PrimaryNavigation } from "../../components/navigation/PrimaryNavigation
 import { getDb } from "../../db";
 import { memberProfiles, schools } from "../../db/schema";
 import { createRuntimeProfileAccessService } from "../../features/directory/profile-access";
-import { requireActiveSession } from "../../features/identity/active-account";
+import { resolveRequestUserId } from "../../features/identity/request-user";
 import { loadProfileVisibility } from "../../lib/db/repositories/directory";
+import { chatGPTSignInPath } from "../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function MemberCenterPage() {
   const requestHeaders = await headers();
-  let userId: string;
-  try { userId = (await requireActiveSession(new Request("https://demo.local/me", { headers: requestHeaders }))).identity.id; }
+  let userId: string | null;
+  try { userId = await resolveRequestUserId(new Request("https://demo.local/me", { headers: requestHeaders })); }
   catch { redirect("/"); }
+  if (!userId) redirect(chatGPTSignInPath("/me"));
   const db = getDb();
   const profile = await (await createRuntimeProfileAccessService()).getOwnProfile(userId);
   const [profileRow, schoolOptions] = await Promise.all([

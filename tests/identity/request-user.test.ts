@@ -2,14 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 async function loadResolver() {
-  let module: Record<string, unknown> = {};
+  let identityModule: Record<string, unknown> = {};
   try {
-    module = await import("../../features/identity/request-user") as Record<string, unknown>;
+    identityModule = await import("../../features/identity/request-user") as Record<string, unknown>;
   } catch {
     // Assertions stay red until the shared production identity boundary exists.
   }
-  assert.equal(typeof module.resolveRequestUserId, "function", "resolveRequestUserId should be exported");
-  return module.resolveRequestUserId as (request: Request, dependencies: Record<string, unknown>) => Promise<string | null>;
+  assert.equal(typeof identityModule.resolveRequestUserId, "function", "resolveRequestUserId should be exported");
+  return identityModule.resolveRequestUserId as (request: Request, dependencies: Record<string, unknown>) => Promise<string | null>;
+}
+
+async function loadRequiredSession() {
+  const identity = await import("../../features/identity/request-user") as Record<string, unknown>;
+  assert.equal(typeof identity.requireRequestUserSession, "function", "requireRequestUserSession should be exported");
+  return identity.requireRequestUserSession as (request: Request, dependencies: Record<string, unknown>) => Promise<{ identity: { id: string } }>;
 }
 
 test("production requests use trusted ChatGPT identity and ensure a member account", async () => {
@@ -39,4 +45,27 @@ test("visitors stay anonymous while demo mode keeps its signed identity", async 
   };
   assert.equal(await resolveRequestUserId(new Request("https://site.test/"), dependencies), null);
   assert.equal(await resolveRequestUserId(new Request("https://site.test/"), { ...dependencies, isDemoMode: () => true }), "demo-member");
+});
+
+test("required member identity accepts trusted production headers", async () => {
+  const requireRequestUserSession = await loadRequiredSession();
+  const session = await requireRequestUserSession(new Request("https://site.test/me", { headers: {
+    "oai-authenticated-user-id": "user-42",
+    "oai-authenticated-user-email": "member@example.com",
+  } }), {
+    isDemoMode: () => false,
+    requireDemoSession: async () => null,
+    ensureChatGPTAccount: async () => undefined,
+  });
+
+  assert.equal(session.identity.id, "chatgpt:user-42");
+});
+
+test("required member identity rejects an anonymous visitor", async () => {
+  const requireRequestUserSession = await loadRequiredSession();
+  await assert.rejects(() => requireRequestUserSession(new Request("https://site.test/me"), {
+    isDemoMode: () => false,
+    requireDemoSession: async () => null,
+    ensureChatGPTAccount: async () => undefined,
+  }));
 });
