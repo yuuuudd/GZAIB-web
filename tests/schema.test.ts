@@ -57,3 +57,31 @@ test("pending community claims have an executable partial unique index while rev
   const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")) as { entries: Array<{ idx: number; tag: string }> };
   assert.ok(journal.entries.some((entry) => entry.idx === 5 && entry.tag === "0005_pending_community_claim_uniqueness"));
 });
+
+test("real community migration publishes the seven approved sources and excludes withheld hackathons", () => {
+  const migrationPath = "drizzle/0006_publish_verified_ai_communities.sql";
+  assert.ok(existsSync(migrationPath), `missing ${migrationPath}`);
+  const database = new DatabaseSync(":memory:");
+  try {
+    database.exec("CREATE TABLE users (id text PRIMARY KEY NOT NULL)");
+    for (const path of ["drizzle/0004_ai_community_foundation.sql", migrationPath]) {
+      for (const statement of readFileSync(path, "utf8").split("--> statement-breakpoint")) {
+        if (statement.trim()) database.exec(statement);
+      }
+    }
+    const rows = database.prepare("SELECT slug, name, publish_status, official_url FROM communities ORDER BY slug").all() as Array<{ slug: string; name: string; publish_status: string; official_url: string }>;
+    assert.equal(rows.length, 7);
+    assert.ok(rows.every((row) => row.publish_status === "published"));
+    assert.ok(rows.every((row) => new URL(row.official_url).protocol === "https:"));
+    assert.deepEqual(rows.map((row) => row.slug), [
+      "datawhale", "dongguan-industrial-ai-community", "gdg-guangzhou", "hackathonweekly",
+      "modelscope", "opc-dongguan", "openi",
+    ]);
+    assert.doesNotMatch(rows.map((row) => row.name).join(" "), /深客松|肇客松|莞客松/);
+  } finally {
+    database.close();
+  }
+
+  const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")) as { entries: Array<{ idx: number; tag: string }> };
+  assert.ok(journal.entries.some((entry) => entry.idx === 6 && entry.tag === "0006_publish_verified_ai_communities"));
+});

@@ -54,11 +54,12 @@ test("news route renders its editorial hierarchy and links to events", async () 
   try {
     const document = dom.window.document;
     assert.match(document.body.textContent ?? "", /值得关注的 AI 新进展/);
-    assert.match(document.body.textContent ?? "", /页面设计预览 · 以下为示例内容/);
+    assert.match(document.body.textContent ?? "", /最后核验于 2026-09-01/);
+    assert.doesNotMatch(document.body.textContent ?? "", /页面设计预览|示例内容/);
     assert.equal(document.querySelectorAll(".news-lead-card").length, 1);
     assert.equal(assertChannelLink(document, "/news", "AI 资讯").getAttribute("aria-current"), "page");
     assertChannelLink(document, "/events", "活动赛事");
-    assert.ok(document.querySelector('[role="group"][aria-label="按分类筛选资讯"]'));
+    assert.ok(document.querySelector('nav[aria-label="资讯分类"]'));
   } finally {
     dom.window.close();
   }
@@ -159,4 +160,31 @@ test("unauthenticated connection API responses remain private and reveal no cont
   const body = await response.text();
 
   assert.doesNotMatch(body, /wechat|email|contactCard|encryptedPayload|demo-admin|demo-member/i);
+});
+
+test("home and community pages expose the two live content channels", async () => {
+  for (const route of ["/", "/communities"]) {
+    const response = await renderRoute(route, { host: "localhost" });
+    const html = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(html, /href="\/news"[^>]*>AI 资讯<\/a>/);
+    assert.match(html, /href="\/events"[^>]*>活动赛事<\/a>/);
+  }
+});
+
+test("news and events pages render sourced content without preview labels", async () => {
+  const news = await renderRoute("/news", { host: "localhost" });
+  const newsHtml = await news.text();
+  assert.equal(news.status, 200);
+  assert.match(newsHtml, /值得关注的 AI 新进展/);
+  assert.match(newsHtml, /GPT-5\.6 正式上线/);
+  assert.doesNotMatch(newsHtml, /示例内容|深客松|肇客松|莞客松/);
+
+  const events = await renderRoute("/events", { host: "localhost" });
+  const eventsHtml = await events.text();
+  assert.equal(events.status, 200);
+  assert.match(eventsHtml, /找到下一场值得参加的 AI 活动/);
+  assert.match(eventsHtml, /AIx Origin 黑客松/);
+  assert.match(eventsHtml, /报名及结果通知由主办方负责/);
+  assert.doesNotMatch(eventsHtml, /示例内容|深客松|肇客松|莞客松/);
 });

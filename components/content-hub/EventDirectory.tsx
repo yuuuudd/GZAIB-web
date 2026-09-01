@@ -1,131 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import {
-  EVENT_LOCATIONS,
-  EVENT_TYPES,
-  filterEvents,
-  type EventGroup,
-  type EventItem,
-  type EventLocation,
-  type EventType,
-} from "../../features/content-hub/catalog";
+import { EVENT_LOCATIONS, EVENT_TYPES, filterEvents, type EventGroup, type EventItem, type EventLocation } from "../../features/content-hub/catalog";
 
-const TIMELINE_GROUPS: EventGroup[] = ["本周进行", "即将开始", "长期征集"];
+const EVENT_GROUPS: EventGroup[] = ["本周进行", "即将开始", "长期征集"];
 
-function RegistrationLink({ item }: { item: EventItem }) {
-  return (
-    <a className="event-registration-link" href={item.url} target="_blank" rel="noreferrer noopener">
-      前往官网报名 ↗
-    </a>
-  );
+function OfficialLink({ item }: { item: EventItem }) {
+  return <a href={item.url} target="_blank" rel="noreferrer noopener">前往官网查看 ↗</a>;
 }
 
 export function EventDirectory({ items }: { items: EventItem[] }) {
-  const [type, setType] = useState<EventType | "全部">("全部");
-  const [location, setLocation] = useState<EventLocation>("广州");
-  const filteredItems = filterEvents(items, type, location);
-  const featuredItem = filteredItems.find((item) => item.featured) ?? filteredItems[0];
-  const scheduleItems = filteredItems.slice(0, 4);
+  const [type, setType] = useState<(typeof EVENT_TYPES)[number]>("全部");
+  const [location, setLocation] = useState<EventLocation>("广东");
+  const filtered = filterEvents(items, type, location);
+  const featured = filtered.find((item) => item.featured) ?? filtered[0];
 
-  return (
-    <section className="event-directory" aria-labelledby="event-directory-title">
-      <p className="content-preview-notice">页面设计预览 · 以下为示例内容</p>
-      <header className="event-directory-heading">
-        <p className="content-hub-kicker">AI 活动与赛事</p>
-        <h1 id="event-directory-title">找到下一场值得参加的 AI 活动</h1>
-        <p>比赛、黑客松、分享会与工作坊，从近期时间开始发现。</p>
-      </header>
-
-      <div className="event-filter-bar">
-        <div className="event-type-filters" role="group" aria-label="按活动类型筛选">
-          {EVENT_TYPES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={type === value}
-              onClick={() => setType(value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-        <div className="event-location-filters" role="group" aria-label="按活动地区筛选">
-          {EVENT_LOCATIONS.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={location === value}
-              onClick={() => setLocation(value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
+  return <section className="event-directory" aria-labelledby="events-title">
+    <header className="content-hub-heading"><p className="community-kicker">AI 活动与赛事</p><h1 id="events-title">找到下一场值得参加的 AI 活动</h1><p>比赛、黑客松、分享会与工作坊，从近期时间开始发现。信息最后核验于 2026-09-01。</p></header>
+    <div className="event-filter-bar"><div aria-label="活动类型">{EVENT_TYPES.map((value) => <button key={value} type="button" aria-pressed={type === value} onClick={() => setType(value)}>{value}</button>)}</div><div aria-label="活动地区">{EVENT_LOCATIONS.map((value) => <button key={value} type="button" aria-pressed={location === value} onClick={() => setLocation(value)}>{value}</button>)}</div></div>
+    <div className="event-content-grid">
+      <div>
+        {featured ? <article className="event-feature-card" data-event-type={featured.type}><span>{featured.dateLabel}</span><div><small>{featured.type}</small><h2>{featured.title}</h2><p>{featured.venue} · {featured.organizer}</p><p>{featured.summary}</p><small>报名截止：{featured.deadlineLabel}</small><OfficialLink item={featured} /></div></article> : null}
+        {EVENT_GROUPS.map((group) => {
+          const groupItems = filtered.filter((item) => item.group === group && item.id !== featured?.id);
+          return groupItems.length ? <section className="event-timeline-group" key={group}><h2>{group}</h2>{groupItems.map((item) => <article key={item.id} data-event-type={item.type}><time>{item.dateLabel}</time><span>{item.type}</span><div><h3>{item.title}</h3><p>{item.venue} · {item.organizer}</p><small>报名截止：{item.deadlineLabel}</small></div><OfficialLink item={item} /></article>)}</section> : null;
+        })}
+        {filtered.length === 0 ? <p className="content-hub-empty">暂时没有匹配的活动，试试其他类型或地区。</p> : null}
       </div>
-
-      <div className="event-directory-layout">
-        <div className="event-directory-main">
-          {featuredItem ? (
-            <article className="event-featured-card" data-event-type={featuredItem.type}>
-              <div className="event-featured-copy">
-                <p className="event-card-date">{featuredItem.dateLabel}</p>
-                <p className="event-card-type">{featuredItem.type}</p>
-                <h2>{featuredItem.title}</h2>
-                <p className="event-card-venue">{featuredItem.venue}</p>
-                <p className="event-card-organizer">主办方：{featuredItem.organizer}</p>
-                <p>{featuredItem.summary}</p>
-                <RegistrationLink item={featuredItem} />
-              </div>
-              <div className="event-featured-art" aria-hidden="true" />
-            </article>
-          ) : (
-            <p className="event-directory-empty" role="status">
-              暂时没有匹配的活动，试试其他类型或地区。
-            </p>
-          )}
-
-          {filteredItems.length ? (
-            <div className="event-timeline">
-              {TIMELINE_GROUPS.map((group) => {
-                const groupItems = filteredItems.filter((item) => item.group === group);
-                return groupItems.length ? (
-                  <section key={group} className="event-timeline-group" aria-labelledby={`event-group-${group}`}>
-                    <h2 id={`event-group-${group}`}>{group}</h2>
-                    <div className="event-timeline-list">
-                      {groupItems.map((item) => (
-                        <article key={item.id} className="event-timeline-card" data-event-type={item.type}>
-                          <p className="event-card-date">{item.dateLabel}</p>
-                          <p className="event-card-type">{item.type}</p>
-                          <h3>{item.title}</h3>
-                          <p className="event-card-venue">{item.venue}</p>
-                          <p className="event-card-deadline">{item.deadlineLabel}</p>
-                          <RegistrationLink item={item} />
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                ) : null;
-              })}
-            </div>
-          ) : null}
-        </div>
-
-        <aside className="event-sidebar" aria-labelledby="event-schedule-title">
-          <h2 id="event-schedule-title">近期日程</h2>
-          {scheduleItems.length ? (
-            <ol className="event-sidebar-list">
-              {scheduleItems.map((item) => (
-                <li key={item.id}>
-                  <span>{item.dateLabel}</span>
-                  <strong>{item.title}</strong>
-                </li>
-              ))}
-            </ol>
-          ) : null}
-          <p className="event-sidebar-notice">报名及结果通知由主办方负责</p>
-        </aside>
-      </div>
-    </section>
-  );
+      <aside className="event-sidebar"><section aria-labelledby="schedule-title"><h2 id="schedule-title">近期日程</h2><ul>{filtered.slice(0, 5).map((item) => <li key={item.id}><time>{item.dateLabel}</time><span>{item.title}</span></li>)}</ul>{filtered.length === 0 ? <p>当前筛选暂无日程。</p> : null}</section><p className="event-responsibility-note"><strong>报名提示</strong>本站只提供信息索引；报名及结果通知由主办方负责，资格审核与赛程变化也请以主办方最新通知为准。</p></aside>
+    </div>
+  </section>;
 }
