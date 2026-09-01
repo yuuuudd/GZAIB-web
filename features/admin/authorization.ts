@@ -12,6 +12,7 @@ export const AUDIT_ACTIONS = [
   "member.restored",
   "member.connections_suspended",
   "member.account_suspended",
+  "member.deleted",
   "member.self_deleted",
   "member.manually_created_draft",
   "member.manually_created_published",

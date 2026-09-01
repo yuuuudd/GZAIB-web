@@ -8,8 +8,9 @@ import type { Session } from "./types";
 export const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 
 export type MinimalAccountDeletionAudit = Pick<AuditRecord, "targetId" | "createdAt"> & {
+  actorUserId: string | null;
   targetType: "member";
-  action: "member.self_deleted";
+  action: "member.self_deleted" | "member.deleted";
   diffJson: "{}";
 };
 
@@ -34,6 +35,7 @@ export function createAccountDeletionService(
         deletedAt: now,
         auditId: createAuditId(),
         audit: {
+          actorUserId: null,
           targetType: "member",
           targetId: userId,
           action: "member.self_deleted",
@@ -85,7 +87,7 @@ export function createAccountDeletionRepository(db: ReturnType<typeof getDb>): A
   return {
     async deleteAccountAtomic(input) {
       const gateAudit = db.insert(schema.auditLogs).select(drizzle.sql`
-        select ${input.auditId}, null, ${input.audit.targetType}, ${input.audit.targetId},
+        select ${input.auditId}, ${input.audit.actorUserId}, ${input.audit.targetType}, ${input.audit.targetId},
           ${input.audit.action}, ${input.audit.diffJson}, ${input.audit.createdAt}
         from ${schema.users}
         where ${schema.users.id} = ${input.userId}

@@ -48,6 +48,7 @@ test("account deletion atomically deletes, unpublishes, withdraws pending review
   assert.equal(store.state.applicationStatus, "withdrawn");
   assert.equal(store.state.sessionsRevokedAt, 1_700_000_000_000);
   assert.deepEqual(store.state.audits, [{
+    actorUserId: null,
     targetType: "member",
     targetId: "owner-1",
     action: "member.self_deleted",

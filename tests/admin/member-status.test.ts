@@ -4,7 +4,10 @@ import { createMemberStatusService, memberTransitionForSafetyResolution, parseMe
 
 test("maps the four allowlisted member actions to account states with exactly one audit row", async () => {
   const rows: Parameters<MemberStatusRepository["applyStatusAtomic"]>[0][] = [];
-  const service = createMemberStatusService({ applyStatusAtomic: async (input) => { rows.push(input); } }, () => "audit-1");
+  const service = createMemberStatusService({
+    applyStatusAtomic: async (input) => { rows.push(input); },
+    deleteAccountAtomic: async () => ({ deleted: true }),
+  }, () => "audit-1");
 
   for (const [action, status, audit] of [
     ["hide", "hidden", "member.hidden"],
@@ -21,14 +24,43 @@ test("maps the four allowlisted member actions to account states with exactly on
 });
 
 test("rejects client decisions outside the member action enum", async () => {
-  const service = createMemberStatusService({ applyStatusAtomic: async () => undefined });
-  await assert.rejects(() => service.updateMemberStatus("demo-admin", "member-1", "delete" as never, 1_000), /action/i);
+  const service = createMemberStatusService({
+    applyStatusAtomic: async () => undefined,
+    deleteAccountAtomic: async () => ({ deleted: true }),
+  });
+  await assert.rejects(() => service.updateMemberStatus("demo-admin", "member-1", "erase" as never, 1_000), /action/i);
+});
+
+test("admin deletion uses the account cleanup path and records the operator", async () => {
+  const deletions: unknown[] = [];
+  const service = createMemberStatusService({
+    applyStatusAtomic: async () => undefined,
+    deleteAccountAtomic: async (input: unknown) => { deletions.push(input); return { deleted: true }; },
+  } as MemberStatusRepository, () => "audit-delete");
+
+  const result = await service.updateMemberStatus("demo-admin", "member-1", "delete" as never, 1_000);
+
+  assert.deepEqual(result, { memberId: "member-1", status: "deleted" });
+  assert.deepEqual(deletions, [{
+    userId: "member-1",
+    deletedAt: 1_000,
+    auditId: "audit-delete",
+    audit: {
+      actorUserId: "demo-admin",
+      targetType: "member",
+      targetId: "member-1",
+      action: "member.deleted",
+      diffJson: "{}",
+      createdAt: 1_000,
+    },
+  }]);
 });
 
 test("member parser accepts only the action field", () => {
   assert.equal(parseMemberStatusAction({ action: "hide" }), "hide");
+  assert.equal(parseMemberStatusAction({ action: "delete" }), "delete");
   assert.throws(() => parseMemberStatusAction({ action: "hide", role: "admin" }), /invalid/i);
-  assert.throws(() => parseMemberStatusAction({ action: "delete" }), /invalid/i);
+  assert.throws(() => parseMemberStatusAction({ action: "erase" }), /invalid/i);
 });
 
 test("safety sanctions reuse the canonical member transition vocabulary", () => {
