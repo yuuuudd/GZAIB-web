@@ -10,12 +10,14 @@ const homeChannels = [
 ] as const;
 
 const communityLoop = [
-  { label: "发现", marker: "见", description: "发现议题、活动与真实需求", href: "/events" },
-  { label: "连接", marker: "联", description: "在共建地图找到同行者", href: "/#map" },
-  { label: "共创", marker: "创", description: "加入网络，发起双向连接", href: "/apply" },
-  { label: "落地", marker: "行", description: "组队协作，把想法变成行动" },
-  { label: "沉淀", marker: "留", description: "让作品、经验与贡献持续可见" },
+  { label: "发现", description: "发现议题、活动与真实需求", href: "/events" },
+  { label: "连接", description: "在共建地图找到同行者", href: "/#map" },
+  { label: "共创", description: "加入网络，发起双向连接", href: "/apply" },
+  { label: "落地", description: "组队协作，把想法变成行动" },
+  { label: "沉淀", description: "让作品、经验与贡献持续可见" },
 ] as const;
+
+const communityLoopPath = "M90 110C200 40 285 45 360 70C450 100 510 125 600 110C690 95 760 50 840 70C930 90 1010 75 1110 110C1170 135 1185 215 1110 245C850 292 350 292 90 245C15 215 25 140 90 110Z";
 
 export default function Home() {
   return (
@@ -56,12 +58,17 @@ export default function Home() {
       <section className="community-loop" id="how-it-works" aria-labelledby="community-loop-title">
         <div className="approval-heading"><p className="map-section-kicker">共创如何发生</p><h2 id="community-loop-title">从连接，到创造</h2><p>让议题找到同行，让行动沉淀成果。</p></div>
         <ol>
+          <svg className="community-loop-path" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <defs><linearGradient id="community-loop-gradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#1e4ed8"/><stop offset=".5" stopColor="#f56a2b"/><stop offset="1" stopColor="#1e4ed8"/></linearGradient></defs>
+            <path className="community-loop-path-line" pathLength="1" d={communityLoopPath}/>
+            <circle className="community-loop-pulse community-loop-pulse-blue" r="4"><animateMotion dur="9s" repeatCount="indefinite" path={communityLoopPath}/></circle>
+            <circle className="community-loop-pulse community-loop-pulse-orange" r="3"><animateMotion begin="-4.5s" dur="9s" repeatCount="indefinite" path={communityLoopPath}/></circle>
+          </svg>
           {communityLoop.map((step, index) => <li className="community-loop-step" key={step.label}>
-            <span>{String(index + 1).padStart(2, "0")}</span><i aria-hidden="true">{step.marker}</i>
+            <span className="sr-only">第 {index + 1} 步</span><i aria-hidden="true" />
             <div>{"href" in step ? <a href={step.href}><strong>{step.label}</strong></a> : <strong>{step.label}</strong>}<p>{step.description}</p></div>
           </li>)}
         </ol>
-        <p className="community-loop-return"><span aria-hidden="true">↺</span> 成果沉淀，进入下一轮发现</p>
       </section>
       <section className="brand-about" id="about"><div><p className="map-section-kicker">广州AI共创社</p><h2>连接创造力，也尊重每一条边界</h2></div><p>这不是成员实时位置地图，而是一份由本人授权、学校聚合、运营审核的公开共建目录。</p><a href="/apply">申请加入共建网络 →</a></section>
     </main>

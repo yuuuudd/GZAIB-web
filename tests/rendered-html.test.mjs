@@ -163,7 +163,7 @@ test("home hero exposes the approved brand and all four visual channels in the f
   }
 });
 
-test("home page presents the five-stage community action loop", async () => {
+test("home page presents the five-stage community action loop as one closed path", async () => {
   const response = await renderHomePage({ host: "localhost" });
   assert.equal(response.status, 200);
   const dom = new JSDOM(await response.text());
@@ -178,7 +178,9 @@ test("home page presents the five-stage community action loop", async () => {
       ["发现", "连接", "共创", "落地", "沉淀"],
     );
     assert.equal(loop.querySelectorAll(".community-loop-step").length, 5);
-    assert.match(loop.querySelector(".community-loop-return")?.textContent ?? "", /进入下一轮发现/);
+    assert.ok(loop.querySelector("svg.community-loop-path path.community-loop-path-line"));
+    assert.equal(loop.querySelector(".community-loop-return"), null);
+    assert.doesNotMatch(loop.textContent ?? "", /进入下一轮发现/);
     assert.equal(loop.querySelector('a[href="/events"]')?.textContent?.trim(), "发现");
     assert.equal(loop.querySelector('a[href="/#map"]')?.textContent?.trim(), "连接");
     assert.equal(loop.querySelector('a[href="/apply"]')?.textContent?.trim(), "共创");
