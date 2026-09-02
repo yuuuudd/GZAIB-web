@@ -203,6 +203,10 @@ test("home page ends with an information footer containing only live platform li
     assertChannelLink(footer, "/events", "活动赛事");
     assertChannelLink(footer, "/apply", "申请加入");
     assertChannelLink(footer, "/me/connections", "我的连接");
+    const officialAccount = footer.querySelector('img[src="/brand/official-account-qr.jpg"]');
+    assert.ok(officialAccount, "Expected the official account QR code in the footer");
+    assert.match(officialAccount?.getAttribute("alt") ?? "", /广州 AI 共创社公众号二维码/);
+    assert.match(footer.textContent ?? "", /扫码关注广州 AI 共创社/);
     assert.doesNotMatch(footer.textContent ?? "", /连接创造力，也尊重每一条边界/);
   } finally {
     dom.window.close();

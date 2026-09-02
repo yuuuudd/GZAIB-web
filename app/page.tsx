@@ -75,8 +75,9 @@ export default function Home() {
           <section className="site-footer-brand"><strong>✦ 广州 AI 共创社 <small>GZAIB</small></strong><p>连接高校 AI 共建者，让项目、活动与资源持续发生。</p><div aria-label="社交渠道"><span>公众号</span><span>小红书</span><span>邮箱</span></div></section>
           <nav aria-label="平台"><h2>平台</h2><a href="/#map">共建地图</a><a href="/communities">AI 社区</a><a href="/news">AI 资讯</a><a href="/events">活动赛事</a></nav>
           <nav aria-label="共建与连接"><h2>共建与连接</h2><a href="/apply">申请加入</a><a href="/me/connections">我的连接</a><a href="/apply">共建者认证</a><a href="/events/submit">活动申请</a></nav>
-          <section className="site-footer-about"><h2>关于我们</h2><p>公开资料由本人授权，经学校聚合与运营审核后展示。</p><p>联系方式仅在双方同意连接后交换。</p></section>
+          <section className="site-footer-qr"><h2>关注公众号</h2><Image src="/brand/official-account-qr.jpg" alt="广州 AI 共创社公众号二维码" width={112} height={112} unoptimized /><p>扫码关注广州 AI 共创社</p></section>
         </div>
+        <div className="site-footer-legal">公开资料由本人授权，经学校聚合与运营审核后展示。联系方式仅在双方同意连接后交换。</div>
         <div className="site-footer-bottom"><span>广州 AI 共创社 · 由高校青年共同建设</span><span>© 2026 GZAIB</span></div>
       </footer>
     </main>
