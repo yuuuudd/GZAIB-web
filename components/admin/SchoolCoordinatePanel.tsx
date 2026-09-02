@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { AmapLoader, AmapLocationPreview, GUANGDONG_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
+import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
 type School = { id: string; name: string; campus: string; city: string; longitude: number; latitude: number; coordinateStatus: string };
 type Candidate = AmapLocation;
 
 function SchoolSearch({ amap, onSelect, pending }: { amap: AmapNamespace; onSelect: (candidate: Candidate) => void; pending: boolean }) {
   const [query, setQuery] = useState(""); const [results, setResults] = useState<Candidate[]>([]); const [preview, setPreview] = useState<Candidate>(); const [message, setMessage] = useState("");
-  function search() { const keyword = query.trim(); if (!keyword) return; setMessage("正在搜索高德地图…"); setPreview(undefined); new amap.PlaceSearch(GUANGDONG_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
+  function search() { const keyword = query.trim(); if (!keyword) return; setMessage("正在搜索高德地图…"); setPreview(undefined); new amap.PlaceSearch(NATIONWIDE_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
     const pois = status === "complete" && value && typeof value === "object" ? ((value as { poiList?: { pois?: unknown[] } }).poiList?.pois ?? []) : [];
     const next = pois.flatMap((poi) => parseAmapLocation(poi) ?? []).slice(0, 8);
     setResults(next); setMessage(next.length ? "请选择一个高德搜索结果" : "没有找到可用地点，可在下方手动填写坐标");

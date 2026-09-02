@@ -7,7 +7,7 @@ import {
   ROLE_OPTIONS,
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
-import { AmapLoader, AmapLocationPreview, GUANGDONG_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
+import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
@@ -37,7 +37,7 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
     if (!keyword) return;
     setMessage("正在搜索高德地图…");
     setPreview(undefined);
-    new amap.PlaceSearch(GUANGDONG_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
+    new amap.PlaceSearch(NATIONWIDE_PLACE_SEARCH_OPTIONS).search(keyword, (status, value) => {
       const pois = status === "complete" && value && typeof value === "object" ? ((value as { poiList?: { pois?: unknown[] } }).poiList?.pois ?? []) : [];
       const next = pois.flatMap((poi) => parseAmapLocation(poi) ?? []).slice(0, 8);
       setResults(next);

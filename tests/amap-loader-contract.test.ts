@@ -34,14 +34,14 @@ test("AMap script requests the administrative-boundary service needed by semanti
   ]);
 });
 
-test("school search stays inside Guangdong and never invents Guangzhou", async () => {
+test("school search accepts AMap results from anywhere in China", async () => {
   const amapModule = await import("../components/map/AmapLoader");
-  const options = (amapModule as Record<string, unknown>).GUANGDONG_PLACE_SEARCH_OPTIONS;
+  const options = (amapModule as Record<string, unknown>).NATIONWIDE_PLACE_SEARCH_OPTIONS;
   const parse = (amapModule as Record<string, unknown>).parseAmapLocation;
 
-  assert.deepEqual(options, { city: "广东", extensions: "all" });
+  assert.deepEqual(options, { extensions: "all" });
   assert.equal(typeof parse, "function");
   if (typeof parse !== "function") return;
   assert.equal(parse({ name: "韩山师范学院", adcode: 445102, adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州");
-  assert.equal(parse({ name: "韩山师范学院", adcode: "610100", location: { lng: 116.61, lat: 23.65 } }), null);
+  assert.equal(parse({ name: "北京大学", cityname: "北京市", adcode: "110108", location: { lng: 116.31, lat: 39.9928 } }).city, "北京市");
 });
