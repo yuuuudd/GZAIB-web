@@ -34,8 +34,8 @@ type AvatarObject = {
 };
 
 const uuidV4Pattern = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}";
-const avatarKeyPattern = new RegExp(`^avatars/[A-Za-z0-9_-]{1,128}/${uuidV4Pattern}\\.(?:jpg|png|webp)$`);
-const ownerPattern = /^[A-Za-z0-9_-]{1,128}$/;
+const avatarKeyPattern = new RegExp(`^avatars/[A-Za-z0-9_:-]{1,128}/${uuidV4Pattern}\\.(?:jpg|png|webp)$`);
+const ownerPattern = /^[A-Za-z0-9_:-]{1,128}$/;
 
 function matches(bytes: Uint8Array, expected: number[], offset = 0): boolean {
   return expected.every((byte, index) => bytes[offset + index] === byte);

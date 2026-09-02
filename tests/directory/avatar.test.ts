@@ -9,6 +9,7 @@ import {
   handleAvatarRead,
   handleAvatarUpload,
   isAvatarKey,
+  isOwnedAvatarKey,
   storeAvatar,
   validateAvatar,
 } from "../../features/directory/avatar";
@@ -51,6 +52,12 @@ test("creates immutable owner-scoped WebP keys and rejects keys outside the rout
   assert.equal(isAvatarKey("avatars/user-1/../private.webp"), false);
   assert.equal(isAvatarKey("avatars/user-1/file.png"), false);
   assert.equal(isAvatarKey("other/user-1/123e4567-e89b-42d3-a456-426614174000.webp"), false);
+});
+
+test("accepts the ChatGPT-prefixed account IDs used for uploaded-avatar ownership", () => {
+  const key = createAvatarKey("chatgpt:user-1", "png");
+  assert.equal(isAvatarKey(key), true);
+  assert.equal(isOwnedAvatarKey(key, "chatgpt:user-1"), true);
 });
 
 test("stores a validated PNG in R2 without requiring the unavailable Images service", async () => {
