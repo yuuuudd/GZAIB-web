@@ -94,3 +94,9 @@ test("public channel navigation remains visible at mobile breakpoints", async ()
   assert.equal(effectiveDisplay(css, "community-header", 760), "flex");
   assert.equal(effectiveDisplay(css, "community-header", 420), "flex");
 });
+
+test("mobile headers keep their account action beside the logo", async () => {
+  const css = await readFile(new URL("../../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.community-header\s*>\s*\.brand-header-action(?=[^{]*\{)[^{]*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
+});
