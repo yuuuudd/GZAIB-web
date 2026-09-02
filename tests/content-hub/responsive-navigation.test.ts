@@ -100,4 +100,6 @@ test("mobile headers reserve separate rows for account actions and navigation", 
 
   assert.match(css, /\.community-header[^}]*grid-template-areas:\s*"brand action"\s*"nav nav";/s);
   assert.match(css, /\.community-header\s*>\s*\.brand-header-action(?=[^{]*\{)[^{]*\{[^}]*grid-area:\s*action;/s);
+  assert.match(css, /\.member-center-shell\s*>\s*\.member-page-header[^}]*grid-template-areas:\s*"brand action"\s*"nav nav";/s);
+  assert.match(css, /\.member-center-shell\s*>\s*\.member-page-header\s*>\s*form(?=[^{]*\{)[^{]*\{[^}]*grid-area:\s*action;/s);
 });
