@@ -4,13 +4,18 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import {
   CONSENT_VERSION,
   DEFAULT_APPLICATION_VISIBILITY,
-  ROLE_OPTIONS,
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
 import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
+const DEFAULT_AVATARS = [
+  { id: "yellow", src: "/brand/avatar-yellow.jpg", label: "黄色小伙伴" },
+  { id: "cow", src: "/brand/avatar-cow.jpg", label: "橙色小牛" },
+  { id: "cat", src: "/brand/avatar-cat.jpg", label: "小猫" },
+  { id: "kangaroo", src: "/brand/avatar-kangaroo.jpg", label: "黄色袋鼠" },
+] as const;
 
 function normalizedSchoolName(value: string): string {
   return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
@@ -83,6 +88,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
   const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
+  const [selectedDefaultAvatar, setSelectedDefaultAvatar] = useState<string | null>(null);
   const [schoolOptions, setSchoolOptions] = useState(schools);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -92,13 +98,9 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
     setSelectedSchoolId(school.id);
   }
 
-  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
-    if (!file) return;
+  async function saveAvatar(file: Blob, message = "头像已安全处理并保存。") {
     if (file.size > maxAvatarSourceBytes) {
       setAvatarMessage("头像文件须小于或等于 5 MB。");
-      input.value = "";
       return;
     }
     const form = new FormData();
@@ -112,12 +114,33 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       setAvatarKey(data.objectKey);
       setAvatarUrl(data.publicUrl);
       setAvatarImageFailed(false);
-      setAvatarMessage("头像已安全处理并保存。");
+      setAvatarMessage(message);
     } catch (error) {
       setAvatarMessage(error instanceof Error ? error.message : "头像上传失败，请稍后重试。");
       input.value = "";
     } finally {
       setUploadingAvatar(false);
+    }
+  }
+
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    setSelectedDefaultAvatar(null);
+    await saveAvatar(file);
+    input.value = "";
+  }
+
+  async function selectDefaultAvatar(avatar: (typeof DEFAULT_AVATARS)[number]) {
+    setSelectedDefaultAvatar(avatar.id);
+    try {
+      const response = await fetch(avatar.src);
+      if (!response.ok) throw new Error("默认头像暂时不可用，请选择上传头像。");
+      await saveAvatar(await response.blob(), `已选用${avatar.label}默认头像。`);
+    } catch (error) {
+      setSelectedDefaultAvatar(null);
+      setAvatarMessage(error instanceof Error ? error.message : "默认头像暂时不可用，请选择上传头像。");
     }
   }
 
@@ -133,17 +156,17 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       setMessage("请选择 1–3 个技能点。");
       return;
     }
+    if (!avatarKey) {
+      setMessage("请上传或选择一个默认头像。");
+      return;
+    }
     const optional = (name: string) => {
       const value = String(form.get(name) ?? "").trim();
       return value || undefined;
     };
     const payload = {
       nickname: optional("nickname"), realName: optional("realName"), avatarKey: optional("avatarKey"),
-      schoolId: optional("schoolId"), major: optional("major"), grade: optional("grade"), intro: optional("intro"),
-      currentFocus: optional("currentFocus"), canOffer: optional("canOffer"), wantsToMeet: optional("wantsToMeet"),
-      skills, interests: String(form.get("interests") ?? "").split(/[,，\n]/).map((item) => item.trim()).filter(Boolean),
-      roles: form.getAll("roles"),
-      workLinks: String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean),
+      schoolId: optional("schoolId"), intro: optional("intro"), skills, interests: [], roles: [], workLinks: [],
       visibility: DEFAULT_APPLICATION_VISIBILITY,
       consentAccepted: form.get("consentAccepted") === "on", consentVersion: CONSENT_VERSION,
     };
@@ -165,41 +188,18 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
   return (
     <form className="application-form" onSubmit={submit}>
       <section className="application-section">
-        <p className="section-kicker">统一极简申请</p><h1>申请点亮我的头像</h1>
-        <p className="section-intro">先用最少的信息让大家认识你。通过审核后，随时可以在「我的」继续完善。</p>
-        <label>昵称 <input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label>
+        <p className="section-kicker">统一极简申请</p><h1>申请点亮我的头像</h1><p className="section-intro">先用最少的信息生成你的基础公开名片。通过审核后，随时可以在「我的」继续完善。</p>
+        <h2>01 基本身份</h2>
+        <div className="application-avatar-choice"><div className="avatar-upload-card"><div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>{avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}</div><div className="avatar-upload-copy"><strong>头像（必填）</strong><small>上传图片，或从下方选择默认头像。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "上传头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div><input name="avatarKey" type="hidden" value={avatarKey} /></div><div className="default-avatar-list" aria-label="选择默认头像">{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt={avatar.label} /></button>)}</div></div>
+        <div className="form-grid application-identity-grid"><label>昵称<input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label><label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择学校或校区</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{[school.name, school.campus === school.name ? undefined : school.campus, school.city].filter(Boolean).join(" · ")}</option>)}</select></label></div>
+        <details className="application-school-more"><summary>找不到学校 / 校区？搜索地图</summary><AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schoolOptions} onSelect={selectSchool} /> : <section className="school-search application-school-search"><p>{state === "failed" ? "高德搜索暂不可用，请从上方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader></details>
       </section>
       <section className="application-section">
-        <h2>你在哪里</h2>
-        <AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schoolOptions} onSelect={selectSchool} /> : <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。{state === "failed" ? "高德搜索暂不可用，请从下方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader>
-        <label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择或搜索学校</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{[school.name, school.campus === school.name ? undefined : school.campus, school.city].filter(Boolean).join(" · ")}</option>)}</select></label>
-      </section>
-      <section className="application-section">
-        <h2>让大家快速认识你</h2>
-        <label>一句话介绍<textarea name="intro" required minLength={10} maxLength={160} placeholder="正在探索 AI 如何帮助校园里的真实协作。" /></label>
+        <h2>02 让大家认识你</h2>
+        <label>一句话介绍（10–50 字）<textarea name="intro" required minLength={10} maxLength={50} placeholder="正在探索 AI 如何帮助校园里的真实协作。" /></label>
         <fieldset><legend>技能点（选择 1–3 项）</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} checked={selectedSkills.includes(skill)} disabled={selectedSkills.length >= 3 && !selectedSkills.includes(skill)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedSkills((current) => checked ? [...current, skill] : current.filter((item) => item !== skill)); }} />{skill}</label>)}</div></fieldset>
       </section>
-      <details className="application-optional">
-        <summary>更多资料（全部选填）</summary>
-        <div className="application-optional-content">
-          <div className="avatar-upload-card">
-            <div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>
-              {/* A newly uploaded owner-scoped URL renders immediately and is already normalized by the avatar API. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}
-            </div>
-            <div className="avatar-upload-copy"><strong>上传头像</strong><small>JPEG、PNG 或 WebP，最大 5 MB。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在安全处理…" : avatarKey ? "更换头像" : "选择头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div>
-            <input name="avatarKey" type="hidden" value={avatarKey} />
-          </div>
-          <div className="form-grid"><label>真实姓名（仅审核所需）<input name="realName" maxLength={60} /></label><label>专业<input name="major" maxLength={100} /></label><label>年级<input name="grade" maxLength={40} /></label></div>
-          <div className="form-grid"><label>我正在做什么<textarea name="currentFocus" maxLength={500} /></label><label>我能提供什么<textarea name="canOffer" maxLength={500} /></label><label>我希望认识谁<textarea name="wantsToMeet" maxLength={500} /></label></div>
-          <label>感兴趣的方向（逗号分隔，最多 6 项）<input name="interests" placeholder="教育创新，校园服务" /></label>
-          <fieldset><legend>参与角色（最多 4 项）</legend><div className="choice-list">{ROLE_OPTIONS.map((role) => <label key={role}><input name="roles" type="checkbox" value={role} />{role}</label>)}</div></fieldset>
-          <label>作品链接（每行一个 HTTPS 链接，最多 5 条）<textarea name="workLinks" placeholder="https://example.com/my-work" /></label>
-        </div>
-      </details>
-      <p className="application-settings-note">审核通过后可在账号设置中调整资料公开范围。</p>
-      <label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label>
+      <section className="application-section application-submit-section"><h2>03 审核与提交</h2><div className="form-grid application-review-grid"><label>真实姓名（仅审核所需）<input name="realName" required maxLength={60} /></label></div><label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label></section>
       {message ? <p className="form-error" role="alert">{message}</p> : null}
       <button className="application-submit" type="submit" disabled={submitting || uploadingAvatar}>{submitting ? "正在提交…" : uploadingAvatar ? "请等待头像处理完成…" : "保存并提交审核 →"}</button>
     </form>

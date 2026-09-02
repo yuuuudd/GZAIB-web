@@ -4,19 +4,18 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ApplicationForm } from "../../components/forms/ApplicationForm";
 
-test("keeps visibility choices out of the application flow and defers them to account settings", () => {
+test("keeps visibility choices out of the application flow", () => {
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
 
   assert.doesNotMatch(html, /06 \/ 公开范围/);
   assert.doesNotMatch(html, /visibility-field/);
-  assert.match(html, /审核通过后可在账号设置中调整资料公开范围/);
+  assert.match(html, /通过审核后，随时可以在「我的」继续完善/);
 });
 
-test("member application offers AMap school search before choosing a school", () => {
+test("member application keeps AMap school search available without expanding the main form", () => {
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
 
-  assert.match(html, /搜索高德学校/);
-  assert.match(html, /先查看地点和周边地图/);
+  assert.match(html, /找不到学校 \/ 校区？搜索地图/);
   assert.doesNotMatch(html, /坐标确认|确认坐标|已由管理员确认/);
 });
 
@@ -29,14 +28,18 @@ test("school choices do not repeat a campus identical to the school name", () =>
   assert.doesNotMatch(html, /中山大学\(广州校区南校园\) · 中山大学\(广州校区南校园\)/);
 });
 
-test("member application keeps only identity, school, intro, skills, and consent in the main flow", () => {
+test("member application uses the three compact sections and requires one of four default avatars or an upload", () => {
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
 
-  assert.match(html, /统一极简申请/);
+  assert.match(html, /01 基本身份/);
+  assert.match(html, /02 让大家认识你/);
+  assert.match(html, /03 审核与提交/);
   assert.match(html, /技能点（选择 1–3 项）/);
-  assert.match(html, /<details[^>]*class="application-optional"/);
-  assert.match(html, /更多资料（全部选填）/);
-  assert.doesNotMatch(html, /01 \/ 身份|02 \/ 学校|03 \/ 方向|04 \/ 参与|05 \/ 作品/);
+  assert.match(html, /一句话介绍（10–50 字）/);
+  for (const avatar of ["avatar-yellow", "avatar-cow", "avatar-cat", "avatar-kangaroo"]) {
+    assert.match(html, new RegExp(`/brand/${avatar}\\.jpg`));
+  }
+  assert.doesNotMatch(html, /更多资料（全部选填）|专业|年级|我正在做什么|我能提供什么|我希望认识谁|感兴趣的方向|参与角色|作品链接/);
 });
 
 test("AMap results can select only a matching confirmed school", async () => {
