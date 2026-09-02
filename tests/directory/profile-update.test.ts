@@ -133,7 +133,7 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, /预览公开主页/);
   assert.match(html, /已在共建地图展示/);
   assert.match(html, /我正在做什么/);
-  assert.match(html, /联系方式只会在双方接受连接后交换/);
+  assert.match(html, /联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。/);
   assert.match(html, /在共建地图中展示我的资料/);
   assert.match(html, /删除我的账号/);
   assert.match(html, /地图展示期间，这些资料会保持公开/);
@@ -145,6 +145,8 @@ test("member center groups profile controls into four focused settings tabs", ()
   const contactPanel = html.slice(html.indexOf('id="settings-contact"'), html.indexOf('id="settings-privacy"'));
   assert.match(contactPanel, />保存更改<\/button>/);
   assert.doesNotMatch(contactPanel, /保存联系方式|保存链接/);
+  assert.match(contactPanel, /联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。/);
+  assert.match(html, /profile-related-links settings-list/);
   assert.match(html, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
 
   const hiddenHtml = renderToStaticMarkup(createElement(ProfileEditor, {

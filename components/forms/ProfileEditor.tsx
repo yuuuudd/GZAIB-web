@@ -171,7 +171,7 @@ export function ProfileEditor({
     </section>
 
     <section id="settings-contact" className="settings-panel" role="tabpanel" hidden={activeTab !== "contact"}>
-      <form onSubmit={saveContactAndLinks}><div className="settings-section"><h2>联系方式</h2><p className="settings-hint">联系方式只会在双方接受连接后交换，不会出现在地图或公开主页。</p><ContactCardEditor initialCard={contactCard} value={contactDraft} onChange={setContactDraft} onClear={() => setSavedContact({})} embedded /></div>
+      <form onSubmit={saveContactAndLinks}><div className="settings-section contact-settings-section"><h2>联系方式</h2><p className="settings-hint">联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。</p><ContactCardEditor initialCard={contactCard} value={contactDraft} onChange={setContactDraft} onClear={() => setSavedContact({})} embedded /></div>
       <div className="settings-section"><h2>外部链接</h2><label>作品与个人主页<textarea className="profile-links-input" name="workLinks" placeholder={"https://github.com/…\nhttps://your-site.com"} defaultValue={profile.workLinks?.join("\n")} /><small>每行一个 HTTPS 链接，最多 5 条。</small></label></div><div className="settings-section profile-related-links community-management-row"><div><h2>我的社群</h2><p>查看或更新你负责的社群资料。</p></div><a href="/me/communities">管理我的社群 →</a></div><div className="settings-actions"><button type="button" onClick={() => window.location.reload()}>取消</button><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存更改"}</button></div></form>
     </section>
 
@@ -188,7 +188,7 @@ export function ProfileEditor({
     <section id="settings-account" className="settings-panel" role="tabpanel" hidden={activeTab !== "account"}>
       <div className="settings-section account-setting-row"><div><h2>地图展示</h2><h3>在共建地图中展示我的资料</h3><p>关闭后，你的资料将不再出现在共建地图搜索和浏览结果中。</p></div><label className="account-map-toggle"><input type="checkbox" role="switch" checked={mapPublished} disabled={busy} onChange={(event) => void toggleMap(event.currentTarget.checked)} /><span>{mapPublished ? "ON" : "OFF"}</span></label></div>
       <div className="settings-section"><h2>账号与数据</h2><details className="delete-account"><summary>注销账号</summary><p>删除后会立即下架公开资料、撤回待审申请并撤销所有会话。此操作不可撤销。</p><label>输入“{ACCOUNT_DELETION_CONFIRMATION}”确认<input value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label><button type="button" disabled={busy || confirmation !== ACCOUNT_DELETION_CONFIRMATION} onClick={() => void request("/api/me/account", "DELETE", { confirmation }, "")}>{ACCOUNT_DELETION_CONFIRMATION}</button></details></div>
-      <div className="settings-section profile-related-links"><h2>其他管理</h2><div><a href="/me/connections">我的连接</a><a href="/me/blocked">已屏蔽成员</a></div></div>
+      <div className="settings-section profile-related-links settings-list"><h2>其他管理</h2><div><a href="/me/connections">我的连接</a><a href="/me/blocked">已屏蔽成员</a></div></div>
     </section>
 
     {message ? <p className="profile-editor-message" role="status">{message}</p> : null}
