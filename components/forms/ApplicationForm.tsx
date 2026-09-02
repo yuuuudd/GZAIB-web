@@ -117,7 +117,6 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       setAvatarMessage(message);
     } catch (error) {
       setAvatarMessage(error instanceof Error ? error.message : "头像上传失败，请稍后重试。");
-      input.value = "";
     } finally {
       setUploadingAvatar(false);
     }
