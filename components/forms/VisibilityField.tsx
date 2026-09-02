@@ -2,12 +2,6 @@
 
 import type { Visibility } from "../../features/directory/types";
 
-export const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: "public", label: "所有访客可见" },
-  { value: "members", label: "仅审核成员可见" },
-  { value: "private", label: "仅自己和必要管理员可见" },
-];
-
 type VisibilityFieldProps = {
   label: string;
   value: Visibility;
@@ -15,14 +9,16 @@ type VisibilityFieldProps = {
   disabled?: boolean;
 };
 
-/** A compact, keyboard-friendly privacy control used for every optional profile field. */
+/** Two visible states keep privacy decisions understandable while preserving stored member-only values until changed. */
 export function VisibilityField({ label, value, onChange, disabled = false }: VisibilityFieldProps) {
+  const isPublic = value === "public";
   return (
     <label className="visibility-field">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value as Visibility)} aria-label={`${label}公开范围`} disabled={disabled}>
-        {VISIBILITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+      <span className="visibility-toggle-copy">
+        <input type="checkbox" role="switch" checked={isPublic} onChange={(event) => onChange(event.target.checked ? "public" : "private")} aria-label={`${label}公开范围`} disabled={disabled} />
+        <b>{isPublic ? "公开" : "私密"}</b>
+      </span>
     </label>
   );
 }

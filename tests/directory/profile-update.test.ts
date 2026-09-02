@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ProfileEditor } from "../../components/forms/ProfileEditor";
+import { ProfileEditor, simplifyVisibility } from "../../components/forms/ProfileEditor";
 import {
   createProfileUpdateService,
   type OwnProfileUpdateContext,
@@ -30,6 +30,12 @@ function memoryRepository(initial = context()) {
   };
   return { repository, writes };
 }
+
+test("two-level privacy settings convert legacy member-only fields to private", () => {
+  assert.deepEqual(simplifyVisibility({ nickname: "public", currentFocus: "members", grade: "private" }), {
+    nickname: "public", currentFocus: "private", grade: "private",
+  });
+});
 
 test("owner can update allowlisted fields while identity, slug, status, and unknown claims are forbidden", async () => {
   const store = memoryRepository();
@@ -110,7 +116,7 @@ test("visibility and public profile updates are committed in one immediate write
   assert.equal(store.writes[0]?.publishStatus, "published");
 });
 
-test("member center editor exposes profile-level map hiding and exact account deletion confirmation", () => {
+test("member center groups profile controls into four focused settings tabs", () => {
   const html = renderToStaticMarkup(createElement(ProfileEditor, {
     profile: { slug: "lin", nickname: "林同学", school: "中山大学", city: "广州", intro: "正在探索 AI 如何帮助校园里的真实协作。", skills: ["产品设计"], roles: ["活动共建者"], verifiedBuilder: true, contributions: [] },
     visibility: context().visibility,
@@ -118,18 +124,25 @@ test("member center editor exposes profile-level map hiding and exact account de
     currentSchoolId: "school-old",
     published: true,
   }));
-  assert.match(html, /隐藏我的地图资料/);
+  assert.match(html, /role="tablist"/);
+  assert.match(html, />个人资料<\/button>/);
+  assert.match(html, />联系方式与链接<\/button>/);
+  assert.match(html, />展示与隐私<\/button>/);
+  assert.match(html, />账号设置<\/button>/);
+  assert.match(html, /aria-selected="true"[^>]*>个人资料/);
+  assert.match(html, /预览公开主页/);
+  assert.match(html, /已在共建地图展示/);
+  assert.match(html, /我正在做什么/);
+  assert.match(html, /联系方式只会在双方接受连接后交换/);
+  assert.match(html, /在共建地图中展示我的资料/);
   assert.match(html, /删除我的账号/);
-  assert.match(html, /地图必需资料在展示期间必须保持“所有访客可见”/);
+  assert.match(html, /地图展示期间，这些资料会保持公开/);
   assert.match(html, /name="schoolId"/);
-  assert.match(html, /我的共创空间/);
   assert.match(html, /更换头像/);
   assert.match(html, /type="file"/);
-  assert.match(html, /href="\/me\/contact-card"/);
-  assert.match(html, /href="\/me\/connections"/);
-  assert.match(html, /href="\/me\/communities"/);
-  assert.match(html, /href="\/me\/activities"/);
-  assert.match(html, /<select(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*>/);
+  assert.doesNotMatch(html, /member-hub-actions/);
+  assert.doesNotMatch(html, /保存资料与公开设置/);
+  assert.match(html, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
 
   const hiddenHtml = renderToStaticMarkup(createElement(ProfileEditor, {
     profile: { slug: "lin", nickname: "林同学", school: "中山大学", city: "广州", intro: "正在探索 AI 如何帮助校园里的真实协作。", skills: ["产品设计"], roles: ["活动共建者"], verifiedBuilder: true, contributions: [] },
@@ -139,5 +152,5 @@ test("member center editor exposes profile-level map hiding and exact account de
     published: false,
   }));
   assert.match(hiddenHtml, /aria-label="昵称公开范围"/);
-  assert.doesNotMatch(hiddenHtml, /<select(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*>/);
+  assert.doesNotMatch(hiddenHtml, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
 });
