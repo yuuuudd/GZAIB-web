@@ -12,7 +12,7 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  const [topic, setTopic] = useState("");
+  const topic = "校园 AI 共建交流";
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -33,7 +33,8 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
     event.preventDefault();
     setBusy(true); setNotice("");
     try {
-      const response = await fetch("/api/connections", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ recipientId: recipientSlug, topic, message }) });
+      const safeMessage = message.trim() || "我想和你聊聊校园 AI 共建的实践与合作想法。";
+      const response = await fetch("/api/connections", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ recipientId: recipientSlug, topic, message: safeMessage }) });
       const data = await response.json() as { error?: string };
       if (!response.ok) { setNotice(data.error ?? "提交失败，请稍后再试。"); return; }
       setNotice("连接请求已发出，等待对方回应。");
@@ -44,15 +45,13 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
   return <div className="connection-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="connection-dialog" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="connection-dialog-title" aria-describedby="connection-dialog-description">
       <button type="button" className="connection-dialog-close" onClick={onClose} aria-label="关闭连接请求对话框">×</button>
-      <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>认识 {recipientName}</h2>
-      <p id="connection-dialog-description">用一段清晰、友善的介绍开启交流。请不要填写微信号、邮箱或其他联系方式。</p>
+      <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>向 {recipientName} 发起连接申请？</h2>
+      <p id="connection-dialog-description">对方会收到你的连接申请，待对方同意后，双方可交换联系方式。</p>
       <form onSubmit={submit}>
-        <label>想交流的话题 <span>{topic.trim().length}/60</span><input value={topic} onChange={(event) => setTopic(event.currentTarget.value)} minLength={2} maxLength={60} required autoComplete="off" /></label>
-        <label>介绍与连接理由 <span>{message.trim().length}/500</span><textarea value={message} onChange={(event) => setMessage(event.currentTarget.value)} minLength={20} maxLength={500} required /></label>
-        <p className="connection-privacy-reminder">联系方式仅在双方接受连接后，从各自当前名片中读取；它不会出现在这条请求里。</p>
-        <p className="connection-limit">今日还可发起 <strong>{dailyRemaining}</strong> 次连接请求</p>
+        <label>可选留言 <span>{message.trim().length}/200</span><textarea value={message} onChange={(event) => setMessage(event.currentTarget.value)} maxLength={200} placeholder="介绍一下你自己，或说明你想认识 TA 的原因……" /></label>
+        <p className="connection-privacy-reminder">联系方式仅在双方同意后交换。</p>
         {notice ? <p role="status" className="connection-form-status">{notice}</p> : null}
-        <div className="connection-dialog-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" disabled={busy}>{busy ? "正在发送…" : "确认发送请求"}</button></div>
+        <div className="connection-dialog-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" disabled={busy}>{busy ? "正在发送…" : "发送申请"}</button></div>
       </form>
     </section>
   </div>;

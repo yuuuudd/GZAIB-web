@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { DirectoryQuery, DirectorySchool } from "../../features/directory/service";
+import type { DirectoryMemberPreview, DirectoryQuery, DirectorySchool } from "../../features/directory/service";
 import {
   DEFAULT_CITY,
   groupSchoolsByCity,
@@ -10,6 +10,7 @@ import {
   type MapLevel,
 } from "../../features/map/semantic-map";
 import { SchoolDrawer } from "../directory/SchoolDrawer";
+import { MapMemberProfileCard } from "../directory/MapMemberProfileCard";
 import { AmapLoader } from "./AmapLoader";
 import { CityDirectoryFallback } from "./CityDirectoryFallback";
 import { SemanticMapCanvas } from "./SemanticMapCanvas";
@@ -42,6 +43,7 @@ export function BuilderMap() {
   const [level, setLevel] = useState<MapLevel>("city");
   const [activeCity, setActiveCity] = useState(DEFAULT_CITY);
   const [selectedId, setSelectedId] = useState<string>();
+  const [selectedMember, setSelectedMember] = useState<DirectoryMemberPreview>();
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string>();
 
@@ -75,17 +77,17 @@ export function BuilderMap() {
 
   const changeLevel = useCallback((next: MapLevel) => {
     setLevel(next);
-    if (next !== "city") setSelectedId(undefined);
+    if (next !== "city") { setSelectedId(undefined); setSelectedMember(undefined); }
   }, []);
   const selectCity = useCallback((city: string) => {
     setActiveCity(normalizeCity(city));
-    setSelectedId(undefined);
+    setSelectedId(undefined); setSelectedMember(undefined);
     setLevel("city");
   }, []);
   const selectSchool = useCallback((school: DirectorySchool) => {
     setActiveCity(normalizeCity(school.city));
     setLevel("city");
-    setSelectedId(school.id);
+    setSelectedId(school.id); setSelectedMember(undefined);
   }, []);
 
   return (
@@ -128,7 +130,8 @@ export function BuilderMap() {
             onSelectSchool={selectSchool}
           />
         </div>
-        <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} onClose={() => setSelectedId(undefined)} />
+        <SchoolDrawer key={`${selected?.id ?? "none"}:${JSON.stringify(query)}`} school={selected} query={query} selectedMemberSlug={selectedMember?.slug} onMemberSelect={setSelectedMember} onClose={() => { setSelectedId(undefined); setSelectedMember(undefined); }} />
+        {selectedMember ? <MapMemberProfileCard member={selectedMember} onClose={() => setSelectedMember(undefined)} /> : null}
       </div>
     </section>
   );
