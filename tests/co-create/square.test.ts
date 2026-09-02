@@ -51,6 +51,11 @@ test("co-create keeps the hero focused on its message without CTA buttons", () =
   assert.equal(hero.querySelectorAll(".co-create-aside a").length, 3);
 });
 
+test("co-create does not render the deprecated action-flow strip", () => {
+  const document = new JSDOM(renderToStaticMarkup(createElement(CoCreateSquare))).window.document;
+  assert.equal(document.querySelector(".co-create-flow"), null);
+});
+
 test("co-create omits the experience filter and offsets the desktop hero toward the routes", () => {
   const document = new JSDOM(renderToStaticMarkup(createElement(CoCreateSquare))).window.document;
   const css = readFileSync("app/globals.css", "utf8");
