@@ -76,6 +76,19 @@ test("directory normalizes NFKC search and city filters, focus and location mode
   assert.deepEqual((await service.list({ locationMode: "online" })).items.map((item) => item.slug), ["three"]);
 });
 
+test("directory presets reuse public cities, modes, and focus tags", async () => {
+  const service = createCommunityDirectoryService(repository([
+    community({ id: "gz", slug: "gz", primaryCity: "广州市", focusTagsJson: '["高校", "开发者"]', locationMode: "city", updatedAt: 20 }),
+    community({ id: "online", slug: "online", primaryCity: null, focusTagsJson: '["创业落地"]', locationMode: "online", updatedAt: 10 }),
+    community({ id: "outside", slug: "outside", primaryCity: "北京市", focusTagsJson: '["开发者"]', locationMode: "hybrid", updatedAt: 30 }),
+  ]));
+
+  assert.deepEqual((await service.list({ category: "广东" })).items.map((item) => item.slug), ["gz"]);
+  assert.deepEqual((await service.list({ category: "全国" })).items.map((item) => item.slug), ["outside", "online"]);
+  assert.deepEqual((await service.list({ category: "线下活动" })).items.map((item) => item.slug), ["outside", "gz"]);
+  assert.deepEqual((await service.list({ category: "高校" })).items.map((item) => item.slug), ["gz"]);
+});
+
 test("directory projects claims, one public manager, eight tags, three updates, and viewer follow state", async () => {
   const result = await createCommunityDirectoryService(repository([
     community({ focusTagsJson: JSON.stringify(["1", "2", "3", "4", "5", "6", "7", "8", "9"]) }),

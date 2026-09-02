@@ -70,6 +70,18 @@ function isLocationMode(value: unknown): value is CommunityLocationMode {
   return value === "city" || value === "hybrid" || value === "online";
 }
 
+const GUANGDONG_CITIES = new Set(["广州", "深圳", "佛山", "东莞", "珠海", "中山", "惠州", "江门", "肇庆", "汕头", "湛江", "茂名", "韶关", "清远", "潮州", "揭阳", "云浮", "河源", "阳江", "梅州", "汕尾"]);
+
+function matchesCategory(community: CommunityRecord, query: CommunityDirectoryQuery, focusTags: string[]): boolean {
+  switch (query.category) {
+    case "广东": return GUANGDONG_CITIES.has(normalizedCity(community.primaryCity ?? ""));
+    case "全国": return community.locationMode === "online" || !GUANGDONG_CITIES.has(normalizedCity(community.primaryCity ?? ""));
+    case "高校": case "开发者": case "创业落地": return focusTags.includes(query.category);
+    case "线下活动": return community.locationMode !== "online";
+    default: return true;
+  }
+}
+
 function matchesQuery(community: CommunityRecord, query: CommunityDirectoryQuery, focusTags: string[]): boolean {
   if (query.city && normalizedCity(community.primaryCity ?? "") !== normalizedCity(query.city)) return false;
   if (query.locationMode && community.locationMode !== query.locationMode) return false;
@@ -179,6 +191,7 @@ export function createCommunityDirectoryService(repository: CommunityDirectoryRe
       const records = (await repository.listPublished(COMMUNITY_DIRECTORY_CAP))
         .slice(0, COMMUNITY_DIRECTORY_CAP)
         .filter(isPublished)
+        .filter((record) => matchesCategory(record, query, safeJsonArray(record.focusTagsJson).slice(0, 8)))
         .filter((record) => matchesQuery(record, query, safeJsonArray(record.focusTagsJson).slice(0, 8)))
         .sort(sortRecords);
       return { items: await projectCommunities(repository, records, viewerId), citySummaries: citySummaries(records) };

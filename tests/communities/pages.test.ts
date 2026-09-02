@@ -29,3 +29,16 @@ test("community directory query normalization selects the first repeated support
   assert.match(page, /string \| string\[\] \| undefined/);
   assert.match(page, /Array\.isArray\(raw\) \? raw\[0\] : raw/);
 });
+
+test("community directory is a discovery page with collapsed filters and activity-led cards", () => {
+  const directory = readFileSync("components/communities/CommunityDirectory.tsx", "utf8");
+
+  for (const label of ["推荐", "广东", "全国", "高校", "开发者", "创业落地", "线下活动"]) assert.match(directory, new RegExp(label));
+  assert.match(directory, /更多筛选/);
+  assert.match(directory, /推荐一个社群/);
+  assert.match(directory, /认领社群/);
+  assert.match(directory, /已收录社群/);
+  assert.match(directory, /近期活动/);
+  assert.match(directory, /暂无近期公开活动/);
+  assert.match(directory, /查看社群/);
+});

@@ -6,15 +6,17 @@ import { createRuntimeCommunityDirectoryService } from "../../features/communiti
 import { resolveRequestUserId } from "../../features/identity/request-user";
 
 type CommunitySearchValue = string | string[] | undefined;
-type CommunitySearchParams = Promise<{ q?: CommunitySearchValue; city?: CommunitySearchValue; locationMode?: CommunitySearchValue; focus?: CommunitySearchValue }>;
+type CommunitySearchParams = Promise<{ category?: CommunitySearchValue; q?: CommunitySearchValue; city?: CommunitySearchValue; locationMode?: CommunitySearchValue; focus?: CommunitySearchValue }>;
 
-function queryFromSearchParams(searchParams: { q?: CommunitySearchValue; city?: CommunitySearchValue; locationMode?: CommunitySearchValue; focus?: CommunitySearchValue }) {
+function queryFromSearchParams(searchParams: { category?: CommunitySearchValue; q?: CommunitySearchValue; city?: CommunitySearchValue; locationMode?: CommunitySearchValue; focus?: CommunitySearchValue }) {
   const value = (name: keyof typeof searchParams) => {
     const raw = searchParams[name];
     return (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) || undefined;
   };
   const locationMode = value("locationMode");
+  const category = value("category");
   return {
+    ...(category === "推荐" || category === "广东" || category === "全国" || category === "高校" || category === "开发者" || category === "创业落地" || category === "线下活动" ? { category } : {}),
     ...(value("q") ? { q: value("q") } : {}),
     ...(value("city") ? { city: value("city") } : {}),
     ...(locationMode === "city" || locationMode === "hybrid" || locationMode === "online" ? { locationMode } : {}),

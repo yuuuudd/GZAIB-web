@@ -12,6 +12,7 @@ export type CommunityProfileInput = {
 };
 
 export type CommunityDirectoryQuery = {
+  category?: "推荐" | "广东" | "全国" | "高校" | "开发者" | "创业落地" | "线下活动";
   q?: string;
   city?: string;
   locationMode?: CommunityLocationMode;
