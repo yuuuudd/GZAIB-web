@@ -431,7 +431,7 @@ a { color: inherit; }
 .brand-home-hero::after { content:""; position:absolute; z-index:-3; inset:0; opacity:.24; background-image:linear-gradient(rgba(30,78,216,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(30,78,216,.07) 1px,transparent 1px); background-size:46px 46px; mask-image:linear-gradient(90deg,transparent 0,#000 38%,#000 100%); }
 .brand-home-copy { position:relative; z-index:2; align-self:center; }
 .brand-home-copy .brand-eyebrow { margin-bottom:clamp(1.5rem,3.2vh,2.6rem); }
-.brand-home-copy h1 { max-width:620px; margin:0; font-family:var(--font-source-han-serif),"Source Han Serif SC","Noto Serif CJK SC",serif; font-size:clamp(3rem,4.25vw,5.25rem); font-weight:600; line-height:1.22; letter-spacing:.025em; }
+.brand-home-copy h1 { max-width:620px; margin:0; font-family:var(--font-source-han-serif),"Source Han Serif SC","Noto Serif CJK SC",serif; font-size:clamp(2.7rem,3.8vw,4.7rem); font-weight:600; line-height:1.22; letter-spacing:.025em; }
 .brand-home-copy h1 .hero-title-line { color:inherit; text-shadow:none; }
 .brand-home-copy h1 .hero-title-accent { color:var(--cobalt); text-shadow:0 12px 34px rgba(30,78,216,.16); }
 .brand-home-copy .brand-intro { max-width:520px; margin:1.5rem 0 0; }
