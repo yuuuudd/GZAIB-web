@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -35,6 +36,12 @@ test("two-level privacy settings convert legacy member-only fields to private", 
   assert.deepEqual(simplifyVisibility({ nickname: "public", currentFocus: "members", grade: "private" }), {
     nickname: "public", currentFocus: "private", grade: "private",
   });
+});
+
+test("member profile textareas start at input height and grow with content", () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  assert.match(css, /\.settings-panel \.profile-intro-input \{ min-height:44px; field-sizing:content; \}/);
+  assert.match(css, /\.profile-about-fields textarea \{ min-height:44px; field-sizing:content; \}/);
 });
 
 test("owner can update allowlisted fields while identity, slug, status, and unknown claims are forbidden", async () => {
