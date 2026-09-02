@@ -190,6 +190,25 @@ test("home page presents the five-stage community action loop as one closed path
   }
 });
 
+test("home page ends with an information footer containing only live platform links", async () => {
+  const response = await renderHomePage({ host: "localhost" });
+  const dom = new JSDOM(await response.text());
+  try {
+    const footer = dom.window.document.querySelector("footer.site-footer");
+    assert.ok(footer);
+    assert.match(footer.textContent ?? "", /连接高校 AI 共建者，让项目、活动与资源持续发生。/);
+    assertChannelLink(footer, "/#map", "共建地图");
+    assertChannelLink(footer, "/communities", "AI 社区");
+    assertChannelLink(footer, "/news", "AI 资讯");
+    assertChannelLink(footer, "/events", "活动赛事");
+    assertChannelLink(footer, "/apply", "申请加入");
+    assertChannelLink(footer, "/me/connections", "我的连接");
+    assert.doesNotMatch(footer.textContent ?? "", /连接创造力，也尊重每一条边界/);
+  } finally {
+    dom.window.close();
+  }
+});
+
 test("home page omits social URLs and images when the Host header is missing", async () => {
   const response = await renderHomePage({ host: "" });
   assert.equal(response.status, 200);

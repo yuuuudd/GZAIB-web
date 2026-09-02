@@ -70,7 +70,15 @@ export default function Home() {
           </li>)}
         </ol>
       </section>
-      <section className="brand-about" id="about"><div><p className="map-section-kicker">广州AI共创社</p><h2>连接创造力，也尊重每一条边界</h2></div><p>这不是成员实时位置地图，而是一份由本人授权、学校聚合、运营审核的公开共建目录。</p><a href="/apply">申请加入共建网络 →</a></section>
+      <footer className="site-footer" aria-label="网站页脚">
+        <div className="site-footer-grid">
+          <section className="site-footer-brand"><strong>✦ 广州 AI 共创社 <small>GZAIB</small></strong><p>连接高校 AI 共建者，让项目、活动与资源持续发生。</p><div aria-label="社交渠道"><span>公众号</span><span>小红书</span><span>邮箱</span></div></section>
+          <nav aria-label="平台"><h2>平台</h2><a href="/#map">共建地图</a><a href="/communities">AI 社区</a><a href="/news">AI 资讯</a><a href="/events">活动赛事</a></nav>
+          <nav aria-label="共建与连接"><h2>共建与连接</h2><a href="/apply">申请加入</a><a href="/me/connections">我的连接</a><a href="/apply">共建者认证</a><a href="/events/submit">活动申请</a></nav>
+          <section className="site-footer-about"><h2>关于我们</h2><p>公开资料由本人授权，经学校聚合与运营审核后展示。</p><p>联系方式仅在双方同意连接后交换。</p></section>
+        </div>
+        <div className="site-footer-bottom"><span>广州 AI 共创社 · 由高校青年共同建设</span><span>© 2026 GZAIB</span></div>
+      </footer>
     </main>
   );
 }
