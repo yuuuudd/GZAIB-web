@@ -6,6 +6,7 @@ export const MAX_AVATAR_MULTIPART_BYTES = 6 * 1024 * 1024;
 export const AVATAR_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 type AcceptedAvatarMime = "image/jpeg" | "image/png" | "image/webp";
+type AvatarExtension = "jpg" | "png" | "webp";
 
 export type AvatarValidationResult =
   | { ok: true; mimeType: AcceptedAvatarMime }
@@ -33,7 +34,7 @@ type AvatarObject = {
 };
 
 const uuidV4Pattern = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}";
-const avatarKeyPattern = new RegExp(`^avatars/[A-Za-z0-9_-]{1,128}/${uuidV4Pattern}\\.webp$`);
+const avatarKeyPattern = new RegExp(`^avatars/[A-Za-z0-9_-]{1,128}/${uuidV4Pattern}\\.(?:jpg|png|webp)$`);
 const ownerPattern = /^[A-Za-z0-9_-]{1,128}$/;
 
 function matches(bytes: Uint8Array, expected: number[], offset = 0): boolean {
@@ -66,9 +67,9 @@ export function validateAvatar(file: SyncAvatarCandidate | Blob): AvatarValidati
   return file.slice(0, 12).arrayBuffer().then((buffer) => validateBytes(file.type, file.size, new Uint8Array(buffer)));
 }
 
-export function createAvatarKey(userId: string, extension: "webp" = "webp"): string {
-  if (extension !== "webp" || !ownerPattern.test(userId)) throw new Error("Invalid avatar owner");
-  return `avatars/${userId}/${crypto.randomUUID()}.webp`;
+export function createAvatarKey(userId: string, extension: AvatarExtension = "webp"): string {
+  if (!ownerPattern.test(userId)) throw new Error("Invalid avatar owner");
+  return `avatars/${userId}/${crypto.randomUUID()}.${extension}`;
 }
 
 export function isAvatarKey(value: string): boolean {
@@ -91,16 +92,10 @@ export async function storeAvatar(
   const validation = await validateAvatar(file);
   if (!validation.ok) throw new AvatarInputError(validation.error);
   const bindings = providedBindings ?? (await import("../../lib/r2")).getAvatarStorageBindings();
-  const objectKey = createAvatarKey(userId);
-  const transformed = await bindings.images.input(file.stream()).transform({
-    width: 1024,
-    height: 1024,
-    fit: "cover",
-  }).output({ format: "image/webp", quality: 85 });
-  const response = transformed.response();
-  if (!response.ok || !response.body) throw new Error("Avatar image transform failed");
-  await bindings.avatars.put(objectKey, response.body, {
-    httpMetadata: { contentType: "image/webp", cacheControl: AVATAR_CACHE_CONTROL },
+  const extension = validation.mimeType === "image/jpeg" ? "jpg" : validation.mimeType.slice(6) as AvatarExtension;
+  const objectKey = createAvatarKey(userId, extension);
+  await bindings.avatars.put(objectKey, file.stream(), {
+    httpMetadata: { contentType: validation.mimeType, cacheControl: AVATAR_CACHE_CONTROL },
   });
   return { objectKey, publicUrl: `/api/avatars/${objectKey}` };
 }

@@ -53,33 +53,21 @@ test("creates immutable owner-scoped WebP keys and rejects keys outside the rout
   assert.equal(isAvatarKey("other/user-1/123e4567-e89b-42d3-a456-426614174000.webp"), false);
 });
 
-test("uses the platform image pipeline for a square WebP and stores immutable metadata", async () => {
-  let transformOptions: Record<string, unknown> | undefined;
-  let outputOptions: Record<string, unknown> | undefined;
-  let stored: { key: string; options?: Record<string, unknown> } | undefined;
+test("stores a validated PNG in R2 without requiring the unavailable Images service", async () => {
+  let stored: { key: string; body: Uint8Array; options?: Record<string, unknown> } | undefined;
   const result = await storeAvatar("user-1", new Blob([pngSignature], { type: "image/png" }), {
-    images: {
-      input: () => ({
-        transform: (options) => {
-          transformOptions = options;
-          return { output: async (options) => {
-            outputOptions = options;
-            return { response: () => new Response(webpSignature, { status: 200, headers: { "content-type": "image/webp" } }) };
-          } };
-        },
-      }),
-    },
     avatars: {
-      put: async (key, _body, options) => { stored = { key, options }; },
+      put: async (key, body, options) => {
+        stored = { key, body: new Uint8Array(await new Response(body).arrayBuffer()), options };
+      },
     },
   });
 
-  assert.deepEqual(transformOptions, { width: 1024, height: 1024, fit: "cover" });
-  assert.deepEqual(outputOptions, { format: "image/webp", quality: 85 });
-  assert.match(result.objectKey, /^avatars\/user-1\/.+\.webp$/);
+  assert.match(result.objectKey, /^avatars\/user-1\/.+\.png$/);
   assert.equal(stored?.key, result.objectKey);
+  assert.deepEqual(stored?.body, pngSignature);
   assert.deepEqual(stored?.options, {
-    httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" },
+    httpMetadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
   });
 });
 

@@ -1,17 +1,5 @@
 import { env } from "cloudflare:workers";
 
-type ImageOutput = {
-  response(): Response;
-};
-
-export type ImagesBinding = {
-  input(stream: ReadableStream): {
-    transform(options: Record<string, unknown>): {
-      output(options: { format: string; quality: number }): Promise<ImageOutput>;
-    };
-  };
-};
-
 export type AvatarBucket = {
   put(
     key: string,
@@ -36,13 +24,11 @@ type D1Binding = {
 };
 
 type AvatarRuntimeBindings = {
-  IMAGES?: ImagesBinding;
   AVATARS?: AvatarBucket;
   DB?: D1Binding;
 };
 
 export type AvatarStorageBindings = {
-  images: ImagesBinding;
   avatars: Pick<AvatarBucket, "put">;
 };
 
@@ -51,9 +37,9 @@ function runtimeBindings(): AvatarRuntimeBindings {
 }
 
 export function getAvatarStorageBindings(): AvatarStorageBindings {
-  const { IMAGES, AVATARS } = runtimeBindings();
-  if (!IMAGES || !AVATARS) throw new Error("Avatar service unavailable");
-  return { images: IMAGES, avatars: AVATARS };
+  const { AVATARS } = runtimeBindings();
+  if (!AVATARS) throw new Error("Avatar service unavailable");
+  return { avatars: AVATARS };
 }
 
 function requireAvatarBucket(): AvatarBucket {
