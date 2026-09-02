@@ -24,7 +24,7 @@ const VISIBILITY_VALUES: readonly Visibility[] = ["public", "members", "private"
 export const DEFAULT_APPLICATION_VISIBILITY: Required<VisibilityRules> = {
   nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public", skills: "public", roles: "public",
   verifiedBuilder: "public", contributions: "public",
-  currentFocus: "private", canOffer: "private", wantsToMeet: "private", workLinks: "private", major: "private", grade: "private",
+  currentFocus: "public", canOffer: "public", wantsToMeet: "public", workLinks: "public", major: "public", grade: "public",
 };
 
 export function completeApplicationVisibility(visibility: VisibilityRules): Required<VisibilityRules> {

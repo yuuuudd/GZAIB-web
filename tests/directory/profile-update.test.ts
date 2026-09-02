@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ProfileEditor, simplifyVisibility } from "../../components/forms/ProfileEditor";
+import { DEFAULT_APPLICATION_VISIBILITY } from "../../features/applications/validation";
 import {
   createProfileUpdateService,
   type OwnProfileUpdateContext,
@@ -36,6 +37,12 @@ test("two-level privacy settings convert legacy member-only fields to private", 
   assert.deepEqual(simplifyVisibility({ nickname: "public", currentFocus: "members", grade: "private" }), {
     nickname: "public", currentFocus: "private", grade: "private",
   });
+});
+
+test("new personal-information visibility defaults to public", () => {
+  assert.equal(DEFAULT_APPLICATION_VISIBILITY.currentFocus, "public");
+  assert.equal(DEFAULT_APPLICATION_VISIBILITY.workLinks, "public");
+  assert.equal(DEFAULT_APPLICATION_VISIBILITY.major, "public");
 });
 
 test("member profile textareas start at input height and grow with content", () => {
@@ -134,7 +141,7 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, /role="tablist"/);
   assert.match(html, />个人资料<\/button>/);
   assert.match(html, />联系方式与链接<\/button>/);
-  assert.match(html, />展示与隐私<\/button>/);
+  assert.match(html, />资料展示<\/button>/);
   assert.match(html, />账号设置<\/button>/);
   assert.match(html, /aria-selected="true"[^>]*>个人资料/);
   assert.match(html, /预览公开主页/);
@@ -143,7 +150,9 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, /联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。/);
   assert.match(html, /在共建地图中展示我的资料/);
   assert.match(html, /删除我的账号/);
-  assert.match(html, /地图展示期间，这些资料会保持公开/);
+  assert.match(html, /社群公开名片/);
+  assert.match(html, /全部公开/);
+  assert.match(html, /全部私密/);
   assert.match(html, /name="schoolId"/);
   assert.match(html, /更换头像/);
   assert.match(html, /type="file"/);
@@ -154,7 +163,7 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.doesNotMatch(contactPanel, /保存联系方式|保存链接/);
   assert.match(contactPanel, /联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。/);
   assert.match(html, /profile-related-links settings-list/);
-  assert.match(html, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
+  assert.doesNotMatch(html, /aria-label="昵称公开范围"/);
 
   const hiddenHtml = renderToStaticMarkup(createElement(ProfileEditor, {
     profile: { slug: "lin", nickname: "林同学", school: "中山大学", city: "广州", intro: "正在探索 AI 如何帮助校园里的真实协作。", skills: ["产品设计"], roles: ["活动共建者"], verifiedBuilder: true, contributions: [] },
@@ -163,6 +172,5 @@ test("member center groups profile controls into four focused settings tabs", ()
     currentSchoolId: "school-old",
     published: false,
   }));
-  assert.match(hiddenHtml, /aria-label="昵称公开范围"/);
-  assert.doesNotMatch(hiddenHtml, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
+  assert.doesNotMatch(hiddenHtml, /aria-label="昵称公开范围"/);
 });

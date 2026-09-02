@@ -19,14 +19,14 @@ function repository(confirmed = new Set(["confirmed-school"])) {
   return { repo, writes };
 }
 
-test("stores a manually entered member as an unpublished managed profile with default private optional fields", async () => {
+test("stores a manually entered member as an unpublished managed profile with default public optional fields", async () => {
   const store = repository();
   const service = createManualMemberService(store.repo, () => "member-1", () => "profile-1", () => "audit-1");
   const created = await service.create(input(), "chatgpt:operator", 1_000);
 
   assert.equal(created.profile.publishStatus, "unpublished");
   assert.equal(created.profile.adminManaged, true);
-  assert.equal(created.visibility.currentFocus, "private");
+  assert.equal(created.visibility.currentFocus, "public");
   assert.equal(store.writes.length, 1);
   assert.equal(store.writes[0]?.audit.action, "member.manually_created_draft");
 });

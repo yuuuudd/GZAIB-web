@@ -49,11 +49,11 @@ test("requires one to three skill points for a minimal member application", () =
   assert.equal(validateApplication({ ...validInput, skills: ["AI应用", "产品设计", "内容创作", "活动策划"] }).ok, false);
 });
 
-test("defaults every map-required output to public and every optional field to private", () => {
+test("defaults map-required and optional profile fields to public", () => {
   assert.deepEqual(DEFAULT_APPLICATION_VISIBILITY, {
     nickname: "public", avatarUrl: "public", school: "public", city: "public", intro: "public", skills: "public", roles: "public",
     verifiedBuilder: "public", contributions: "public",
-    currentFocus: "private", canOffer: "private", wantsToMeet: "private", workLinks: "private", major: "private", grade: "private",
+    currentFocus: "public", canOffer: "public", wantsToMeet: "public", workLinks: "public", major: "public", grade: "public",
   });
 });
 

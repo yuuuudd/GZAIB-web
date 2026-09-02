@@ -15,7 +15,7 @@ const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "profile", label: "个人资料" },
   { id: "contact", label: "联系方式与链接" },
-  { id: "privacy", label: "展示与隐私" },
+  { id: "privacy", label: "资料展示" },
   { id: "account", label: "账号设置" },
 ];
 const labels: Record<PrivacyField, string> = {
@@ -26,6 +26,7 @@ const requiredLabels: Record<(typeof MAP_REQUIRED_VISIBILITY_FIELDS)[number], st
   nickname: "昵称", avatarUrl: "头像", school: "学校", city: "城市", intro: "一句话介绍", skills: "技能方向",
   roles: "参与角色", verifiedBuilder: "共建者认证", contributions: "已确认贡献",
 };
+const PUBLIC_CARD_FIELDS = ["nickname", "avatarUrl", "school", "city", "intro", "skills", "roles"] as const;
 
 export function simplifyVisibility(visibility: VisibilityRules): VisibilityRules {
   return Object.fromEntries(Object.entries(visibility).map(([field, value]) => [field, value === "public" ? "public" : "private"])) as VisibilityRules;
@@ -130,6 +131,10 @@ export function ProfileEditor({
     if (await request("/api/me/profile", "PATCH", { mapVisibility: next ? "shown" : "hidden" }, next ? "资料已重新显示在共建地图中。" : "资料已从共建地图隐藏。")) setMapPublished(next);
   }
 
+  function setOptionalVisibility(value: Visibility) {
+    setVisibility((current) => ({ ...current, ...Object.fromEntries(OPTIONAL_VISIBILITY_FIELDS.map((field) => [field, value])) }));
+  }
+
   return <div className="profile-settings">
     <section className="member-summary">
       <div className="member-summary-main">
@@ -177,10 +182,9 @@ export function ProfileEditor({
 
     <section id="settings-privacy" className="settings-panel" role="tabpanel" hidden={activeTab !== "privacy"}>
       <form onSubmit={savePrivacy}>
-        <div className="settings-section privacy-intro"><div><h2>地图公开资料</h2><p>打开的内容会出现在共建地图和公开主页；关闭后仅本人和必要管理员可见。</p></div><span>公开 / 私密</span></div>
-        <div className="settings-section privacy-group"><h3>公开身份</h3><p>{mapPublished ? "地图展示期间，这些资料会保持公开。" : "地图已隐藏，你可以单独调整这些资料。"}</p>{MAP_REQUIRED_VISIBILITY_FIELDS.slice(0, 5).map((field) => <VisibilityField key={field} label={requiredLabels[field]} value={visibility[field] ?? "public"} disabled={mapPublished} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
-        <div className="settings-section privacy-group"><h3>能力与经历</h3>{MAP_REQUIRED_VISIBILITY_FIELDS.slice(5).map((field) => <VisibilityField key={field} label={requiredLabels[field]} value={visibility[field] ?? "public"} disabled={mapPublished} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
-        <div className="settings-section privacy-group"><h3>个人动态</h3>{OPTIONAL_VISIBILITY_FIELDS.map((field) => <VisibilityField key={field} label={labels[field]} value={visibility[field] ?? "private"} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
+        <div className="settings-section privacy-intro"><div><h2>社群公开名片</h2><p>以下资料会持续展示在共建地图和公开主页。</p></div></div>
+        <div className="settings-section public-card-fields">{PUBLIC_CARD_FIELDS.map((field) => <span key={field}>{requiredLabels[field]}</span>)}</div>
+        <div className="settings-section privacy-group"><div className="privacy-group-heading"><h3>更多个人信息</h3><div><button type="button" onClick={() => setOptionalVisibility("public")}>全部公开</button><button type="button" onClick={() => setOptionalVisibility("private")}>全部私密</button></div></div><p>默认公开；你可以按需关闭单项展示。</p>{OPTIONAL_VISIBILITY_FIELDS.map((field) => <VisibilityField key={field} label={labels[field]} value={visibility[field] ?? "public"} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
         <div className="settings-actions"><button type="button" onClick={() => window.location.reload()}>取消</button><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存更改"}</button></div>
       </form>
     </section>
