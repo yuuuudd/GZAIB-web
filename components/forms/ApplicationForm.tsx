@@ -11,10 +11,10 @@ import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parse
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
 const DEFAULT_AVATARS = [
-  { id: "yellow", src: "/brand/avatar-yellow.jpg", label: "黄色小伙伴" },
-  { id: "cow", src: "/brand/avatar-cow.jpg", label: "橙色小牛" },
-  { id: "cat", src: "/brand/avatar-cat.jpg", label: "小猫" },
-  { id: "kangaroo", src: "/brand/avatar-kangaroo.jpg", label: "黄色袋鼠" },
+  { id: "yellow", src: "/brand/avatar-yellow.png", label: "黄色小伙伴" },
+  { id: "cow", src: "/brand/avatar-cow.png", label: "橙色小牛" },
+  { id: "cat", src: "/brand/avatar-cat.png", label: "小猫" },
+  { id: "kangaroo", src: "/brand/avatar-kangaroo.png", label: "黄色袋鼠" },
 ] as const;
 
 function normalizedSchoolName(value: string): string {

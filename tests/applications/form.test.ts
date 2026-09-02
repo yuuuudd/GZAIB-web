@@ -37,7 +37,7 @@ test("member application uses the three compact sections and requires one of fou
   assert.match(html, /技能点（选择 1–3 项）/);
   assert.match(html, /一句话介绍（10–50 字）/);
   for (const avatar of ["avatar-yellow", "avatar-cow", "avatar-cat", "avatar-kangaroo"]) {
-    assert.match(html, new RegExp(`/brand/${avatar}\\.jpg`));
+    assert.match(html, new RegExp(`/brand/${avatar}\\.png`));
   }
   assert.doesNotMatch(html, /更多资料（全部选填）|专业|年级|我正在做什么|我能提供什么|我希望认识谁|感兴趣的方向|参与角色|作品链接/);
 });
