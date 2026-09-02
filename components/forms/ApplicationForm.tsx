@@ -7,15 +7,10 @@ import {
   SKILL_OPTIONS,
 } from "../../features/applications/validation";
 import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
+import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
 
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
-const DEFAULT_AVATARS = [
-  { id: "yellow", src: "/brand/avatar-yellow.png", label: "黄色小伙伴" },
-  { id: "cow", src: "/brand/avatar-cow.png", label: "橙色小牛" },
-  { id: "cat", src: "/brand/avatar-cat.png", label: "小猫" },
-  { id: "kangaroo", src: "/brand/avatar-kangaroo.png", label: "黄色袋鼠" },
-] as const;
 
 function normalizedSchoolName(value: string): string {
   return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
@@ -73,10 +68,6 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
   }
 
   return <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。</p><div><input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="例如：华南理工大学五山校区" aria-label="搜索高德学校" /><button type="button" className="action-primary" disabled={pending} onClick={search}>搜索</button></div>{message ? <p role="status">{message}</p> : null}{preview ? <AmapLocationPreview amap={amap} location={preview} pending={pending} onBack={() => setPreview(undefined)} onConfirm={() => void confirm()} confirmLabel="确认选择这个学校" /> : <ul>{results.map((candidate) => <li key={`${candidate.name}-${candidate.longitude}`}><button type="button" disabled={pending} onClick={() => setPreview(candidate)}><strong>{candidate.name}</strong><span>{[candidate.city, candidate.district, candidate.address].filter(Boolean).join(" · ")}</span></button></li>)}</ul>}</section>;
-}
-
-function nicknameInitial(nickname: string): string {
-  return Array.from(nickname.trim())[0] ?? "你";
 }
 
 export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
@@ -143,6 +134,16 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
     }
   }
 
+  async function selectNicknameAvatar() {
+    setSelectedDefaultAvatar("initial");
+    try {
+      await saveAvatar(await createNicknameAvatar(nickname), "已选用昵称首字默认头像。");
+    } catch (error) {
+      setSelectedDefaultAvatar(null);
+      setAvatarMessage(error instanceof Error ? error.message : "昵称头像暂时不可用，请选择其他头像。");
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (uploadingAvatar) {
@@ -189,7 +190,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       <section className="application-section">
         <p className="section-kicker">统一极简申请</p><h1>申请点亮我的头像</h1><p className="section-intro">先用最少的信息生成你的基础公开名片。通过审核后，随时可以在「我的」继续完善。</p>
         <h2>01 基本身份</h2>
-        <div className="application-avatar-choice"><div className="avatar-upload-card"><div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>{avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}</div><div className="avatar-upload-copy"><strong>头像（必填）</strong><small>上传图片，或从下方选择默认头像。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "上传头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div><input name="avatarKey" type="hidden" value={avatarKey} /></div><div className="default-avatar-list" aria-label="选择默认头像">{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt={avatar.label} /></button>)}</div></div>
+        <div className="application-avatar-choice"><div className="avatar-upload-card"><div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>{avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}</div><div className="avatar-upload-copy"><strong>头像（必填）</strong><small>上传图片，或从下方选择默认头像。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "上传头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div><input name="avatarKey" type="hidden" value={avatarKey} /></div><div className="default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(nickname)}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt={avatar.label} /></button>)}</div></div>
         <div className="form-grid application-identity-grid"><label>昵称<input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label><label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择学校或校区</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{[school.name, school.campus === school.name ? undefined : school.campus, school.city].filter(Boolean).join(" · ")}</option>)}</select></label></div>
         <details className="application-school-more"><summary>找不到学校 / 校区？搜索地图</summary><AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schoolOptions} onSelect={selectSchool} /> : <section className="school-search application-school-search"><p>{state === "failed" ? "高德搜索暂不可用，请从上方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader></details>
       </section>

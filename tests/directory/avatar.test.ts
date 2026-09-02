@@ -201,12 +201,13 @@ test("hides unavailable avatar storage details from public read responses", asyn
   assert.deepEqual(await response.json(), { error: "头像暂时无法读取" });
 });
 
-test("application form offers image upload and a nickname-initial avatar fallback", () => {
+test("application form lets applicants choose a nickname-initial default avatar", () => {
   assert.equal(getNicknameInitial(" 林同学 "), "林");
   assert.equal(getNicknameInitial(""), "你");
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
   assert.match(html, /type="file"/);
   assert.match(html, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(html, /aria-label="当前头像：你"/);
+  assert.match(html, /aria-label="使用昵称首字头像"/);
   assert.doesNotMatch(html, /name="avatarKey"[^>]*type="text"/);
 });

@@ -6,6 +6,7 @@ import type { ContactCard } from "../../features/connections/contact-card";
 import type { ProjectedProfile, Visibility, VisibilityRules } from "../../features/directory/types";
 import { ContactCardEditor } from "../connections/ContactCardEditor";
 import { VisibilityField } from "./VisibilityField";
+import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
 
 type SchoolOption = { id: string; name: string; campus: string; city: string };
 type PrivacyField = (typeof OPTIONAL_VISIBILITY_FIELDS)[number];
@@ -53,6 +54,7 @@ export function ProfileEditor({
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState("");
+  const [selectedDefaultAvatar, setSelectedDefaultAvatar] = useState<string | null>(null);
   const [contactDraft, setContactDraft] = useState<ContactCard>(contactCard ?? {});
   const [savedContact, setSavedContact] = useState<ContactCard>(contactCard ?? {});
 
@@ -61,15 +63,36 @@ export function ProfileEditor({
     const file = input.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setAvatarMessage("头像文件须小于或等于 5 MB。"); input.value = ""; return; }
+    setSelectedDefaultAvatar(null);
+    await saveAvatar(file, "头像已上传，保存资料后生效。");
+    input.value = "";
+  }
+
+  async function saveAvatar(file: Blob, success: string) {
     const form = new FormData(); form.set("avatar", file);
     setUploadingAvatar(true); setAvatarMessage("");
     try {
       const response = await fetch("/api/uploads/avatar", { method: "POST", body: form });
       const result = await response.json() as { error?: string; objectKey?: string; publicUrl?: string };
       if (!response.ok || !result.objectKey || !result.publicUrl) throw new Error(result.error ?? "头像上传失败");
-      setAvatarKey(result.objectKey); setAvatarUrl(result.publicUrl); setAvatarFailed(false); setAvatarMessage("头像已上传，保存资料后生效。");
-    } catch (error) { setAvatarMessage(error instanceof Error ? error.message : "头像上传失败"); input.value = ""; }
+      setAvatarKey(result.objectKey); setAvatarUrl(result.publicUrl); setAvatarFailed(false); setAvatarMessage(success);
+    } catch (error) { setAvatarMessage(error instanceof Error ? error.message : "头像上传失败"); }
     finally { setUploadingAvatar(false); }
+  }
+
+  async function selectDefaultAvatar(avatar: (typeof DEFAULT_AVATARS)[number]) {
+    setSelectedDefaultAvatar(avatar.id);
+    try {
+      const response = await fetch(avatar.src);
+      if (!response.ok) throw new Error("默认头像暂时不可用，请选择上传头像。");
+      await saveAvatar(await response.blob(), `已选用${avatar.label}默认头像，保存资料后生效。`);
+    } catch (error) { setSelectedDefaultAvatar(null); setAvatarMessage(error instanceof Error ? error.message : "默认头像暂时不可用，请选择上传头像。"); }
+  }
+
+  async function selectNicknameAvatar() {
+    setSelectedDefaultAvatar("initial");
+    try { await saveAvatar(await createNicknameAvatar(profile.nickname ?? ""), "已选用昵称首字默认头像，保存资料后生效。"); }
+    catch (error) { setSelectedDefaultAvatar(null); setAvatarMessage(error instanceof Error ? error.message : "昵称头像暂时不可用，请选择其他头像。"); }
   }
 
   async function request(path: string, method: "PATCH" | "DELETE", payload: unknown, success: string): Promise<boolean> {
@@ -145,6 +168,7 @@ export function ProfileEditor({
         <div className="member-summary-copy"><h1>{profile.nickname}</h1><p>{[profile.school, profile.city].filter(Boolean).join(" · ")}</p><span className={mapPublished ? "map-status is-visible" : "map-status"}>● {mapPublished ? "已在共建地图展示" : "未在共建地图展示"}</span>
           <label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "添加 / 更换头像"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={uploadAvatar} /></label>
           {avatarMessage ? <small role="status">{avatarMessage}</small> : null}
+          <div className="default-avatar-list profile-default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(profile.nickname ?? "")}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-label={`使用${avatar.label}头像`} aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt="" /></button>)}</div>
         </div>
       </div>
       <a className="profile-preview-link" href={`/members/${profile.slug}`}>预览公开主页 →</a>

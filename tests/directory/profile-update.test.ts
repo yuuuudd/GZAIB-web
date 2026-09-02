@@ -156,6 +156,7 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, /name="schoolId"/);
   assert.match(html, /更换头像/);
   assert.match(html, /type="file"/);
+  assert.match(html, /aria-label="使用昵称首字头像"/);
   assert.doesNotMatch(html, /member-hub-actions/);
   assert.doesNotMatch(html, /保存资料与公开设置/);
   const contactPanel = html.slice(html.indexOf('id="settings-contact"'), html.indexOf('id="settings-privacy"'));
