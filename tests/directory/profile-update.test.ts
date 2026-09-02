@@ -142,6 +142,9 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, /type="file"/);
   assert.doesNotMatch(html, /member-hub-actions/);
   assert.doesNotMatch(html, /保存资料与公开设置/);
+  const contactPanel = html.slice(html.indexOf('id="settings-contact"'), html.indexOf('id="settings-privacy"'));
+  assert.match(contactPanel, />保存更改<\/button>/);
+  assert.doesNotMatch(contactPanel, /保存联系方式|保存链接/);
   assert.match(html, /<input(?=[^>]*aria-label="昵称公开范围")(?=[^>]*disabled)[^>]*type="checkbox"/);
 
   const hiddenHtml = renderToStaticMarkup(createElement(ProfileEditor, {

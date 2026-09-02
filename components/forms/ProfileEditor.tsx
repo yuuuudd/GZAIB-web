@@ -52,6 +52,8 @@ export function ProfileEditor({
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState("");
+  const [contactDraft, setContactDraft] = useState<ContactCard>(contactCard ?? {});
+  const [savedContact, setSavedContact] = useState<ContactCard>(contactCard ?? {});
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -96,12 +98,27 @@ export function ProfileEditor({
     }, "个人资料已保存。");
   }
 
-  async function saveLinks(event: FormEvent<HTMLFormElement>) {
+  async function saveContactAndLinks(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await request("/api/me/profile", "PATCH", {
-      workLinks: String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean),
-    }, "链接已保存。");
+    const fields = ["wechat", "email", "otherLabel", "otherValue"] as const;
+    const changed = fields.some((field) => (contactDraft[field] ?? "").trim() !== (savedContact[field] ?? "").trim());
+    setBusy(true); setMessage(null);
+    try {
+      if (changed) {
+        const optional = (field: typeof fields[number]) => contactDraft[field]?.trim() || undefined;
+        const payload = { ...(optional("wechat") ? { wechat: optional("wechat") } : {}), ...(optional("email") ? { email: optional("email") } : {}), ...(optional("otherLabel") ? { otherLabel: optional("otherLabel") } : {}), ...(optional("otherValue") ? { otherValue: optional("otherValue") } : {}) };
+        const response = await fetch("/api/me/contact-card", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+        const result = await response.json() as { error?: string };
+        if (!response.ok) throw new Error(result.error ?? "暂时无法保存联系方式，请稍后重试。");
+        setSavedContact(contactDraft);
+      }
+      const response = await fetch("/api/me/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ workLinks: String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean) }) });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "操作失败，请稍后重试。");
+      setMessage("联系方式与链接已保存。");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "操作失败，请稍后重试。"); }
+    finally { setBusy(false); }
   }
 
   async function savePrivacy(event: FormEvent<HTMLFormElement>) {
@@ -149,14 +166,13 @@ export function ProfileEditor({
         </div></div>
         <div className="settings-section"><fieldset><legend>技能方向</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} defaultChecked={profile.skills?.includes(skill)} />{skill}</label>)}</div></fieldset></div>
         <div className="settings-section"><fieldset><legend>参与角色</legend><div className="choice-list">{ROLE_OPTIONS.map((role) => <label key={role}><input name="roles" type="checkbox" value={role} defaultChecked={profile.roles?.includes(role)} />{role}</label>)}</div></fieldset></div>
-        <div className="settings-actions"><button type="submit" disabled={busy || uploadingAvatar}>{busy ? "正在保存…" : "保存更改"}</button></div>
+        <div className="settings-actions"><button type="button" onClick={() => window.location.reload()}>取消</button><button type="submit" disabled={busy || uploadingAvatar}>{busy ? "正在保存…" : "保存更改"}</button></div>
       </form>
     </section>
 
     <section id="settings-contact" className="settings-panel" role="tabpanel" hidden={activeTab !== "contact"}>
-      <div className="settings-section"><h2>联系方式</h2><p className="settings-hint">联系方式只会在双方接受连接后交换，不会出现在地图或公开主页。</p><ContactCardEditor initialCard={contactCard} embedded /></div>
-      <form onSubmit={saveLinks}><div className="settings-section"><h2>我的链接</h2><label>作品与个人主页<textarea className="profile-links-input" name="workLinks" placeholder={"https://github.com/…\nhttps://your-site.com"} defaultValue={profile.workLinks?.join("\n")} /><small>每行一个 HTTPS 链接，最多 5 条。</small></label></div><div className="settings-actions"><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存链接"}</button></div></form>
-      <div className="settings-section profile-related-links"><h2>我的社群</h2><p>查看或更新你负责的社群资料。</p><a href="/me/communities">管理我的社群 →</a></div>
+      <form onSubmit={saveContactAndLinks}><div className="settings-section"><h2>联系方式</h2><p className="settings-hint">联系方式只会在双方接受连接后交换，不会出现在地图或公开主页。</p><ContactCardEditor initialCard={contactCard} value={contactDraft} onChange={setContactDraft} onClear={() => setSavedContact({})} embedded /></div>
+      <div className="settings-section"><h2>外部链接</h2><label>作品与个人主页<textarea className="profile-links-input" name="workLinks" placeholder={"https://github.com/…\nhttps://your-site.com"} defaultValue={profile.workLinks?.join("\n")} /><small>每行一个 HTTPS 链接，最多 5 条。</small></label></div><div className="settings-section profile-related-links community-management-row"><div><h2>我的社群</h2><p>查看或更新你负责的社群资料。</p></div><a href="/me/communities">管理我的社群 →</a></div><div className="settings-actions"><button type="button" onClick={() => window.location.reload()}>取消</button><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存更改"}</button></div></form>
     </section>
 
     <section id="settings-privacy" className="settings-panel" role="tabpanel" hidden={activeTab !== "privacy"}>
@@ -165,14 +181,14 @@ export function ProfileEditor({
         <div className="settings-section privacy-group"><h3>公开身份</h3><p>{mapPublished ? "地图展示期间，这些资料会保持公开。" : "地图已隐藏，你可以单独调整这些资料。"}</p>{MAP_REQUIRED_VISIBILITY_FIELDS.slice(0, 5).map((field) => <VisibilityField key={field} label={requiredLabels[field]} value={visibility[field] ?? "public"} disabled={mapPublished} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
         <div className="settings-section privacy-group"><h3>能力与经历</h3>{MAP_REQUIRED_VISIBILITY_FIELDS.slice(5).map((field) => <VisibilityField key={field} label={requiredLabels[field]} value={visibility[field] ?? "public"} disabled={mapPublished} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
         <div className="settings-section privacy-group"><h3>个人动态</h3>{OPTIONAL_VISIBILITY_FIELDS.map((field) => <VisibilityField key={field} label={labels[field]} value={visibility[field] ?? "private"} onChange={(value: Visibility) => setVisibility((current) => ({ ...current, [field]: value }))} />)}</div>
-        <div className="settings-actions"><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存更改"}</button></div>
+        <div className="settings-actions"><button type="button" onClick={() => window.location.reload()}>取消</button><button type="submit" disabled={busy}>{busy ? "正在保存…" : "保存更改"}</button></div>
       </form>
     </section>
 
     <section id="settings-account" className="settings-panel" role="tabpanel" hidden={activeTab !== "account"}>
       <div className="settings-section account-setting-row"><div><h2>地图展示</h2><h3>在共建地图中展示我的资料</h3><p>关闭后，你的资料将不再出现在共建地图搜索和浏览结果中。</p></div><label className="account-map-toggle"><input type="checkbox" role="switch" checked={mapPublished} disabled={busy} onChange={(event) => void toggleMap(event.currentTarget.checked)} /><span>{mapPublished ? "ON" : "OFF"}</span></label></div>
       <div className="settings-section"><h2>账号与数据</h2><details className="delete-account"><summary>注销账号</summary><p>删除后会立即下架公开资料、撤回待审申请并撤销所有会话。此操作不可撤销。</p><label>输入“{ACCOUNT_DELETION_CONFIRMATION}”确认<input value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label><button type="button" disabled={busy || confirmation !== ACCOUNT_DELETION_CONFIRMATION} onClick={() => void request("/api/me/account", "DELETE", { confirmation }, "")}>{ACCOUNT_DELETION_CONFIRMATION}</button></details></div>
-      <div className="settings-section profile-related-links"><h2>其他管理</h2><div><a href="/me/connections">我的连接</a><a href="/me/activities">活动申请</a><a href="/me/blocked">已屏蔽成员</a></div></div>
+      <div className="settings-section profile-related-links"><h2>其他管理</h2><div><a href="/me/connections">我的连接</a><a href="/me/blocked">已屏蔽成员</a></div></div>
     </section>
 
     {message ? <p className="profile-editor-message" role="status">{message}</p> : null}
