@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { CommunityDirectory } from "../../components/communities/CommunityDirectory";
 import { BrandHomeLink } from "../../components/navigation/BrandHomeLink";
 import { PrimaryNavigation } from "../../components/navigation/PrimaryNavigation";
@@ -30,5 +29,5 @@ export default async function CommunitiesPage({ searchParams }: { searchParams: 
   try { viewerId = (await resolveRequestUserId(new Request("https://demo.local/communities", { headers: requestHeaders }))) ?? undefined; } catch { viewerId = undefined; }
   const result = service ? await service.list(query, viewerId).catch(() => ({ items: [], citySummaries: [] })) : { items: [], citySummaries: [] };
 
-  return <main className="community-shell"><header className="brand-header community-header"><BrandHomeLink /><PrimaryNavigation active="communities" /><Link className="brand-header-action" href="/me">我的</Link></header><CommunityDirectory communities={result.items} query={query} /></main>;
+  return <main className="community-shell"><header className="brand-header community-header"><BrandHomeLink /><PrimaryNavigation active="communities" /><a className="brand-header-action" href="/me">我的</a></header><CommunityDirectory communities={result.items} query={query} /></main>;
 }
