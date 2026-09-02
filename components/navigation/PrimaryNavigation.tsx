@@ -1,8 +1,9 @@
-type PrimaryChannel = "home" | "map" | "communities" | "news" | "events" | "me";
+type PrimaryChannel = "home" | "map" | "co-create" | "communities" | "news" | "events" | "me";
 
 const channels: Array<{ id: PrimaryChannel; href: string; label: string }> = [
   { id: "home", href: "/", label: "首页" },
   { id: "map", href: "/#map", label: "共建地图" },
+  { id: "co-create", href: "/co-create", label: "共创广场" },
   { id: "communities", href: "/communities", label: "AI 社群" },
   { id: "news", href: "/news", label: "AI 资讯" },
   { id: "events", href: "/events", label: "活动赛事" },
