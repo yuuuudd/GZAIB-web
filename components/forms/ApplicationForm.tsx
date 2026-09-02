@@ -172,7 +172,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       <section className="application-section">
         <h2>你在哪里</h2>
         <AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schoolOptions} onSelect={selectSchool} /> : <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。{state === "failed" ? "高德搜索暂不可用，请从下方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader>
-        <label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择或搜索学校</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{school.name} · {school.campus} · {school.city}</option>)}</select></label>
+        <label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择或搜索学校</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{[school.name, school.campus === school.name ? undefined : school.campus, school.city].filter(Boolean).join(" · ")}</option>)}</select></label>
       </section>
       <section className="application-section">
         <h2>让大家快速认识你</h2>

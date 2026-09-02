@@ -20,6 +20,15 @@ test("member application offers AMap school search before choosing a school", ()
   assert.doesNotMatch(html, /坐标确认|确认坐标|已由管理员确认/);
 });
 
+test("school choices do not repeat a campus identical to the school name", () => {
+  const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [{
+    id: "school-1", name: "中山大学(广州校区南校园)", campus: "中山大学(广州校区南校园)", city: "广州",
+  }] }));
+
+  assert.match(html, /中山大学\(广州校区南校园\) · 广州/);
+  assert.doesNotMatch(html, /中山大学\(广州校区南校园\) · 中山大学\(广州校区南校园\)/);
+});
+
 test("member application keeps only identity, school, intro, skills, and consent in the main flow", () => {
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
 
