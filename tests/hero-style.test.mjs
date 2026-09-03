@@ -7,3 +7,9 @@ test("home hero title stays clear of the channel cards", async () => {
 
   assert.match(css, /\.brand-home-copy h1 \{[^}]*font-size:clamp\(2\.7rem,3\.8vw,4\.7rem\)/);
 });
+
+test("home content stage keeps its glow wide without reaching the footer", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.brand-home-stage::before\s*\{[^}]*inset:0 -12%;/);
+});

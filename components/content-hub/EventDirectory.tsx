@@ -11,13 +11,13 @@ function OfficialLink({ item }: { item: EventItem }) {
 
 export function EventDirectory({ items }: { items: EventItem[] }) {
   const [type, setType] = useState<(typeof EVENT_TYPES)[number]>("全部");
-  const [location, setLocation] = useState<EventLocation>("广东");
+  const [location, setLocation] = useState<EventLocation | "全部">("全部");
   const filtered = filterEvents(items, type, location);
   const featured = filtered.find((item) => item.featured) ?? filtered[0];
 
   return <section className="event-directory" aria-labelledby="events-title">
-    <header className="content-hub-heading"><p className="community-kicker">AI 活动与赛事</p><h1 id="events-title">找到下一场值得参加的 AI 活动</h1><p>比赛、黑客松、分享会与工作坊，从近期时间开始发现。信息最后核验于 2026-09-01。</p><a className="content-hub-submit-link" href="/events/submit">我想发起 / 共建活动 →</a></header>
-    <div className="event-filter-bar"><div aria-label="活动类型">{EVENT_TYPES.map((value) => <button key={value} type="button" aria-pressed={type === value} onClick={() => setType(value)}>{value}</button>)}</div><div aria-label="活动地区">{EVENT_LOCATIONS.map((value) => <button key={value} type="button" aria-pressed={location === value} onClick={() => setLocation(value)}>{value}</button>)}</div></div>
+    <header className="content-hub-heading"><p className="community-kicker">青年相遇 · 活动赛事</p><div className="event-hero-row"><h1 id="events-title">让每一次相遇，都成为共创的开始。</h1><div className="event-hero-description-row"><p>发现比赛、黑客松、分享会与工作坊，把线上连接带到真实的活动赛事中。</p><a className="content-hub-submit-link" href="/events/submit">我想发起 / 共建活动 →</a></div></div></header>
+    <div className="event-filter-bar"><div className="event-filter-row" aria-label="活动类型"><strong>活动类型</strong><div>{EVENT_TYPES.map((value) => <button key={value} type="button" aria-pressed={type === value} onClick={() => setType(value)}>{value}</button>)}</div></div><div className="event-filter-row" aria-label="活动地区"><strong>活动地点</strong><div>{EVENT_LOCATIONS.map((value) => <button key={value} type="button" aria-pressed={location === value} onClick={() => setLocation(value)}>{value}</button>)}</div></div></div>
     <div className="event-content-grid">
       <div>
         {featured ? <article className="event-feature-card" data-event-type={featured.type}><span>{featured.dateLabel}</span><div><small>{featured.type}</small><h2>{featured.title}</h2><p>{featured.venue} · {featured.organizer}</p><p>{featured.summary}</p><small>报名截止：{featured.deadlineLabel}</small><OfficialLink item={featured} /></div></article> : null}

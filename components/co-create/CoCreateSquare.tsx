@@ -24,7 +24,7 @@ export function CoCreateSquare() {
   return <>
     <section className="co-create-top">
       <section className="co-create-hero" aria-labelledby="co-create-title">
-        <div className="co-create-hero-copy"><p className="community-kicker">广州 AI 共创社 · 共创广场</p><h1 id="co-create-title">让想做的事，<br />找到愿意一起做的人</h1><p>发现正在发生的项目、活动和真实需求，找到你可以加入的位置。</p></div>
+        <div className="co-create-hero-copy"><p className="community-kicker">广州AI共创社 · 共创广场</p><h1 id="co-create-title"><span className="hero-title-line">让每一个想法</span><span className="hero-title-line"><span className="hero-title-accent">找到同行者</span>。</span></h1><p>发现真实需求、开放项目与协作机会，在这里找到可以一起开始的人。</p></div>
       </section>
       <div className="co-create-top-actions"><div className="co-create-hero-shortcuts" aria-label="共创分类快捷入口">{coreTypes.map((item, index) => <button key={item} type="button" onClick={() => selectType(item)}><i aria-hidden="true">{["◒", "✦", "⌂", "▤"][index]}</i><span><b>{item}</b></span><em aria-hidden="true">→</em></button>)}</div><section className="co-create-metrics" aria-label="共创演示数据">{metrics.map(([icon, label, count, unit], index) => <article key={label} className={`metric-${index}`}><i aria-hidden="true">{icon}</i><p><strong>{count} <small>{unit}</small></strong>{label}</p></article>)}</section></div>
     </section>

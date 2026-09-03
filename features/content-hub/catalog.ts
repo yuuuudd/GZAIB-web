@@ -13,9 +13,9 @@ export type NewsItem = {
 };
 
 export const EVENT_TYPES = ["全部", "比赛赛事", "黑客松", "分享会", "工作坊", "展会"] as const;
-export const EVENT_LOCATIONS = ["广州", "广东", "线上", "全国"] as const;
+export const EVENT_LOCATIONS = ["全部", "广州", "广东", "线上", "全国"] as const;
 export type EventType = Exclude<(typeof EVENT_TYPES)[number], "全部">;
-export type EventLocation = (typeof EVENT_LOCATIONS)[number];
+export type EventLocation = Exclude<(typeof EVENT_LOCATIONS)[number], "全部">;
 export type EventGroup = "本周进行" | "即将开始" | "长期征集";
 
 export type EventItem = {
@@ -201,6 +201,6 @@ export function filterNews(items: NewsItem[], category: (typeof NEWS_CATEGORIES)
   return category === "全部" ? items : items.filter((item) => item.category === category);
 }
 
-export function filterEvents(items: EventItem[], type: (typeof EVENT_TYPES)[number], location: EventLocation) {
-  return items.filter((item) => (type === "全部" || item.type === type) && item.locations.includes(location));
+export function filterEvents(items: EventItem[], type: (typeof EVENT_TYPES)[number], location: (typeof EVENT_LOCATIONS)[number]) {
+  return items.filter((item) => (type === "全部" || item.type === type) && (location === "全部" || item.locations.includes(location)));
 }

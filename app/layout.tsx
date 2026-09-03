@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Serif_SC } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { DemoIdentitySwitcher } from "../components/auth/DemoIdentitySwitcher";
 import { isDemoMode } from "../features/identity/demo-auth";
@@ -8,7 +9,7 @@ import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const sourceHanSerif = Noto_Serif_SC({ variable: "--font-source-han-serif", weight: "600", subsets: ["latin"], display: "swap" });
+const sourceHanSerif = localFont({ src:"./fonts/SourceHanSerifSC-SemiBold.woff2", weight:"600", variable:"--font-source-han-serif", display:"swap" });
 
 const siteTitle = "广州 AI 共创社｜共建者与 AI 社群地图";
 const siteDescription = "看见广东高校共建者，发现正在行动的 AI 社群与共创网络。";

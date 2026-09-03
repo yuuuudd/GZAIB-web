@@ -1,17 +1,16 @@
-import { EcosystemMapSwitcher } from "../components/map/EcosystemMapSwitcher";
 import { PrimaryNavigation } from "../components/navigation/PrimaryNavigation";
 import Image from "next/image";
 
 const homeChannels = [
-  { href: "#map", title: "共建地图", subtitle: "看见彼此，连接行动", artwork: "/brand/home-map.webp", tone: "map" },
-  { href: "/communities", title: "AI 社区", subtitle: "连接同频，共创未来", artwork: "/brand/home-community.webp", tone: "community" },
-  { href: "/news", title: "AI 资讯", subtitle: "洞察前沿，启发更多", artwork: "/brand/home-news.webp", tone: "news" },
-  { href: "/events", title: "活动赛事", subtitle: "发现活动，参与共建", artwork: "/brand/home-events.webp", tone: "events" },
+  { href: "/map", title: "共建地图", subtitle: "看见彼此，连接行动", artwork: "/brand/home-map.webp", tone: "map" },
+  { href: "/co-create", title: "共创广场", subtitle: "提一个想法，找一群同行者", artwork: "/brand/home-co-create.png", tone: "co-create" },
+  { href: "/events", title: "活动赛事", subtitle: "在线下相遇，让共创发生", artwork: "/brand/home-events-scene.png", tone: "events" },
+  { href: "/about#co-create-archive", title: "共创档案", subtitle: "让每一次共创留下痕迹", artwork: "/brand/home-archive.png", tone: "archive" },
 ] as const;
 
 const communityLoop = [
   { label: "发现", description: "发现议题、活动与真实需求", href: "/events" },
-  { label: "连接", description: "在共建地图找到同行者", href: "/#map" },
+  { label: "连接", description: "在共建地图找到同行者", href: "/map" },
   { label: "共创", description: "加入网络，发起双向连接", href: "/apply" },
   { label: "落地", description: "组队协作，把想法变成行动" },
   { label: "沉淀", description: "让作品、经验与贡献持续可见" },
@@ -22,6 +21,7 @@ const communityLoopPath = "M90 110C200 40 285 45 360 70C450 100 510 125 600 110C
 export default function Home() {
   return (
     <main className="brand-shell">
+      <div className="brand-home-stage">
       <header className="brand-header">
         <a className="brand-mark" href="#top" aria-label="广州AI共创社首页">
           <Image src="/brand/gzaib-horizontal.png" alt="广州 AI 共创社 GZAIB" width={276} height={106} priority unoptimized />
@@ -32,11 +32,11 @@ export default function Home() {
       <section className="brand-home-hero" id="top" aria-labelledby="hero-title">
         <div className="brand-home-copy">
           <p className="brand-eyebrow">青年共建 · 连接创造力</p>
-          <h1 id="hero-title"><span className="hero-title-line">让广东每一所高校，</span><span className="hero-title-line">都亮起一束<span className="hero-title-accent">共建的光</span>。</span></h1>
-          <p className="brand-intro">让愿意分享的人被看见，让想做的事找到同行者，让高校里的创造力彼此连接。</p>
+          <h1 id="hero-title"><span className="hero-title-line">让愿意行动的人</span><span className="hero-title-line"><span className="hero-title-accent">彼此看见</span>。</span><span className="hero-title-line">让想做的事</span><span className="hero-title-line"><span className="hero-title-warm">找到同行者</span>。</span></h1>
+          <p className="brand-intro">以 AI 为共同议题，以高校青年为主要参与者。<br />连接人、想法与行动，<br />让一次相遇，成为下一次共创的开始。</p>
           <div className="brand-hero-actions">
-            <a className="brand-primary-action" href="/apply">申请点亮我的头像 <span>→</span></a>
-            <a className="brand-secondary-action" href="#map">探索地图 <span>↓</span></a>
+            <a className="brand-primary-action" href="/map">加入共建地图 <span>→</span></a>
+            <a className="brand-secondary-action" href="/co-create">看看大家在做什么 <span>→</span></a>
           </div>
         </div>
         <div className="hero-channel-grid" aria-label="探索广州 AI 共创社">
@@ -54,7 +54,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <EcosystemMapSwitcher initialView="builders" />
       <section className="community-loop" id="how-it-works" aria-labelledby="community-loop-title">
         <div className="approval-heading"><p className="map-section-kicker">共创如何发生</p><h2 id="community-loop-title">从连接，到创造</h2><p>让议题找到同行，让行动沉淀成果。</p></div>
         <ol>
@@ -70,10 +69,11 @@ export default function Home() {
           </li>)}
         </ol>
       </section>
+      </div>
       <footer className="site-footer" aria-label="网站页脚">
         <div className="site-footer-grid">
           <section className="site-footer-brand"><strong>✦ 广州 AI 共创社 <small>GZAIB</small></strong><p>连接高校 AI 共建者，让项目、活动与资源持续发生。</p><div aria-label="社交渠道"><span>公众号</span><span>小红书</span><span>邮箱</span></div></section>
-          <nav aria-label="平台"><h2>平台</h2><a href="/#map">共建地图</a><a href="/communities">AI 社区</a><a href="/news">AI 资讯</a><a href="/events">活动赛事</a></nav>
+          <nav aria-label="平台"><h2>平台</h2><a href="/map">共建地图</a><a href="/co-create">共创广场</a><a href="/events">活动赛事</a><a href="/about#co-create-archive">共创档案</a></nav>
           <nav aria-label="共建与连接"><h2>共建与连接</h2><a href="/apply">申请加入</a><a href="/me/connections">我的连接</a><a href="/apply">共建者认证</a><a href="/events/submit">活动申请</a></nav>
           <section className="site-footer-qr"><h2>关注公众号</h2><Image src="/brand/official-account-qr.jpg" alt="广州 AI 共创社公众号二维码" width={112} height={112} unoptimized /><p>扫码关注广州 AI 共创社</p></section>
         </div>

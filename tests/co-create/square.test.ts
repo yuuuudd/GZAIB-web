@@ -15,7 +15,7 @@ test("co-create filters keep only items matching every selected participation co
 
 test("co-create hero keeps the action copy without a decorative illustration", () => {
   const document = new JSDOM(renderToStaticMarkup(createElement(CoCreateSquare))).window.document;
-  assert.match(document.querySelector(".co-create-hero")?.textContent ?? "", /让想做的事/);
+  assert.match(document.querySelector(".co-create-hero")?.textContent ?? "", /让每一个想法/);
   assert.equal(document.querySelector(".co-create-hero-art"), null);
   assert.equal(document.querySelector(".idea-network"), null);
 });
@@ -41,7 +41,7 @@ test("co-create keeps auxiliary copy out of shortcuts, metrics, and quick action
   assert.equal(document.querySelector(".co-create-metrics > span"), null);
   assert.equal(document.querySelector(".co-create-heading > small"), null);
   assert.equal(document.querySelectorAll(".co-create-aside a small").length, 0);
-  assert.match(document.querySelector(".co-create-hero-copy > p:not(.community-kicker)")?.textContent ?? "", /^发现正在发生的项目、活动和真实需求，找到你可以加入的位置。$/);
+  assert.match(document.querySelector(".co-create-hero-copy > p:not(.community-kicker)")?.textContent ?? "", /^发现真实需求、开放项目与协作机会，在这里找到可以一起开始的人。$/);
   assert.equal(document.querySelector(".co-create-heading"), null);
 });
 
@@ -73,8 +73,8 @@ test("co-create restores 50px to the quick panel while retaining its right edge"
 
 test("co-create uses the same public square naming and four-category vocabulary throughout", () => {
   const document = new JSDOM(renderToStaticMarkup(createElement(CoCreateSquare))).window.document;
-  assert.equal(document.querySelector(".community-kicker")?.textContent, "广州 AI 共创社 · 共创广场");
-  assert.match(document.querySelector(".co-create-hero-copy > p:not(.community-kicker)")?.textContent ?? "", /^发现正在发生的项目、活动和真实需求，找到你可以加入的位置。$/);
+  assert.equal(document.querySelector(".community-kicker")?.textContent, "广州AI共创社 · 共创广场");
+  assert.match(document.querySelector(".co-create-hero-copy > p:not(.community-kicker)")?.textContent ?? "", /^发现真实需求、开放项目与协作机会，在这里找到可以一起开始的人。$/);
   assert.equal(coCreateItems.find((item) => item.id === "tool-sharing")?.type, "活动协作");
   assert.equal(document.querySelector(".co-create-flow p"), null);
   assert.match(document.querySelector(".co-create-metrics")?.textContent ?? "", /参与高校/);

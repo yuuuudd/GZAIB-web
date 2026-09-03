@@ -93,8 +93,8 @@ export function BuilderMap() {
   return (
     <section className="builder-map-section" id="map" aria-labelledby="map-title">
       <div className="map-heading-row">
-        <div><p className="map-section-kicker">高校共建者 · 行动连接地图</p><h2 id="map-title">探索高校能量，发现同频伙伴</h2></div>
-        <p>每一枚图钉，不只是一个地点，也是一份愿意分享、愿意行动的共建回应。</p>
+        <div><p className="map-section-kicker">高校共建者 · 行动连接地图</p><h2 id="map-title">探索高校能量，发现同频伙伴 <a className="map-light-avatar-action" href="/apply">点亮我的头像 →</a></h2></div>
+        <p>看见正在行动的高校与共建者，<br />让每一束光连接成更大的创造力网络。</p>
       </div>
       <div className="map-overview-row">
         <nav className="semantic-level-switcher" aria-label="共建地图层级">
