@@ -42,6 +42,14 @@ export const sessions = sqliteTable("sessions", {
   lastSeenAt: integer("last_seen_at").notNull(),
 }, (t) => [uniqueIndex("ux_sessions_token_hash").on(t.tokenHash), index("idx_sessions_user_expiry").on(t.userId, t.expiresAt)]);
 
+export const passwordCredentials = sqliteTable("password_credentials", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  passwordHash: text("password_hash").notNull(),
+  salt: text("salt").notNull(),
+  iterations: integer("iterations").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
 export const applications = sqliteTable("applications", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),

@@ -7,11 +7,26 @@ import * as schema from "../db/schema";
 
 test("core schema exports every required table", () => {
   for (const name of [
-    "users", "magicLinkTokens", "sessions", "schools", "applications",
+    "users", "magicLinkTokens", "sessions", "passwordCredentials", "schools", "applications",
     "memberProfiles", "profileVisibility", "contributions", "notifications", "dailyMetrics", "auditLogs",
   ]) assert.ok(name in schema, `missing ${name}`);
   for (const name of ["contactCards", "connectionRequests", "blocks", "reports"]) {
     assert.ok(name in schema, `missing ${name}`);
+  }
+});
+
+test("password credential migration stores only a salted irreversible digest", () => {
+  const migrationPath = "drizzle/0009_password_credentials.sql";
+  assert.ok(existsSync(migrationPath), `missing ${migrationPath}`);
+  const database = new DatabaseSync(":memory:");
+  try {
+    database.exec("PRAGMA foreign_keys = ON; CREATE TABLE users (id text PRIMARY KEY NOT NULL)");
+    database.exec(readFileSync(migrationPath, "utf8"));
+    const columns = database.prepare("PRAGMA table_info(password_credentials)").all() as Array<{ name: string }>;
+    assert.deepEqual(columns.map(({ name }) => name), ["user_id", "password_hash", "salt", "iterations", "updated_at"]);
+    assert.throws(() => database.exec("INSERT INTO password_credentials VALUES ('missing', 'hash', 'salt', 600000, 1)"), /FOREIGN KEY constraint failed/);
+  } finally {
+    database.close();
   }
 });
 
