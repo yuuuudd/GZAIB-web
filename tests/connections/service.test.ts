@@ -303,8 +303,8 @@ test("D1 guarded creation requires an approved, published active sender and incl
   const query = new SQLiteSyncDialect().sqlToQuery(guardedInsert as never);
   assert.match(query.sql, /sender_application\.status = 'approved'/);
   assert.match(query.sql, /sender_profile\.publish_status = 'published'/);
-  assert.match(query.sql, /"users"\."role" = 'member'/);
-  assert.match(query.sql, /recipient\.role = 'member'/);
+  assert.match(query.sql, /"users"\."role" in \('member', 'admin'\)/);
+  assert.match(query.sql, /recipient\.role in \('member', 'admin'\)/);
   assert.match(query.sql, /daily_request\.created_at >= \?/);
   assert.ok(query.params.includes(now - 86_400_000));
 });
@@ -382,7 +382,7 @@ test("D1 resolution batches a non-empty notification only after its guarded tran
   assert.equal(operations[0]?.table, connectionRequests);
   assert.equal(operations[1]?.table, notifications);
   const transitionGuard = new SQLiteSyncDialect().sqlToQuery(operations[0]?.query as never);
-  assert.match(transitionGuard.sql, /accepting_member\.role = 'member'/i);
+  assert.match(transitionGuard.sql, /accepting_member\.role in \('member', 'admin'\)/i);
   assert.match(transitionGuard.sql, /accepting_application\.status = 'approved'/i);
   assert.match(transitionGuard.sql, /accepting_profile\.publish_status = 'published'/i);
   assert.match(transitionGuard.sql, /request_sender\.status in \('active', 'connection_suspended'\)/i);

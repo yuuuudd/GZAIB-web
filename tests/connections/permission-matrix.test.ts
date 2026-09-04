@@ -21,7 +21,7 @@ const cases: Array<{ actor: Actor; expected: Expected }> = [
   { actor: "connection_suspended", expected: { create: 403, inbox: 200, accept: 200, contact: 403, report: 201, admin: 403 } },
   { actor: "hidden", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 403 } },
   { actor: "suspended", expected: { create: 401, inbox: 401, accept: 401, contact: 401, report: 401, admin: 403 } },
-  { actor: "admin", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 200 } },
+  { actor: "admin", expected: { create: 201, inbox: 200, accept: 200, contact: 200, report: 201, admin: 200 } },
   { actor: "blocked", expected: { create: 403, inbox: 200, accept: 403, contact: 403, report: 201, admin: 403 } },
 ];
 
@@ -43,8 +43,8 @@ function request(path: string, body?: unknown) {
 function fixture(actor: Actor) {
   const actorId = actor === "admin" ? "demo-admin" : actor;
   const status = new Map<string, string>([[actorId, accountStatus(actor)], ["recipient", "active"], ["sender", "active"]]);
-  const approved = new Set(["active", "connection_suspended", "blocked", "recipient", "sender"]);
-  const published = new Set(["active", "connection_suspended", "blocked", "recipient", "sender"]);
+  const approved = new Set(["active", "connection_suspended", "blocked", "recipient", "sender", "demo-admin"]);
+  const published = new Set(["active", "connection_suspended", "blocked", "recipient", "sender", "demo-admin"]);
   const blocked = actor === "blocked";
   const requests: ConnectionRequest[] = [];
   const notifications: unknown[] = [];
@@ -54,8 +54,8 @@ function fixture(actor: Actor) {
   const connectionRepository: ConnectionRepository = {
     getCreateContext: async (senderId, recipientId, input) => ({
       senderId, recipientId, senderStatus: status.get(senderId) ?? "missing",
-      senderIsMember: senderId !== "demo-admin", senderApproved: approved.has(senderId), senderPublished: published.has(senderId),
-      recipientIsMember: recipientId !== "demo-admin", recipientPublished: published.has(recipientId), blockedEitherDirection: blocked,
+      senderIsMember: approved.has(senderId), senderApproved: approved.has(senderId), senderPublished: published.has(senderId),
+      recipientIsMember: approved.has(recipientId), recipientPublished: published.has(recipientId), blockedEitherDirection: blocked,
       pendingEitherDirection: requests.some((item) => item.status === "pending" && ((item.senderId === senderId && item.recipientId === recipientId) || (item.senderId === recipientId && item.recipientId === senderId))),
       requestsInLast24Hours: 0, topic: input.topic, message: input.message,
     }),
@@ -66,7 +66,7 @@ function fixture(actor: Actor) {
       if (!incoming || incoming.recipientId !== acceptingUserId) return "ineligible";
       if (blocked) return "blocked";
       const acceptingStatus = status.get(acceptingUserId);
-      const acceptingMember = actor !== "admin" && (acceptingStatus === "active" || acceptingStatus === "connection_suspended")
+      const acceptingMember = (acceptingStatus === "active" || acceptingStatus === "connection_suspended")
         && approved.has(acceptingUserId) && published.has(acceptingUserId);
       const senderEligible = status.get(incoming.senderId) === "active" && approved.has(incoming.senderId) && published.has(incoming.senderId);
       return acceptingMember && senderEligible ? "allowed" : "ineligible";
@@ -136,7 +136,7 @@ test("permission matrix calls production route and service boundaries, including
     const accept = await statusOf(() => store.route.PATCH(new Request("https://demo.local/api/connections/incoming", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "accept" }) })));
 
     await store.contacts.saveOwnCard("recipient", { wechat: "recipient-card" }, now);
-    if (item.actor === "active") store.requests.push({ id: "accepted", senderId: store.actorId, recipientId: "recipient", topic: "校园 AI 共创", message, status: "accepted", createdAt: now, updatedAt: now });
+    if (item.actor === "active" || item.actor === "admin") store.requests.push({ id: "accepted", senderId: store.actorId, recipientId: "recipient", topic: "校园 AI 共创", message, status: "accepted", createdAt: now, updatedAt: now });
     const contact = await store.session(request("/me/connections")).then(async () => await store.contacts.getVisibleContactCard(store.actorId, "recipient") ? 200 : 403).catch(() => 401);
 
     const report = await store.session(request("/api/reports")).then(async () => {

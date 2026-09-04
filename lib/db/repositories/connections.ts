@@ -49,20 +49,22 @@ function acceptanceEligibility(actorId: string) {
       inner join member_profiles accepting_profile on accepting_profile.user_id = accepting_member.id
       where accepting_member.id = ${actorId}
         and accepting_member.id = ${connectionRequests.recipientId}
-        and accepting_member.role = 'member'
+        and accepting_member.role in ('member', 'admin')
         and accepting_member.status in ('active', 'connection_suspended')
         and accepting_application.status = 'approved'
         and accepting_profile.publish_status = 'published'
+        and accepting_profile.admin_managed = 0
     )
     and exists (
       select 1 from users request_sender
       inner join applications sender_application on sender_application.user_id = request_sender.id
       inner join member_profiles sender_profile on sender_profile.user_id = request_sender.id
       where request_sender.id = ${connectionRequests.senderId}
-        and request_sender.role = 'member'
+        and request_sender.role in ('member', 'admin')
         and request_sender.status in ('active', 'connection_suspended')
         and sender_application.status = 'approved'
         and sender_profile.publish_status = 'published'
+        and sender_profile.admin_managed = 0
     )
   `;
 }
@@ -107,6 +109,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
           role: users.role,
           applicationStatus: applications.status,
           publishStatus: memberProfiles.publishStatus,
+          adminManaged: memberProfiles.adminManaged,
         }).from(users)
           .leftJoin(applications, eq(applications.userId, users.id))
           .leftJoin(memberProfiles, eq(memberProfiles.userId, users.id))
@@ -116,10 +119,11 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
           .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
           .where(and(
             eq(users.id, recipientId),
-            eq(users.role, "member"),
+            inArray(users.role, ["member", "admin"]),
             inArray(users.status, ["active", "connection_suspended"]),
             eq(applications.status, "approved"),
             eq(memberProfiles.publishStatus, "published"),
+            eq(memberProfiles.adminManaged, false),
           )),
         db.select({ blockerId: blocks.blockerId }).from(blocks).where(or(
           and(eq(blocks.blockerId, senderId), eq(blocks.blockedId, recipientId)),
@@ -138,7 +142,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         senderId,
         recipientId,
         senderStatus: senderRows[0]?.status ?? "missing",
-        senderIsMember: senderRows[0]?.role === "member",
+        senderIsMember: (senderRows[0]?.role === "member" || senderRows[0]?.role === "admin") && senderRows[0]?.adminManaged === false,
         senderApproved: senderRows[0]?.applicationStatus === "approved",
         senderPublished: senderRows[0]?.publishStatus === "published",
         recipientIsMember: recipientRows.length > 0,
@@ -159,7 +163,7 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
         from ${users}
         where ${users.id} = ${request.senderId}
           and ${users.status} = 'active'
-          and ${users.role} = 'member'
+          and ${users.role} in ('member', 'admin')
           and ${request.senderId} <> ${request.recipientId}
           and exists (
             select 1 from applications sender_application
@@ -167,16 +171,18 @@ export function createConnectionRepository(db: Db): ConnectionRepository {
             where sender_application.user_id = ${users.id}
               and sender_application.status = 'approved'
               and sender_profile.publish_status = 'published'
+              and sender_profile.admin_managed = 0
           )
           and exists (
             select 1 from users recipient
             inner join applications recipient_application on recipient_application.user_id = recipient.id
             inner join member_profiles recipient_profile on recipient_profile.user_id = recipient.id
             where recipient.id = ${request.recipientId}
-              and recipient.role = 'member'
+              and recipient.role in ('member', 'admin')
               and recipient.status in ('active', 'connection_suspended')
               and recipient_application.status = 'approved'
               and recipient_profile.publish_status = 'published'
+              and recipient_profile.admin_managed = 0
           )
           and not exists (
             select 1 from blocks current_block

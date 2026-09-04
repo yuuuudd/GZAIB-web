@@ -103,11 +103,9 @@ test("permits ordinary community discussion in a topic without an explicit conta
   assert.deepEqual(canCreate({ ...base, topic: "WeChat campus AI community experience" }), { ok: true });
 });
 
-test("rejects an approved and published admin in either side of a new connection", () => {
-  const approvedPublishedAdminSender = { ...base, senderIsMember: false };
-  const approvedPublishedAdminRecipient = { ...base, recipientIsMember: false };
-  assert.deepEqual(canCreate(approvedPublishedAdminSender), { ok: false, code: "sender_ineligible" });
-  assert.deepEqual(canCreate(approvedPublishedAdminRecipient), { ok: false, code: "recipient_unavailable" });
+test("rejects accounts that do not have an eligible member profile", () => {
+  assert.deepEqual(canCreate({ ...base, senderIsMember: false }), { ok: false, code: "sender_ineligible" });
+  assert.deepEqual(canCreate({ ...base, recipientIsMember: false }), { ok: false, code: "recipient_unavailable" });
 });
 
 test("permits an eligible request without a contact disclosure", () => {

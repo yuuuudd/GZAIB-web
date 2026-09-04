@@ -16,7 +16,7 @@ export async function resolveConnectionCtaState(viewer: Viewer, slug: string, de
   now(): number;
 }): Promise<{ state: ConnectionCtaState; dailyRemaining: number }> {
   if (viewer.kind === "visitor") return { state: "visitor", dailyRemaining: 0 };
-  if (viewer.kind !== "member") return { state: "unavailable", dailyRemaining: 0 };
+  if (viewer.kind !== "member" && viewer.kind !== "admin") return { state: "unavailable", dailyRemaining: 0 };
   const recipientId = await dependencies.resolveRecipientId(slug);
   if (!recipientId) return { state: "unavailable", dailyRemaining: 0 };
   if (recipientId === viewer.userId) return { state: "own", dailyRemaining: 0 };
