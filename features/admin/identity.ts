@@ -1,9 +1,9 @@
 export type TrustedChatGPTUser = { userId: string; email: string };
 export type RuntimeAdmin = { id: string; email: string };
 
-/** IDs issued by the only two trusted admin boundaries: demo session or ChatGPT allowlist. */
+/** IDs issued by the trusted demo, ChatGPT, or local database-session boundaries. */
 export function isAuthorizedAdminId(value: string): boolean {
-  return value === "demo-admin" || value.startsWith("chatgpt:");
+  return value === "demo-admin" || value.startsWith("chatgpt:") || /^local:[0-9a-f-]{36}$/iu.test(value);
 }
 
 function allowedEmails(value: string): Set<string> {

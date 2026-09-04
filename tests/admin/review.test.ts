@@ -108,6 +108,17 @@ test("publishes an eligible application through one atomic review payload and au
   assert.equal(store.atomicReviews[0]?.visibility.length, Object.keys(DEFAULT_APPLICATION_VISIBILITY).length);
 });
 
+test("a durable local administrator can approve an application", async () => {
+  const store = repository();
+  const service = createApplicationReviewService(store.repo, () => "profile-1", () => "audit-1");
+  const adminId = "local:00000000-0000-4000-8000-000000000001";
+
+  const result = await service.reviewApplication(adminId, "a1", { decision: "approved" }, 1_000);
+
+  assert.equal(result.application.status, "approved");
+  assert.equal(store.atomicReviews[0]?.audit.actorUserId, adminId);
+});
+
 test("lets a verified administrator approve their own application and records the self-review", async () => {
   const store = repository({ record: application({ userId: "demo-admin" }) });
   const service = createApplicationReviewService(store.repo, () => "profile-1", () => "audit-1");
