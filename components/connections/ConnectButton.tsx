@@ -18,7 +18,8 @@ export function ConnectButton({ state, recipientSlug, recipientName, dailyRemain
   onSent?: () => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentState, setCurrentState] = useState(state);
+  const [optimisticState, setOptimisticState] = useState<{ source: ConnectionCtaState; value: ConnectionCtaState }>();
+  const currentState = optimisticState?.source === state ? optimisticState.value : state;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const shouldFocusStatusRef = useRef(false);
@@ -36,5 +37,5 @@ export function ConnectButton({ state, recipientSlug, recipientName, dailyRemain
   if (currentState === "own") return <a className="connection-cta" href="/me">编辑我的资料 <span aria-hidden="true">→</span></a>;
   if (currentState === "pending") return <div ref={statusRef} className="connection-pending-status" role="status" tabIndex={-1}><button className="connection-cta" type="button" disabled>等待对方回应</button></div>;
   if (currentState === "accepted") return <a className="connection-cta" href="/me/connections?box=accepted">查看已交换的联系方式 <span aria-hidden="true">→</span></a>;
-  return <>{dialogOpen ? <ConnectionRequestDialog recipientSlug={recipientSlug} recipientName={recipientName} dailyRemaining={dailyRemaining} onClose={closeAndRestoreFocus} onCreated={() => { const next = connectionCreatedUiState(); shouldFocusStatusRef.current = next.focusTarget === "status"; setCurrentState(next.ctaState); setDialogOpen(false); onSent?.(); }} /> : null}<button ref={triggerRef} className="connection-cta" type="button" onClick={() => setDialogOpen(true)}>{label ?? "想认识 TA"} <span aria-hidden="true">→</span></button></>;
+  return <>{dialogOpen ? <ConnectionRequestDialog recipientSlug={recipientSlug} recipientName={recipientName} dailyRemaining={dailyRemaining} onClose={closeAndRestoreFocus} onCreated={() => { const next = connectionCreatedUiState(); shouldFocusStatusRef.current = next.focusTarget === "status"; setOptimisticState({ source: state, value: next.ctaState }); setDialogOpen(false); onSent?.(); }} /> : null}<button ref={triggerRef} className="connection-cta" type="button" onClick={() => setDialogOpen(true)}>{label ?? "想认识 TA"} <span aria-hidden="true">→</span></button></>;
 }
