@@ -88,6 +88,16 @@ test("list accepts only a validated box and cursor and never returns an unauthor
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
 });
 
+test("inbox items include the public counterpart card needed by new friends and the friend list", async () => {
+  const pending = { id: "connection-1", senderId: "demo-member", recipientId: "demo-peer", topic: "AI", message: "我想聊聊校园 AI 共建的实践与想法。", status: "pending" as const, createdAt: now, updatedAt: now };
+  const route = createConnectionRouteHandlers({
+    ...deps({ createService: () => ({ createRequest: async () => pending, resolveRequest: async () => pending, listInbox: async () => ({ items: [pending], nextCursor: undefined }) }) }).dependencies,
+    resolvePublicMember: async () => ({ slug: "peer", nickname: "共建者 B", school: "中山大学", city: "广州", intro: "正在做校园 AI 项目", skills: ["AI应用"] }),
+  } as never);
+  const body = await (await route.GET(request("/api/connections?box=sent"))).json() as { items: Array<{ counterpart?: { nickname: string; slug: string } }> };
+  assert.deepEqual(body.items[0]?.counterpart, { slug: "peer", nickname: "共建者 B", school: "中山大学", city: "广州", intro: "正在做校园 AI 项目", skills: ["AI应用"] });
+});
+
 test("recipient accepts, sender withdraws, and cross-user resolutions remain forbidden", async () => {
   const accepted = deps();
   const acceptRoute = createConnectionRouteHandlers(accepted.dependencies);
@@ -148,6 +158,7 @@ test("connection CTA and inbox keep contact plaintext out of unauthorized server
   assert.match(visitor, /href="\/apply"/);
   assert.match(eligible, /想认识 TA/);
   assert.equal(blocked, "");
-  assert.match(inbox, /收到的|发出的|已连接/);
+  assert.match(inbox, /新的朋友/);
+  assert.match(inbox, /好友列表/);
   assert.doesNotMatch(inbox, /微信号|@example\.com|联系方式：/);
 });

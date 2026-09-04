@@ -1,5 +1,6 @@
 import { ConnectionServiceError, createRuntimeConnectionService } from "./service";
 import type { ConnectionAction, ConnectionBox, ConnectionCursor, ConnectionRequest } from "./types";
+import type { PublicConnectionMember } from "./recipient-resolver";
 
 type ActiveSession = { identity: { id: string; role?: string } };
 type ContactCard = { wechat?: string; email?: string; otherLabel?: string; otherValue?: string };
@@ -82,6 +83,7 @@ export function createConnectionRouteHandlers(dependencies: {
   createService(): ConnectionService | Promise<ConnectionService>;
   resolveRecipientId(publicSlug: string): Promise<string | undefined>;
   resolvePublicSlug?(userId: string): Promise<string | undefined>;
+  resolvePublicMember?(userId: string): Promise<PublicConnectionMember | undefined>;
   getVisibleContactCard(viewerId: string, ownerId: string): Promise<ContactCard | undefined>;
   now(): number;
 }) {
@@ -91,11 +93,13 @@ export function createConnectionRouteHandlers(dependencies: {
   }
 
   async function toItem(actorId: string, request: ConnectionRequest) {
+    const otherId = counterpartId(request, actorId);
     const unlockedContactCard = request.status === "accepted"
-      ? await dependencies.getVisibleContactCard(actorId, counterpartId(request, actorId))
+      ? await dependencies.getVisibleContactCard(actorId, otherId)
       : undefined;
-    const counterpartSlug = await dependencies.resolvePublicSlug?.(counterpartId(request, actorId));
-    return { request: publicRequest(request), ...(counterpartSlug ? { counterpartSlug } : {}), ...(unlockedContactCard ? { unlockedContactCard } : {}) };
+    const counterpart = await dependencies.resolvePublicMember?.(otherId);
+    const counterpartSlug = counterpart?.slug ?? await dependencies.resolvePublicSlug?.(otherId);
+    return { request: publicRequest(request), ...(counterpartSlug ? { counterpartSlug } : {}), ...(counterpart ? { counterpart } : {}), ...(unlockedContactCard ? { unlockedContactCard } : {}) };
   }
 
   return {

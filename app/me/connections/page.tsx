@@ -13,9 +13,9 @@ export default async function ConnectionsPage({ searchParams }: { searchParams: 
   try { userId = await resolveRequestUserId(new Request("https://demo.local/me/connections", { headers: await headers() })); } catch { redirect("/"); }
   if (!userId) redirect(accountSignInPath("/me/connections"));
   const box = (await searchParams).box;
-  const initialBox = box === "sent" || box === "accepted" ? box : "received";
+  const initialBox = box === "accepted" ? "accepted" : "new";
   return <main className="member-center-shell">
-    <header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation /><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
+    <header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="me" /><form action="/api/auth/logout" method="post"><button className="brand-header-action member-logout" type="submit">退出</button></form></header>
     <div className="member-center-content"><ConnectionInbox initialBox={initialBox} /></div>
   </main>;
 }

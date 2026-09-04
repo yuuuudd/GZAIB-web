@@ -1,5 +1,6 @@
 import { createConnectionRouteHandlers } from "./route-handlers";
 import type { ConnectionRequest } from "./types";
+import type { PublicConnectionMember } from "./recipient-resolver";
 
 type ActiveSession = { identity: { id: string; role?: string } };
 type LiveContactService = { getVisibleContactCard(viewerId: string, ownerId: string): Promise<{ wechat?: string; email?: string; otherLabel?: string; otherValue?: string } | undefined> };
@@ -15,6 +16,7 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
   createRuntimeService(): Promise<RuntimeService>;
   resolveRecipientId(slug: string): Promise<string | undefined>;
   resolvePublicSlug?(userId: string): Promise<string | undefined>;
+  resolvePublicMember?(userId: string): Promise<PublicConnectionMember | undefined>;
   createLiveContactService(): LiveContactService;
   now(): number;
 }) {
@@ -23,6 +25,7 @@ export function createRuntimeConnectionRouteAdapter(dependencies: {
     createService: dependencies.createRuntimeService,
     resolveRecipientId: dependencies.resolveRecipientId,
     resolvePublicSlug: dependencies.resolvePublicSlug,
+    resolvePublicMember: dependencies.resolvePublicMember,
     getVisibleContactCard: (viewerId, ownerId) => dependencies.createLiveContactService().getVisibleContactCard(viewerId, ownerId),
     now: dependencies.now,
   });
@@ -36,6 +39,7 @@ export async function createDefaultRuntimeConnectionRouteAdapter() {
     createRuntimeService: async () => (await import("./service")).createRuntimeConnectionService(),
     resolveRecipientId: async (slug) => (await import("./recipient-resolver")).resolvePublicConnectionRecipientId(slug),
     resolvePublicSlug: async (userId) => (await import("./recipient-resolver")).resolvePublicConnectionSlug(userId),
+    resolvePublicMember: async (userId) => (await import("./recipient-resolver")).resolvePublicConnectionMember(userId),
     createLiveContactService: () => ({
       getVisibleContactCard: async (viewerId, ownerId) => {
         const [cards, repository, database] = await Promise.all([

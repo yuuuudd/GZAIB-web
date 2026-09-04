@@ -50,6 +50,7 @@ test("primary navigation marks only the active channel with the correct current 
 
   const meDocument = renderNavigation("me");
   assert.equal(meDocument.querySelector('a[href="/me"]'), null);
+  assert.equal(meDocument.querySelector('a[href="/me/connections"]')?.textContent, "连接中心");
 
   const aboutDocument = renderNavigation("about");
   assert.equal(aboutDocument.querySelector('a[href="/about"]')?.getAttribute("aria-current"), "page");
