@@ -23,7 +23,7 @@ test("registration route ignores Vinext route context", async () => {
   assert.equal(response.headers.get("location"), "/register?error=invalid");
 });
 
-test("registration normalizes email, preserves password, creates a session, and keeps a safe return path", async () => {
+test("registration normalizes email, preserves password, creates a session, and continues to the member application", async () => {
   const registered: unknown[] = [];
   const request = new Request("https://site.test/api/auth/register", {
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -33,7 +33,7 @@ test("registration normalizes email, preserves password, creates a session, and 
     register: async (email: string, password: string, now: number) => { registered.push({ email, password, now }); return "local:user-1"; },
   }));
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "/me?tab=profile");
+  assert.equal(response.headers.get("location"), "/apply");
   assert.match(response.headers.get("set-cookie") ?? "", /^gzaib_session=/);
   assert.deepEqual(registered, [{ email: "builder@example.com", password: "correct horse battery", now: 1_000 }]);
 });
@@ -54,7 +54,7 @@ test("registration rejects role claims, oversized bodies, and external return pa
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ email: "member@example.com", password: "correct horse battery", returnTo: "//evil.test" }),
   }), deps);
-  assert.equal(external.headers.get("location"), "/me");
+  assert.equal(external.headers.get("location"), "/apply");
   assert.equal(registrations, 1);
 });
 

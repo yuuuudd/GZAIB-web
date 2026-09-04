@@ -121,7 +121,7 @@ export async function handleRegistration(request: Request, dependencies: Passwor
     const userId = await dependencies.register(input.email, input.password, now);
     const session = await dependencies.startSession(userId, now);
     dependencies.limiter.clear(key);
-    return success(request, input.returnTo, session.cookie, 201);
+    return success(request, "/apply", session.cookie, 201);
   } catch {
     dependencies.limiter.fail(key, now);
     return failure(request, "/register", "请检查邮箱和密码，或登录已有账号", 400);
