@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { DirectoryMemberPreview } from "../../features/directory/service";
 import type { ProjectedProfile } from "../../features/directory/types";
-import { ConnectButton } from "../connections/ConnectButton";
+import { ConnectButton, type ConnectionCtaState } from "../connections/ConnectButton";
 import { mapConnectionCardState } from "../connections/map-card-state";
 
 type ConnectionItem = { request: { status: string }; counterpartSlug?: string; unlockedContactCard?: { wechat?: string; email?: string; otherLabel?: string; otherValue?: string } };
@@ -12,6 +12,7 @@ function initial(value: string) { return Array.from(value)[0] ?? "共"; }
 
 export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMemberPreview; onClose(): void }) {
   const [profile, setProfile] = useState<ProjectedProfile>();
+  const [connectionCta, setConnectionCta] = useState<ConnectionCtaState>("unavailable");
   const [connectionStatus, setConnectionStatus] = useState<string>();
   const [contact, setContact] = useState<ConnectionItem["unlockedContactCard"]>();
   const [sent, setSent] = useState(false);
@@ -21,8 +22,8 @@ export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMem
   useEffect(() => {
     const controller = new AbortController();
     void fetch(`/api/members/${encodeURIComponent(member.slug)}`, { signal: controller.signal })
-      .then(async (response) => response.ok ? response.json() as Promise<{ profile?: ProjectedProfile }> : {})
-      .then((data) => setProfile(data.profile))
+      .then(async (response) => response.ok ? response.json() as Promise<{ profile?: ProjectedProfile; connection?: { state: ConnectionCtaState } }> : {})
+      .then((data) => { setProfile(data.profile); setConnectionCta(data.connection?.state ?? "unavailable"); })
       .catch(() => undefined);
     return () => controller.abort();
   }, [member.slug]);
@@ -49,7 +50,7 @@ export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMem
   }, [member.slug, sent]);
 
   const shown = profile ?? member;
-  const state = sent ? "waiting" : mapConnectionCardState(connectionStatus);
+  const state = sent ? "waiting" : mapConnectionCardState(connectionStatus, connectionCta);
   const contactEntries = contact ? [["微信", contact.wechat], ["邮箱", contact.email], [contact.otherLabel ?? "其他联系方式", contact.otherValue]].filter((entry): entry is [string, string] => Boolean(entry[1])) : [];
   return <aside className="map-member-profile" aria-label={`${shown.nickname ?? member.nickname}的公开资料`}>
     <button className="map-member-profile-close" type="button" onClick={onClose} aria-label="关闭成员资料">×</button>
@@ -63,7 +64,7 @@ export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMem
       {shown.roles?.length ? <section><h3>参与角色</h3><div className="map-member-tags roles">{shown.roles.map((role) => <span key={role}>{role}</span>)}</div></section> : null}
     </div>
     <footer className="map-member-profile-actions">
-      {state === "ready" ? <ConnectButton state="eligible" recipientSlug={member.slug} recipientName={shown.nickname ?? member.nickname} dailyRemaining={5} label="发起连接" onSent={() => setSent(true)} /> : null}
+      {["eligible", "visitor", "own", "unavailable"].includes(state) ? <ConnectButton state={state as ConnectionCtaState} recipientSlug={member.slug} recipientName={shown.nickname ?? member.nickname} dailyRemaining={5} label="发起连接" onSent={() => setSent(true)} /> : null}
       {state === "waiting" ? <button className="connection-cta" type="button" disabled>等待对方确认</button> : null}
       {state === "declined" ? <p className="map-connection-neutral">对方暂未接受此次连接</p> : null}
       {state === "connected" ? <button className="connection-cta" type="button" onClick={() => setShowContact(true)}>查看联系方式</button> : null}

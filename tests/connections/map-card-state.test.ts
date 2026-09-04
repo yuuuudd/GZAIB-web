@@ -9,5 +9,6 @@ test("map connection card turns a pending request into a locked waiting action",
 test("map connection card only unlocks contacts for an accepted request", () => {
   assert.equal(mapConnectionCardState("accepted"), "connected");
   assert.equal(mapConnectionCardState("declined"), "declined");
-  assert.equal(mapConnectionCardState(undefined), "ready");
+  assert.equal(mapConnectionCardState(undefined), "unavailable");
+  assert.equal(mapConnectionCardState(undefined, "eligible"), "eligible");
 });

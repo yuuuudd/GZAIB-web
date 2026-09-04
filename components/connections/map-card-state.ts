@@ -1,8 +1,10 @@
-export type MapConnectionCardState = "ready" | "waiting" | "connected" | "declined";
+import type { ConnectionCtaState } from "./ConnectButton";
 
-export function mapConnectionCardState(status?: string): MapConnectionCardState {
+export type MapConnectionCardState = ConnectionCtaState | "waiting" | "connected" | "declined";
+
+export function mapConnectionCardState(status?: string, fallback: ConnectionCtaState = "unavailable"): MapConnectionCardState {
   if (status === "accepted") return "connected";
   if (status === "pending") return "waiting";
   if (status === "declined") return "declined";
-  return "ready";
+  return fallback;
 }
