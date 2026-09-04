@@ -79,6 +79,7 @@ export async function resolveDatabaseSession(
 }
 
 export async function resolveRuntimeDatabaseSession(request: Request): Promise<Session | null> {
+  if (!tokenFromRequest(request)) return null;
   const { loadPasswordSessionByTokenHash } = await import("../../lib/db/repositories/password-auth");
   return resolveDatabaseSession(request, { now: Date.now, loadByTokenHash: loadPasswordSessionByTokenHash });
 }

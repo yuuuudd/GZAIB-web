@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <a href="/admin/contributions">◇ <span>贡献确认</span></a>
             <a href="/admin/members">○ <span>成员管理</span></a>
           </nav>
-          <p>演示后台仅供固定运营员身份体验。所有操作均写入审计记录。</p>
+          <p>运营操作仅限管理员账号，关键变更会写入审计记录。</p>
         </aside>
         <section className="admin-content">{children}</section>
       </div>

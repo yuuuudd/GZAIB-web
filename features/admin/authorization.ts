@@ -1,5 +1,6 @@
 import type { Session } from "../identity/types";
 import { authorizeChatGPTAdmin, ensureRuntimeAdminAccount, type RuntimeAdmin, type TrustedChatGPTUser } from "./identity";
+import { resolveRuntimeDatabaseSession } from "../identity/database-session";
 
 export const AUDIT_ACTIONS = [
   "application.approved",
@@ -65,6 +66,7 @@ export type AdminRouteDependencies = {
   requireSession(request: Request): Promise<Session>;
   adminEmails?(): string;
   ensureAdminAccount?(admin: RuntimeAdmin): Promise<void>;
+  resolveAccountSession?(request: Request): Promise<Session | null>;
 };
 
 export type AdminRouteAuthorization =
@@ -86,6 +88,11 @@ export async function authorizeAdminRoute(
     if (dependencies.isDemoMode()) {
       const session = await dependencies.requireSession(request);
       return { ok: true, adminId: requireAdmin(session), email: null };
+    }
+    const accountSession = await (dependencies.resolveAccountSession ?? resolveRuntimeDatabaseSession)(request);
+    if (accountSession) {
+      if (accountSession.identity.role !== "admin") throw new Error("Forbidden");
+      return { ok: true, adminId: accountSession.identity.id, email: accountSession.identity.displayName };
     }
     const admin = authorizeChatGPTAdmin(trustedChatGPTUserFromHeaders(request.headers), dependencies.adminEmails?.());
     await (dependencies.ensureAdminAccount ?? ensureRuntimeAdminAccount)(admin);

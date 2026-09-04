@@ -11,7 +11,7 @@ import { createRuntimeProfileAccessService } from "../../features/directory/prof
 import { resolveRequestUserId } from "../../features/identity/request-user";
 import { createContactCardRepository } from "../../lib/db/repositories/contact-cards";
 import { loadProfileVisibility } from "../../lib/db/repositories/directory";
-import { chatGPTSignInPath } from "../chatgpt-auth";
+import { accountSignInPath } from "../../features/identity/account-paths";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export default async function MemberCenterPage() {
   let userId: string | null;
   try { userId = await resolveRequestUserId(new Request("https://demo.local/me", { headers: requestHeaders })); }
   catch { redirect("/"); }
-  if (!userId) redirect(chatGPTSignInPath("/me"));
+  if (!userId) redirect(accountSignInPath("/me"));
   const db = getDb();
   const profileAccess = await createRuntimeProfileAccessService();
   const [profile, profileRow, schoolOptions, contactCard] = await Promise.all([

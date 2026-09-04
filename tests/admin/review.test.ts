@@ -73,6 +73,21 @@ test("admin route boundary accepts only verified demo or allowlisted ChatGPT ide
   assert.deepEqual(allowed, { ok: true, adminId: "demo-admin", email: null });
 });
 
+test("production admin routes accept only a durable local administrator session", async () => {
+  const request = new Request("https://example.test/api/admin/applications/a1", { method: "POST" });
+  const localAdmin: Session = { identity: { id: "local:admin-1", role: "admin", displayName: "admin@example.com" }, expiresAt: 9_999 };
+  const localMember: Session = { identity: { id: "local:member-1", role: "member", displayName: "member@example.com" }, expiresAt: 9_999 };
+  const allowed = await authorizeAdminRoute(request, {
+    isDemoMode: () => false, requireSession: async () => adminSession, resolveAccountSession: async () => localAdmin,
+  });
+  const forbidden = await authorizeAdminRoute(request, {
+    isDemoMode: () => false, requireSession: async () => adminSession, resolveAccountSession: async () => localMember,
+  });
+  assert.deepEqual(allowed, { ok: true, adminId: "local:admin-1", email: "admin@example.com" });
+  assert.equal(forbidden.ok, false);
+  if (!forbidden.ok) assert.equal(forbidden.response.status, 403);
+});
+
 test("review parser accepts only exact decisions and never accepts identity claims", () => {
   assert.deepEqual(parseReviewDecision({ decision: "approved" }), { decision: "approved" });
   assert.throws(() => parseReviewDecision({ decision: "approved", role: "admin" }), /invalid/i);
