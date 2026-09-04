@@ -11,6 +11,7 @@
 - 数据库已经有 `users` 和 `sessions` 表；当前生产认证只信任 ChatGPT Sites 提供的 `oai-authenticated-user-*` 请求头。
 - 在取得微信开放平台已审核网站应用的 AppID 和 AppSecret 前，不能启用微信网站扫码登录。
 - 正式环境必须关闭 Demo 身份和公开的身份切换器。
+- VPS 设置 `AUTH_MODE=local`；未设置时继续沿用 ChatGPT Sites 登录路径，避免影响现有托管站点。
 
 ## 账号流程
 
@@ -39,7 +40,7 @@
 
 Nginx 转发请求前必须清除所有外部传入的 `oai-authenticated-user-*` 请求头，避免公网访客伪造 ChatGPT 用户身份。
 
-未登录访客访问账号页面时跳转到 `/login?return_to=...`。现有 API 保持原有的 `401` 响应约定。
+VPS 上未登录访客访问账号页面时跳转到 `/login?return_to=...`；现有 ChatGPT Sites 环境仍跳转到平台登录地址。现有 API 保持原有的 `401` 响应约定。
 
 ## 管理员流程
 
