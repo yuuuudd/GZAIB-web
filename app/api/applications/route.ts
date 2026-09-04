@@ -33,7 +33,7 @@ export function runtimeApplicationRouteService(): ApplicationRouteService {
 
 export async function handleApplicationGet(request: Request, dependencies: ApplicationRouteDependencies) {
   const userId = await dependencies.authenticate(request);
-  if (!userId) return Response.json({ error: "请先登录 ChatGPT 后查看申请状态" }, { status: 401 });
+  if (!userId) return Response.json({ error: "请先登录账号后查看申请状态" }, { status: 401 });
   try {
     return Response.json({ application: await (await dependencies.service()).getApplicationStatus(userId) });
   } catch (error) {
@@ -44,7 +44,7 @@ export async function handleApplicationGet(request: Request, dependencies: Appli
 
 export async function handleApplicationPost(request: Request, dependencies: ApplicationRouteDependencies) {
   const userId = await dependencies.authenticate(request);
-  if (!userId) return Response.json({ error: "请先登录 ChatGPT 后再提交申请" }, { status: 401 });
+  if (!userId) return Response.json({ error: "请先登录账号后再提交申请" }, { status: 401 });
   let input: unknown;
   try {
     input = await request.json();

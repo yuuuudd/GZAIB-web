@@ -88,6 +88,7 @@ test("rejects anonymous upload requests before parsing or storing the file", asy
     reportFailure: () => undefined,
   });
   assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "请先登录账号后再上传头像" });
   assert.equal(stored, false);
 });
 
