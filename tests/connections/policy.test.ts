@@ -48,17 +48,17 @@ test("caps all newly created requests at five in the rolling twenty-four-hour wi
 });
 
 test("normalizes whitespace and accepts the inclusive message and topic boundaries", () => {
-  const message = `  ${"m".repeat(20)}\n\n`;
-  assert.deepEqual(normalizeConnectionInput({ topic: "  AI\t", message }), { topic: "AI", message: "m".repeat(20) });
-  assert.deepEqual(canCreate({ ...base, topic: "t".repeat(60), message: "m".repeat(500) }), { ok: true });
+  const message = `  ${"m".repeat(10)}\n\n`;
+  assert.deepEqual(normalizeConnectionInput({ topic: "  AI\t", message }), { topic: "AI", message: "m".repeat(10) });
+  assert.deepEqual(canCreate({ ...base, topic: "t".repeat(60), message: "m".repeat(100) }), { ok: true });
 });
 
 test("rejects invalid topic or message sizes after whitespace normalization", () => {
   for (const input of [
-    { topic: "A", message: "m".repeat(20) },
-    { topic: "t".repeat(61), message: "m".repeat(20) },
-    { topic: "AI", message: "m".repeat(19) },
-    { topic: "AI", message: "m".repeat(501) },
+    { topic: "A", message: "m".repeat(10) },
+    { topic: "t".repeat(61), message: "m".repeat(10) },
+    { topic: "AI", message: "m".repeat(9) },
+    { topic: "AI", message: "m".repeat(101) },
   ]) {
     assert.deepEqual(canCreate({ ...base, ...input }), { ok: false, code: "invalid_message" });
   }

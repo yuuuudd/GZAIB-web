@@ -18,6 +18,8 @@ test("only Escape requests a dialog close", () => {
 
 test("dialog keeps its modal labels and an explicit close control while focus behavior stays local", () => {
   const html = renderToStaticMarkup(createElement(ConnectionRequestDialog, { recipientSlug: "peer", recipientName: "共建者 B", dailyRemaining: 3, onClose: () => undefined, onCreated: () => undefined }));
+  assert.match(html, /填写时 10～100 字/);
+  assert.match(html, /minlength="10"/i);
   assert.match(html, /aria-modal="true"/);
   assert.match(html, /关闭连接请求对话框/);
   assert.match(html, /连接-dialog-title|connection-dialog-title/);

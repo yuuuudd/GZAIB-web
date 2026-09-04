@@ -1,7 +1,7 @@
 import type { ConnectionPolicyContext, CreateConnectionInput, PolicyResult } from "./types";
 
-const MESSAGE_MIN_LENGTH = 20;
-const MESSAGE_MAX_LENGTH = 500;
+const MESSAGE_MIN_LENGTH = 10;
+const MESSAGE_MAX_LENGTH = 100;
 const TOPIC_MIN_LENGTH = 2;
 const TOPIC_MAX_LENGTH = 60;
 

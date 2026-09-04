@@ -13,6 +13,7 @@ function initial(value: string) { return Array.from(value)[0] ?? "共"; }
 export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMemberPreview; onClose(): void }) {
   const [profile, setProfile] = useState<ProjectedProfile>();
   const [connectionCta, setConnectionCta] = useState<ConnectionCtaState>("unavailable");
+  const [dailyRemaining, setDailyRemaining] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState<string>();
   const [contact, setContact] = useState<ConnectionItem["unlockedContactCard"]>();
   const [sent, setSent] = useState(false);
@@ -22,8 +23,8 @@ export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMem
   useEffect(() => {
     const controller = new AbortController();
     void fetch(`/api/members/${encodeURIComponent(member.slug)}`, { signal: controller.signal })
-      .then(async (response) => response.ok ? response.json() as Promise<{ profile?: ProjectedProfile; connection?: { state: ConnectionCtaState } }> : {})
-      .then((data) => { setProfile(data.profile); setConnectionCta(data.connection?.state ?? "unavailable"); })
+      .then(async (response) => response.ok ? response.json() as Promise<{ profile?: ProjectedProfile; connection?: { state: ConnectionCtaState; dailyRemaining: number } }> : {})
+      .then((data) => { setProfile(data.profile); setConnectionCta(data.connection?.state ?? "unavailable"); setDailyRemaining(data.connection?.dailyRemaining ?? 0); })
       .catch(() => undefined);
     return () => controller.abort();
   }, [member.slug]);
@@ -64,7 +65,7 @@ export function MapMemberProfileCard({ member, onClose }: { member: DirectoryMem
       {shown.roles?.length ? <section><h3>参与角色</h3><div className="map-member-tags roles">{shown.roles.map((role) => <span key={role}>{role}</span>)}</div></section> : null}
     </div>
     <footer className="map-member-profile-actions">
-      {["eligible", "visitor", "own", "unavailable"].includes(state) ? <ConnectButton state={state as ConnectionCtaState} recipientSlug={member.slug} recipientName={shown.nickname ?? member.nickname} dailyRemaining={5} label="发起连接" onSent={() => setSent(true)} /> : null}
+      {["eligible", "visitor", "own", "unavailable"].includes(state) ? <ConnectButton state={state as ConnectionCtaState} recipientSlug={member.slug} recipientName={shown.nickname ?? member.nickname} dailyRemaining={dailyRemaining} label="发起连接" onSent={() => setSent(true)} /> : null}
       {state === "waiting" ? <button className="connection-cta" type="button" disabled>等待对方确认</button> : null}
       {state === "declined" ? <p className="map-connection-neutral">对方暂未接受此次连接</p> : null}
       {state === "connected" ? <button className="connection-cta" type="button" onClick={() => setShowContact(true)}>查看联系方式</button> : null}

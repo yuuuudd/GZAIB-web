@@ -48,8 +48,8 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
       <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>向 {recipientName} 发起连接申请？</h2>
       <p id="connection-dialog-description">对方会收到你的连接申请，待对方同意后，双方可交换联系方式。</p>
       <form onSubmit={submit}>
-        <label>可选留言 <span>{message.trim().length}/200</span><textarea value={message} onChange={(event) => setMessage(event.currentTarget.value)} maxLength={200} placeholder="介绍一下你自己，或说明你想认识 TA 的原因……" /></label>
-        <p className="connection-privacy-reminder">联系方式仅在双方同意后交换。</p>
+        <label>可选留言（填写时 10～100 字） <span>{message.trim().length}/100</span><textarea value={message} onChange={(event) => setMessage(event.currentTarget.value)} minLength={10} maxLength={100} placeholder="介绍一下你自己，或说明你想认识 TA 的原因……" /></label>
+        <p className="connection-privacy-reminder">今日还可发起 {dailyRemaining} 次连接；联系方式仅在双方同意后交换。</p>
         {notice ? <p role="status" className="connection-form-status">{notice}</p> : null}
         <div className="connection-dialog-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" disabled={busy}>{busy ? "正在发送…" : "发送申请"}</button></div>
       </form>
