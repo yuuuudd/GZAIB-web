@@ -86,6 +86,7 @@ test("account deletion HTTP boundary returns 204 and clears the current cookie",
   });
   assert.equal(response.status, 204);
   assert.match(response.headers.get("set-cookie") ?? "", /demo_session=;/);
+  assert.match(response.headers.get("set-cookie") ?? "", /gzaib_session=;/);
   assert.match(response.headers.get("set-cookie") ?? "", /Max-Age=0/);
   assert.deepEqual(deleted, [{ userId: "demo-member", confirmation: ACCOUNT_DELETION_CONFIRMATION, now: 1_700_000_000_000 }]);
 });

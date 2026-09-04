@@ -69,3 +69,19 @@ test("required member identity rejects an anonymous visitor", async () => {
     ensureChatGPTAccount: async () => undefined,
   }));
 });
+
+test("production requests prefer a valid local database session over hosting headers", async () => {
+  const requireRequestUserSession = await loadRequiredSession();
+  let hostingEnsures = 0;
+  const session = await requireRequestUserSession(new Request("https://site.test/me", { headers: {
+    "oai-authenticated-user-id": "host-user",
+    "oai-authenticated-user-email": "host@example.com",
+  } }), {
+    isDemoMode: () => false,
+    requireDemoSession: async () => null,
+    resolveDatabaseSession: async () => ({ identity: { id: "local:user-1", role: "member", displayName: "member@example.com" }, expiresAt: 9_999 }),
+    ensureChatGPTAccount: async () => { hostingEnsures += 1; },
+  });
+  assert.equal(session.identity.id, "local:user-1");
+  assert.equal(hostingEnsures, 0);
+});

@@ -1,5 +1,7 @@
 import { isDemoMode } from "./demo-auth";
 import { resolveOptionalActiveSession } from "./active-account";
+import { resolveRuntimeDatabaseSession } from "./database-session";
+import type { Session } from "./types";
 
 export type ChatGPTAccount = { id: string; email: string };
 
@@ -7,6 +9,7 @@ export type RequestUserDependencies = {
   isDemoMode(): boolean;
   requireDemoSession(request: Request): Promise<{ identity: { id: string } } | null>;
   ensureChatGPTAccount(account: ChatGPTAccount): Promise<void>;
+  resolveDatabaseSession?(request: Request): Promise<Session | null>;
 };
 
 function chatGPTAccountFromHeaders(headers: Headers): ChatGPTAccount | null {
@@ -30,8 +33,11 @@ export async function resolveRequestUserId(request: Request, dependencies: Reque
   isDemoMode,
   requireDemoSession: resolveOptionalActiveSession,
   ensureChatGPTAccount: ensureRuntimeChatGPTAccount,
+  resolveDatabaseSession: resolveRuntimeDatabaseSession,
 }): Promise<string | null> {
   if (dependencies.isDemoMode()) return (await dependencies.requireDemoSession(request))?.identity.id ?? null;
+  const databaseSession = await dependencies.resolveDatabaseSession?.(request);
+  if (databaseSession) return databaseSession.identity.id;
   const account = chatGPTAccountFromHeaders(request.headers);
   if (!account) return null;
   await dependencies.ensureChatGPTAccount(account);

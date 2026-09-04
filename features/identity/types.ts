@@ -11,6 +11,6 @@ export type DemoIdentity = {
 
 /** Generic identity boundary for services that will later use public-account auth. */
 export type Session = {
-  identity: DemoIdentity;
+  identity: { id: string; role: IdentityRole; displayName: string };
   expiresAt: number;
 };

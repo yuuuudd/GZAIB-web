@@ -3,6 +3,7 @@ import type { getDb } from "../../db";
 import * as schema from "../../db/schema";
 import * as drizzle from "drizzle-orm";
 import { clearSession } from "./session";
+import { clearDatabaseSessionCookie } from "./database-session";
 
 export const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 
@@ -79,7 +80,9 @@ export async function handleAccountDeletionRequest(
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "暂时无法删除账号" }, { status: 400 });
   }
-  return clearSession(new Response(null, { status: 204 }));
+  const response = clearSession(new Response(null, { status: 204 }));
+  response.headers.append("Set-Cookie", clearDatabaseSessionCookie());
+  return response;
 }
 
 export function createAccountDeletionRepository(db: ReturnType<typeof getDb>): AccountDeletionRepository {
