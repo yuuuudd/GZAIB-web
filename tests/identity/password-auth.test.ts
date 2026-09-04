@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { POST as registerRoute } from "../../app/api/auth/register/route";
 import { createAuthRateLimiter, createPasswordAccountRecords, handlePasswordLogin, handleRegistration } from "../../features/identity/password-auth";
 
 function dependencies(overrides: Record<string, unknown> = {}) {
@@ -12,6 +13,15 @@ function dependencies(overrides: Record<string, unknown> = {}) {
     ...overrides,
   } as never;
 }
+
+test("registration route ignores Vinext route context", async () => {
+  const request = new Request("https://site.test/api/auth/register", {
+    method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "email=invalid&password=short",
+  });
+  const response = await (registerRoute as unknown as (request: Request, context: object) => Promise<Response>)(request, {});
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "/register?error=invalid");
+});
 
 test("registration normalizes email, preserves password, creates a session, and keeps a safe return path", async () => {
   const registered: unknown[] = [];
