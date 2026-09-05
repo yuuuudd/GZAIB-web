@@ -94,6 +94,25 @@ export const activityProposals = sqliteTable("activity_proposals", {
   updatedAt: integer("updated_at").notNull(),
 }, (t) => [index("idx_activity_proposals_user_submitted").on(t.userId, t.submittedAt), index("idx_activity_proposals_status_submitted").on(t.status, t.submittedAt)]);
 
+export const coCreateProjects = sqliteTable("co_create_projects", {
+  id: text("id").primaryKey(),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  type: text("type", { enum: ["活动协作", "项目共创", "内容共创", "校园连接", "技术支持", "资源协作"] }).notNull(),
+  scope: text("scope", { enum: ["广州", "广东", "线上", "跨校"] }).notNull(),
+  recruitmentStatus: text("recruitment_status", { enum: ["招募中", "组队中", "想法征集"] }).notNull(),
+  summary: text("summary").notNull(),
+  details: text("details").notNull(),
+  problem: text("problem").notNull(),
+  roles: text("roles").notNull(),
+  effort: text("effort").notNull(),
+  deadline: text("deadline"),
+  level: text("level", { enum: ["新手友好", "需要经验"] }).notNull(),
+  publishStatus: text("publish_status", { enum: ["published", "archived"] }).notNull().default("published"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (t) => [index("idx_co_create_public_updated").on(t.publishStatus, t.updatedAt), index("idx_co_create_owner_updated").on(t.ownerUserId, t.updatedAt)]);
+
 export const memberProfiles = sqliteTable("member_profiles", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
