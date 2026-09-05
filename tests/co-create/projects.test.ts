@@ -26,7 +26,7 @@ function testRepository() {
   sqlite.exec(`
     create table users (id text primary key, email text not null, role text not null default 'member', status text not null default 'active', created_at integer not null, updated_at integer not null);
     create table member_profiles (id text primary key, user_id text not null, slug text not null, nickname text not null, real_name text, avatar_key text, school_id text not null, major text, grade text, intro text not null, current_focus text, can_offer text, wants_to_meet text, skills_json text not null default '[]', interests_json text not null default '[]', roles_json text not null default '[]', work_links_json text not null default '[]', publish_status text not null, admin_managed integer not null default 0, verified_builder integer not null default 0, published_at integer, created_at integer not null, updated_at integer not null);
-    create table co_create_projects (id text primary key, owner_user_id text not null, title text not null, type text not null, scope text not null, recruitment_status text not null, summary text not null, details text not null, problem text not null, roles text not null, effort text not null, deadline text, level text not null, publish_status text not null default 'published', created_at integer not null, updated_at integer not null);
+    create table co_create_projects (id text primary key, owner_user_id text not null, title text not null, type text not null, scope text not null, recruitment_status text not null, summary text not null, details text not null, problem text not null, roles text not null, effort text not null, deadline text, level text not null, location text, location_tbd integer not null default 1, starts_at text, ends_at text, time_tbd integer not null default 1, publish_status text not null default 'published', created_at integer not null, updated_at integer not null);
   `);
   const adapter = { prepare: (sql: string) => new Statement(sqlite, sql), batch: async (statements: Statement[]) => Promise.all(statements.map((statement) => statement.run())) };
   const db = drizzle(adapter as never, { schema: { coCreateProjects, memberProfiles, users } });
@@ -36,7 +36,7 @@ function testRepository() {
 const validInput = {
   title: "校园知识库 AI 原型小组",
   type: "项目共创",
-  scope: "跨校",
+  participationMode: "线下",
   status: "组队中",
   summary: "用一周时间做出一个面向学生社团的 AI 知识库原型。",
   details: "先访谈社团负责人，再完成可检索、可演示的网页原型。",
@@ -44,7 +44,11 @@ const validInput = {
   roles: "产品 1 名、前端 1 名、视觉设计 1 名",
   effort: "每周约 3 小时",
   deadline: "2026-09-15",
-  level: "需要经验",
+  location: "广州天河区",
+  locationTbd: false,
+  startsAt: "2026-09-20T14:00",
+  endsAt: "2026-09-20T17:00",
+  timeTbd: false,
 } as const;
 
 test("project validation accepts a complete project and trims its text", () => {
@@ -57,6 +61,28 @@ test("project validation rejects missing collaboration details", () => {
   const result = validateCoCreateProject({ ...validInput, problem: "", roles: "" });
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.errors.join(" "), /问题|角色/);
+});
+
+test("scheduled offline projects require a location and a complete chronological time range", () => {
+  const missing = validateCoCreateProject({ ...validInput, location: "", startsAt: "", endsAt: "" });
+  assert.equal(missing.ok, false);
+  if (!missing.ok) assert.match(missing.errors.join(" "), /地点.*开始时间.*结束时间/);
+
+  const reversed = validateCoCreateProject({ ...validInput, endsAt: "2026-09-20T13:00" });
+  assert.equal(reversed.ok, false);
+  if (!reversed.ok) assert.match(reversed.errors.join(" "), /结束时间需晚于开始时间/);
+});
+
+test("projects can publish with pending time and location", () => {
+  const result = validateCoCreateProject({ ...validInput, location: "", locationTbd: true, startsAt: "", endsAt: "", timeTbd: true });
+  assert.equal(result.ok, true);
+  if (result.ok) assert.deepEqual({ locationTbd: result.value.locationTbd, timeTbd: result.value.timeTbd }, { locationTbd: true, timeTbd: true });
+});
+
+test("project dates must use valid native date input values", () => {
+  const result = validateCoCreateProject({ ...validInput, deadline: "2026-02-30", startsAt: "September 20", endsAt: "2026-09-20T17:00" });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.errors.join(" "), /截止时间格式不正确.*开始时间格式不正确/);
 });
 
 test("public project queries omit archived projects and expose a published organizer", async () => {
@@ -72,6 +98,8 @@ test("public project queries omit archived projects and expose a published organ
   const rows = await repository.listPublished();
   assert.deepEqual(rows.map((row) => row.id), ["open"]);
   assert.equal(rows[0]?.organizerSlug, "owner");
+  assert.equal(rows[0]?.location, "广州天河区");
+  assert.equal(rows[0]?.startsAt, "2026-09-20T14:00");
   sqlite.close();
 });
 

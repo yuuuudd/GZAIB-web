@@ -10,17 +10,18 @@ import { filterCoCreates } from "../../features/co-create/catalog";
 
 const project = {
   id: "knowledge-base", ownerUserId: "owner-1", title: "校园知识库 AI 原型小组", status: "组队中" as const,
-  type: "项目共创" as const, scope: "跨校" as const, summary: "用一周时间做出一个面向学生社团的 AI 知识库原型。",
+  type: "项目共创" as const, participationMode: "线下" as const, summary: "用一周时间做出一个面向学生社团的 AI 知识库原型。",
   details: "先访谈社团负责人，再完成一个可检索、可演示的网页原型。", problem: "社团资料分散，新成员很难快速找到可靠答案。",
   roles: "产品 1 名、前端 1 名、视觉设计 1 名", effort: "每周约 3 小时", deadline: "2026-09-15",
-  organizer: "项目发起人", organizerSlug: "owner", level: "需要经验" as const, publishStatus: "published" as const,
+  organizer: "项目发起人", organizerSlug: "owner", location: "广州天河区", locationTbd: false,
+  startsAt: "2026-09-20T14:00", endsAt: "2026-09-20T17:00", timeTbd: false, publishStatus: "published" as const,
   createdAt: 1, updatedAt: 2, isOwner: false,
 };
 const square = () => createElement(CoCreateSquare, { items: [project], signedIn: false, loginHref: "/login?returnTo=%2Fco-create" });
 
-test("co-create filters keep only items matching every selected participation constraint", () => {
-  assert.deepEqual(filterCoCreates([project], "项目共创", "跨校", "需要经验").map((item) => item.id), ["knowledge-base"]);
-  assert.deepEqual(filterCoCreates([project], "项目共创", "广州", "需要经验"), []);
+test("co-create filters keep only items matching type and participation mode", () => {
+  assert.deepEqual(filterCoCreates([project], "项目共创", "线下").map((item) => item.id), ["knowledge-base"]);
+  assert.deepEqual(filterCoCreates([project], "项目共创", "线上"), []);
 });
 
 test("co-create hero keeps the action copy without a decorative illustration", () => {
@@ -121,6 +122,8 @@ test("clicking a project card opens details instead of navigating to project sub
   assert.equal(card?.tagName, "BUTTON");
   await act(async () => card?.click());
   assert.match(document.querySelector('[role="dialog"]')?.textContent ?? "", /希望解决的问题[\s\S]*社团资料分散/);
+  assert.match(document.querySelector('[role="dialog"]')?.textContent ?? "", /参与方式[\s\S]*线下[\s\S]*活动地点[\s\S]*广州天河区[\s\S]*活动时间[\s\S]*2026-09-20 14:00 – 2026-09-20 17:00/);
+  assert.doesNotMatch(document.querySelector('[role="dialog"]')?.textContent ?? "", /经验要求/);
   assert.equal(document.querySelector('a[href="/events/submit"]'), null);
   assert.match(document.querySelector('[role="dialog"]')?.textContent ?? "", /登录后申请加入/);
   await act(async () => root.unmount());

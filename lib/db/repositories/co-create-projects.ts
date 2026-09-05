@@ -11,7 +11,7 @@ const projectFields = {
   ownerUserId: coCreateProjects.ownerUserId,
   title: coCreateProjects.title,
   type: coCreateProjects.type,
-  scope: coCreateProjects.scope,
+  participationMode: coCreateProjects.scope,
   status: coCreateProjects.recruitmentStatus,
   summary: coCreateProjects.summary,
   details: coCreateProjects.details,
@@ -19,7 +19,11 @@ const projectFields = {
   roles: coCreateProjects.roles,
   effort: coCreateProjects.effort,
   deadline: coCreateProjects.deadline,
-  level: coCreateProjects.level,
+  location: coCreateProjects.location,
+  locationTbd: coCreateProjects.locationTbd,
+  startsAt: coCreateProjects.startsAt,
+  endsAt: coCreateProjects.endsAt,
+  timeTbd: coCreateProjects.timeTbd,
   publishStatus: coCreateProjects.publishStatus,
   createdAt: coCreateProjects.createdAt,
   updatedAt: coCreateProjects.updatedAt,
@@ -27,9 +31,11 @@ const projectFields = {
 
 function values(input: CoCreateProjectInput) {
   return {
-    title: input.title, type: input.type, scope: input.scope, recruitmentStatus: input.status,
+    title: input.title, type: input.type, scope: input.participationMode, recruitmentStatus: input.status,
     summary: input.summary, details: input.details, problem: input.problem, roles: input.roles,
-    effort: input.effort, deadline: input.deadline ?? null, level: input.level,
+    effort: input.effort, deadline: input.deadline ?? null, level: "新手友好" as const,
+    location: input.location ?? null, locationTbd: input.locationTbd,
+    startsAt: input.startsAt ?? null, endsAt: input.endsAt ?? null, timeTbd: input.timeTbd,
   };
 }
 

@@ -16,5 +16,5 @@ export default async function EditCoCreatePage({ params }: { params: Promise<{ i
   if (!userId) redirect(accountSignInPath(`/me/co-creates/${id}/edit`));
   const project = await createCoCreateProjectRepository(getDb()).findOwnedById(id, userId);
   if (!project) notFound();
-  return <main className="member-center-shell"><header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="co-create" /><a className="brand-header-action" href="/me/co-creates">我的共创</a></header><div className="member-center-content"><CoCreateProjectForm projectId={id} initial={{ ...project, deadline: project.deadline ?? undefined }} /></div></main>;
+  return <main className="member-center-shell"><header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="co-create" /><a className="brand-header-action" href="/me/co-creates">我的共创</a></header><div className="member-center-content"><CoCreateProjectForm projectId={id} initial={{ ...project, deadline: project.deadline ?? undefined, location: project.location ?? undefined, startsAt: project.startsAt ?? undefined, endsAt: project.endsAt ?? undefined }} /></div></main>;
 }

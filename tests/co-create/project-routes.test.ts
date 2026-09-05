@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -8,12 +9,13 @@ import { CoCreateProjectForm } from "../../components/co-create/CoCreateProjectF
 import { MyCoCreateProjects } from "../../components/co-create/MyCoCreateProjects";
 
 const project = {
-  title: "校园知识库 AI 原型小组", type: "项目共创", scope: "跨校", status: "组队中",
+  title: "校园知识库 AI 原型小组", type: "项目共创", participationMode: "线下", status: "组队中",
   summary: "用一周时间做出一个面向学生社团的 AI 知识库原型。",
   details: "先访谈社团负责人，再完成可检索、可演示的网页原型。",
   problem: "社团资料分散，新成员很难快速找到可靠答案。",
   roles: "产品 1 名、前端 1 名、视觉设计 1 名", effort: "每周约 3 小时",
-  deadline: "2026-09-15", level: "需要经验",
+  deadline: "2026-09-15", location: "广州天河区", locationTbd: false,
+  startsAt: "2026-09-20T14:00", endsAt: "2026-09-20T17:00", timeTbd: false,
 } as const;
 
 function request(body: unknown) {
@@ -59,10 +61,19 @@ test("owners can archive and republish without deleting a project", async () => 
 
 test("the project form collects every public detail and states immediate publication", () => {
   const html = renderToStaticMarkup(createElement(CoCreateProjectForm));
-  for (const name of ["title", "type", "scope", "status", "summary", "details", "problem", "roles", "effort", "deadline", "level"]) {
+  for (const name of ["title", "type", "participationMode", "status", "summary", "details", "problem", "roles", "effort", "deadline", "location", "locationTbd", "startsAt", "endsAt", "timeTbd"]) {
     assert.match(html, new RegExp(`name="${name}"`));
   }
+  assert.doesNotMatch(html, /经验要求|name="level"/);
+  const headings = ["基本信息", "项目介绍", "参与安排", "招募需求"].map((heading) => html.indexOf(heading));
+  assert.ok(headings.every((position) => position >= 0));
+  assert.deepEqual(headings, [...headings].sort((a, b) => a - b));
   assert.match(html, /发布后将立即出现在共创广场/);
+});
+
+test("the project form keeps text areas compact until their content grows", () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  assert.match(css, /\.co-create-form-grid textarea \{[^}]*min-height:44px[^}]*field-sizing:content/);
 });
 
 test("my projects offers edit and the reversible action for each publication state", () => {

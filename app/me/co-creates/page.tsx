@@ -14,5 +14,5 @@ export default async function MyCoCreatesPage() {
   const userId = await resolveRequestUserId(new Request("https://site.local/me/co-creates", { headers: await headers() }));
   if (!userId) redirect(accountSignInPath("/me/co-creates"));
   const projects = await createCoCreateProjectRepository(getDb()).listByOwner(userId);
-  return <main className="member-center-shell"><header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="co-create" /><a className="brand-header-action" href="/co-create">共创广场</a></header><div className="member-center-content"><MyCoCreateProjects projects={projects.map((project) => ({ ...project, deadline: project.deadline ?? undefined }))} /></div></main>;
+  return <main className="member-center-shell"><header className="brand-header member-page-header"><BrandHomeLink /><PrimaryNavigation active="co-create" /><a className="brand-header-action" href="/co-create">共创广场</a></header><div className="member-center-content"><MyCoCreateProjects projects={projects.map((project) => ({ ...project, deadline: project.deadline ?? undefined, location: project.location ?? undefined, startsAt: project.startsAt ?? undefined, endsAt: project.endsAt ?? undefined }))} /></div></main>;
 }
