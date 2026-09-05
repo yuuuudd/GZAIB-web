@@ -13,6 +13,6 @@ export function safeAccountReturnPath(value: unknown, fallback = "/me"): string 
 
 export function accountSignInPath(returnTo: string, authMode = process.env.AUTH_MODE): string {
   const safeReturnTo = safeAccountReturnPath(returnTo, "/");
-  const path = authMode === "local" ? "/login" : "/signin-with-chatgpt";
+  const path = authMode === "sites" ? "/signin-with-chatgpt" : "/login";
   return `${path}?return_to=${encodeURIComponent(safeReturnTo)}`;
 }
