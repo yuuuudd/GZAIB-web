@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 // @ts-expect-error The project intentionally runs jsdom without the optional @types/jsdom package.
 import { JSDOM } from "jsdom";
 import { createRoot } from "react-dom/client";
+import { ConnectionCard } from "../../components/connections/ConnectionCard";
 import { ConnectionInbox } from "../../components/connections/ConnectionInbox";
 
 const incoming = { request: { id: "incoming", topic: "项目交流", message: "想和你交流校园 AI 项目。", status: "pending", createdAt: 2, updatedAt: 2 }, counterpart: { slug: "xia", nickname: "小夏", school: "中山大学", city: "广州", intro: "在做校园 AI 项目", skills: ["AI应用"] } };
@@ -35,6 +36,15 @@ test("connection center exposes only the WeChat-style new-friends and friend-lis
   const document = new JSDOM(renderToStaticMarkup(createElement(ConnectionInbox))).window.document;
   const tabs = [...document.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
   assert.deepEqual(tabs, ["新的朋友", "好友列表"]);
+});
+
+test("resolved incoming requests display their final state instead of a view action", () => {
+  for (const [status, label] of [["accepted", "已同意"], ["declined", "已拒绝"]] as const) {
+    const html = renderToStaticMarkup(createElement(ConnectionCard, { item: { ...incoming, request: { ...incoming.request, status } }, box: "received", onAction() {}, onView() {} }));
+    const button = new JSDOM(html).window.document.querySelector("button");
+    assert.equal(button?.textContent, label);
+    assert.equal(button?.disabled, true);
+  }
 });
 
 test("friend list identifies accepted members and links to their profile and unlocked contact", async () => {
