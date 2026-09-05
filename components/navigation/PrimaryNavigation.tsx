@@ -16,6 +16,5 @@ export function PrimaryNavigation({ active }: { active?: PrimaryChannel }) {
       href={channel.href}
       aria-current={active === channel.id ? "page" : undefined}
     >{channel.label}</a>)}
-    {active === "me" ? <a href="/me/connections">连接中心</a> : null}
   </nav>;
 }

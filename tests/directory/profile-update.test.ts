@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
+import { act } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createRoot } from "react-dom/client";
+// @ts-expect-error The project intentionally runs jsdom without the optional @types/jsdom package.
+import { JSDOM } from "jsdom";
 import { ProfileEditor, simplifyVisibility } from "../../components/forms/ProfileEditor";
 import { DEFAULT_APPLICATION_VISIBILITY } from "../../features/applications/validation";
 import {
@@ -144,7 +148,9 @@ test("member center groups profile controls into four focused settings tabs", ()
   assert.match(html, />资料展示<\/button>/);
   assert.match(html, />账号设置<\/button>/);
   assert.match(html, /aria-selected="true"[^>]*>个人资料/);
-  assert.match(html, /预览公开主页/);
+  assert.match(html, />连接中心<\/button>/);
+  assert.match(html, />预览公开主页<\/button>/);
+  assert.doesNotMatch(html, /href="\/members\/lin"/);
   assert.match(html, /已在共建地图展示/);
   assert.match(html, /我正在做什么/);
   assert.match(html, /联系方式仅在双方接受连接后交换，不会公开显示；至少填写一种。/);
@@ -174,4 +180,26 @@ test("member center groups profile controls into four focused settings tabs", ()
     published: false,
   }));
   assert.doesNotMatch(hiddenHtml, /aria-label="昵称公开范围"/);
+});
+
+test("previewing the public profile stays in a member-center dialog", async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/me" });
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Node: dom.window.Node, Event: dom.window.Event, MouseEvent: dom.window.MouseEvent, IS_REACT_ACT_ENVIRONMENT: true });
+  const root = createRoot(document.querySelector("#root")!);
+  await act(async () => root.render(createElement(ProfileEditor, {
+    profile: { slug: "lin", nickname: "林同学", school: "中山大学", city: "广州", intro: "正在探索 AI 如何帮助校园里的真实协作。", skills: ["产品设计"], roles: ["活动共建者"], verifiedBuilder: true, contributions: [] },
+    visibility: context().visibility,
+    schools: [{ id: "school-old", name: "中山大学", campus: "主校区", city: "广州" }],
+    currentSchoolId: "school-old",
+    published: true,
+  })));
+  const trigger = [...document.querySelectorAll("button")].find((button) => button.textContent === "预览公开主页");
+  assert.ok(trigger, "public preview trigger should exist in the profile summary");
+  await act(async () => trigger!.click());
+  const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+  assert.ok(dialog, "preview should open in a dialog");
+  assert.match(dialog.textContent ?? "", /公开主页.*林同学/s);
+  assert.equal(document.location.pathname, "/me");
+  await act(async () => root.unmount());
+  dom.window.close();
 });

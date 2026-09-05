@@ -1,16 +1,19 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { MAP_REQUIRED_VISIBILITY_FIELDS, OPTIONAL_VISIBILITY_FIELDS, ROLE_OPTIONS, SKILL_OPTIONS } from "../../features/applications/validation";
 import type { ContactCard } from "../../features/connections/contact-card";
 import type { ProjectedProfile, Visibility, VisibilityRules } from "../../features/directory/types";
 import { ContactCardEditor } from "../connections/ContactCardEditor";
+import { ConnectionInbox } from "../connections/ConnectionInbox";
+import { MemberProfile } from "../directory/MemberProfile";
 import { VisibilityField } from "./VisibilityField";
 import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
 
 type SchoolOption = { id: string; name: string; campus: string; city: string };
 type PrivacyField = (typeof OPTIONAL_VISIBILITY_FIELDS)[number];
 type SettingsTab = "profile" | "contact" | "privacy" | "account";
+type QuickPanel = "connections" | "preview";
 
 const ACCOUNT_DELETION_CONFIRMATION = "删除我的账号";
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -57,6 +60,14 @@ export function ProfileEditor({
   const [selectedDefaultAvatar, setSelectedDefaultAvatar] = useState<string | null>(null);
   const [contactDraft, setContactDraft] = useState<ContactCard>(contactCard ?? {});
   const [savedContact, setSavedContact] = useState<ContactCard>(contactCard ?? {});
+  const [quickPanel, setQuickPanel] = useState<QuickPanel>();
+
+  useEffect(() => {
+    if (!quickPanel) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setQuickPanel(undefined); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [quickPanel]);
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -171,7 +182,7 @@ export function ProfileEditor({
           <div className="default-avatar-list profile-default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(profile.nickname ?? "")}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-label={`使用${avatar.label}头像`} aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt="" /></button>)}</div>
         </div>
       </div>
-      <a className="profile-preview-link" href={`/members/${profile.slug}`}>预览公开主页 →</a>
+      <div className="profile-quick-actions" aria-label="资料快捷入口"><button type="button" onClick={() => setQuickPanel("connections")}>连接中心</button><button type="button" onClick={() => setQuickPanel("preview")}>预览公开主页</button></div>
     </section>
 
     <div className="profile-tabs" role="tablist" aria-label="个人设置分类">
@@ -216,9 +227,10 @@ export function ProfileEditor({
     <section id="settings-account" className="settings-panel" role="tabpanel" hidden={activeTab !== "account"}>
       <div className="settings-section account-setting-row"><div><h2>地图展示</h2><h3>在共建地图中展示我的资料</h3><p>关闭后，你的资料将不再出现在共建地图搜索和浏览结果中。</p></div><label className="account-map-toggle"><input type="checkbox" role="switch" checked={mapPublished} disabled={busy} onChange={(event) => void toggleMap(event.currentTarget.checked)} /><span>{mapPublished ? "ON" : "OFF"}</span></label></div>
       <div className="settings-section"><h2>账号与数据</h2><details className="delete-account"><summary>注销账号</summary><p>删除后会立即下架公开资料、撤回待审申请并撤销所有会话。此操作不可撤销。</p><label>输入“{ACCOUNT_DELETION_CONFIRMATION}”确认<input value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label><button type="button" disabled={busy || confirmation !== ACCOUNT_DELETION_CONFIRMATION} onClick={() => void request("/api/me/account", "DELETE", { confirmation }, "")}>{ACCOUNT_DELETION_CONFIRMATION}</button></details></div>
-      <div className="settings-section profile-related-links settings-list"><h2>其他管理</h2><div><a href="/me/connections">我的连接</a><a href="/me/blocked">已屏蔽成员</a></div></div>
+      <div className="settings-section profile-related-links settings-list"><h2>其他管理</h2><div><a href="/me/blocked">已屏蔽成员</a></div></div>
     </section>
 
+    {quickPanel ? <div className="profile-quick-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setQuickPanel(undefined); }}><section className="profile-quick-panel" role="dialog" aria-modal="true" aria-labelledby="profile-quick-panel-title"><header><div><p className="section-kicker">我的资料</p><h2 id="profile-quick-panel-title">{quickPanel === "connections" ? "连接中心" : "预览公开主页"}</h2></div><button type="button" aria-label="关闭" onClick={() => setQuickPanel(undefined)}>×</button></header><div className="profile-quick-tabs" role="tablist" aria-label="资料快捷面板"><button type="button" role="tab" aria-selected={quickPanel === "connections"} onClick={() => setQuickPanel("connections")}>连接中心</button><button type="button" role="tab" aria-selected={quickPanel === "preview"} onClick={() => setQuickPanel("preview")}>公开主页</button></div><div className="profile-quick-panel-content">{quickPanel === "connections" ? <ConnectionInbox /> : <MemberProfile profile={profile} connection={{ state: "own", dailyRemaining: 0 }} />}</div></section></div> : null}
     {message ? <p className="profile-editor-message" role="status">{message}</p> : null}
   </div>;
 }
