@@ -1,12 +1,12 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { CoCreateProjectForm } from "../../../../../../components/co-create/CoCreateProjectForm";
-import { BrandHomeLink } from "../../../../../../components/navigation/BrandHomeLink";
-import { PrimaryNavigation } from "../../../../../../components/navigation/PrimaryNavigation";
-import { getDb } from "../../../../../../db";
-import { accountSignInPath } from "../../../../../../features/identity/account-paths";
-import { resolveRequestUserId } from "../../../../../../features/identity/request-user";
-import { createCoCreateProjectRepository } from "../../../../../../lib/db/repositories/co-create-projects";
+import { CoCreateProjectForm } from "../../../../../components/co-create/CoCreateProjectForm";
+import { BrandHomeLink } from "../../../../../components/navigation/BrandHomeLink";
+import { PrimaryNavigation } from "../../../../../components/navigation/PrimaryNavigation";
+import { getDb } from "../../../../../db";
+import { accountSignInPath } from "../../../../../features/identity/account-paths";
+import { resolveRequestUserId } from "../../../../../features/identity/request-user";
+import { createCoCreateProjectRepository } from "../../../../../lib/db/repositories/co-create-projects";
 
 export const dynamic = "force-dynamic";
 

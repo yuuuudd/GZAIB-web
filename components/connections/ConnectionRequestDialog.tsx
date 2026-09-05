@@ -3,16 +3,16 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { nextDialogFocusIndex, shouldCloseConnectionDialog } from "./dialog-focus";
 
-export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRemaining, onClose, onCreated }: {
+export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRemaining, topic = "校园 AI 共建交流", onClose, onCreated }: {
   recipientSlug: string;
   recipientName: string;
   dailyRemaining: number;
+  topic?: string;
   onClose(): void;
   onCreated(): void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  const topic = "校园 AI 共建交流";
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -47,6 +47,7 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
       <button type="button" className="connection-dialog-close" onClick={onClose} aria-label="关闭连接请求对话框">×</button>
       <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>向 {recipientName} 发起连接申请？</h2>
       <p id="connection-dialog-description">对方会收到你的连接申请，待对方同意后，双方可交换联系方式。</p>
+      <p className="connection-request-topic">申请事项：{topic}</p>
       <form onSubmit={submit}>
         <label>可选留言（填写时 10～100 字） <span>{message.trim().length}/100</span><textarea value={message} onChange={(event) => setMessage(event.currentTarget.value)} minLength={10} maxLength={100} placeholder="介绍一下你自己，或说明你想认识 TA 的原因……" /></label>
         <p className="connection-privacy-reminder">今日还可发起 {dailyRemaining} 次连接；联系方式仅在双方同意后交换。</p>

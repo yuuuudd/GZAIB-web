@@ -25,6 +25,12 @@ export type CoCreateProject = CoCreateProjectInput & {
   updatedAt: number;
 };
 
+export type PublicCoCreateProject = CoCreateProject & {
+  organizer: string;
+  organizerSlug: string;
+  isOwner: boolean;
+};
+
 type Validation = { ok: true; value: CoCreateProjectInput } | { ok: false; errors: string[] };
 
 function required(input: Record<string, unknown>, name: string, label: string, min: number, max: number, errors: string[]) {

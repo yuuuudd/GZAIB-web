@@ -45,7 +45,7 @@ const validInput = {
   effort: "每周约 3 小时",
   deadline: "2026-09-15",
   level: "需要经验",
-};
+} as const;
 
 test("project validation accepts a complete project and trims its text", () => {
   const result = validateCoCreateProject({ ...validInput, title: `  ${validInput.title}  ` });
