@@ -9,14 +9,14 @@ function OfficialLink({ item }: { item: EventItem }) {
   return <a href={item.url} target="_blank" rel="noreferrer noopener">前往官网查看 ↗</a>;
 }
 
-export function EventDirectory({ items }: { items: EventItem[] }) {
+export function EventDirectory({ items, signedIn = false, loginHref = "/login" }: { items: EventItem[]; signedIn?: boolean; loginHref?: string }) {
   const [type, setType] = useState<(typeof EVENT_TYPES)[number]>("全部");
   const [location, setLocation] = useState<EventLocation | "全部">("全部");
   const filtered = filterEvents(items, type, location);
   const featured = filtered.find((item) => item.featured) ?? filtered[0];
 
   return <section className="event-directory" aria-labelledby="events-title">
-    <header className="content-hub-heading"><p className="community-kicker">青年相遇 · 活动赛事</p><div className="event-hero-row"><h1 id="events-title">让每一次相遇，都成为共创的开始。</h1><div className="event-hero-description-row"><p>发现比赛、黑客松、分享会与工作坊，把线上连接带到真实的活动赛事中。</p><a className="content-hub-submit-link" href="/events/submit">我想发起 / 共建活动 →</a></div></div></header>
+    <header className="content-hub-heading"><p className="community-kicker">青年相遇 · 活动赛事</p><div className="event-hero-row"><h1 id="events-title">让每一次相遇，都成为共创的开始。</h1><div className="event-hero-description-row"><p>发现比赛、黑客松、分享会与工作坊，把线上连接带到真实的活动赛事中。</p><a className="content-hub-submit-link" href={signedIn ? "/events/submit" : loginHref}>{signedIn ? "我想发起 / 共建活动 →" : "登录后发起 →"}</a></div></div></header>
     <div className="event-filter-bar"><div className="event-filter-row" aria-label="活动类型"><strong>活动类型</strong><div>{EVENT_TYPES.map((value) => <button key={value} type="button" aria-pressed={type === value} onClick={() => setType(value)}>{value}</button>)}</div></div><div className="event-filter-row" aria-label="活动地区"><strong>活动地点</strong><div>{EVENT_LOCATIONS.map((value) => <button key={value} type="button" aria-pressed={location === value} onClick={() => setLocation(value)}>{value}</button>)}</div></div></div>
     <div className="event-content-grid">
       <div>

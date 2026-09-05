@@ -40,3 +40,14 @@ test("event directory keeps one clear list view after filtering", async () => {
   await act(async () => root.unmount());
   dom.window.close();
 });
+
+test("guests are sent to sign in before starting an event", async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/events" });
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Node: dom.window.Node, Event: dom.window.Event, MouseEvent: dom.window.MouseEvent, IS_REACT_ACT_ENVIRONMENT: true });
+  const root = createRoot(document.querySelector("#root")!);
+  await act(async () => root.render(createElement(EventDirectory, { items: eventItems, signedIn: false, loginHref: "/login?return_to=%2Fevents%2Fsubmit" } as never)));
+  const link = [...document.querySelectorAll("a")].find((node) => node.textContent?.includes("登录后发起"));
+  assert.equal(link?.getAttribute("href"), "/login?return_to=%2Fevents%2Fsubmit");
+  await act(async () => root.unmount());
+  dom.window.close();
+});
