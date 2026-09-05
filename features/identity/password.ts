@@ -24,7 +24,7 @@ export function normalizeLoginEmail(value: unknown): string {
 export function validatePassword(value: unknown): string {
   if (typeof value !== "string") throw new Error("Invalid password");
   const length = Array.from(value).length;
-  if (length < 12 || length > 128) throw new Error("Invalid password");
+  if (length < 6 || length > 128) throw new Error("Invalid password");
   return value;
 }
 

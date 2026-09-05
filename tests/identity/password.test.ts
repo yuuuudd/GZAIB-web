@@ -9,10 +9,10 @@ test("normalizes a login email without accepting malformed addresses", () => {
   }
 });
 
-test("accepts only passwords from twelve through one hundred twenty-eight characters", () => {
-  assert.equal(validatePassword("123456789012"), "123456789012");
+test("accepts login passwords from six through one hundred twenty-eight characters", () => {
+  assert.equal(validatePassword("123456"), "123456");
   assert.equal(validatePassword("密".repeat(128)), "密".repeat(128));
-  assert.throws(() => validatePassword("12345678901"));
+  assert.throws(() => validatePassword("12345"));
   assert.throws(() => validatePassword("密".repeat(129)));
   assert.throws(() => validatePassword(42));
 });

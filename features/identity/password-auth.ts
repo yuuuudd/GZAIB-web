@@ -77,7 +77,7 @@ function safeReturnTo(value: unknown): string {
   catch { return "/me"; }
 }
 
-async function readInput(request: Request): Promise<{ email: string; password: string; returnTo: string }> {
+async function readInput(request: Request, registration = false): Promise<{ email: string; password: string; returnTo: string }> {
   const body = new TextDecoder().decode(await readBoundedRequestBody(request, MAX_BODY_BYTES));
   const contentType = request.headers.get("content-type")?.split(";", 1)[0];
   let raw: unknown;
@@ -86,8 +86,11 @@ async function readInput(request: Request): Promise<{ email: string; password: s
   else throw new Error("Invalid request");
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid request");
   const input = raw as Record<string, unknown>;
-  if (Object.keys(input).some((key) => key !== "email" && key !== "password" && key !== "returnTo")) throw new Error("Invalid request");
-  return { email: normalizeLoginEmail(input.email), password: validatePassword(input.password), returnTo: safeReturnTo(input.returnTo) };
+  const allowedKeys = registration ? ["email", "password", "confirmPassword", "returnTo"] : ["email", "password", "returnTo"];
+  if (Object.keys(input).some((key) => !allowedKeys.includes(key))) throw new Error("Invalid request");
+  const password = validatePassword(input.password);
+  if (registration && (Array.from(password).length > 18 || input.confirmPassword !== password)) throw new Error("Invalid password confirmation");
+  return { email: normalizeLoginEmail(input.email), password, returnTo: safeReturnTo(input.returnTo) };
 }
 
 function isForm(request: Request): boolean {
@@ -112,7 +115,7 @@ export async function handleRegistration(request: Request, dependencies: Passwor
   const key = clientKey(request);
   if (dependencies.limiter.blocked(key, now)) return failure(request, "/register", "尝试次数过多，请稍后再试", 429);
   let input;
-  try { input = await readInput(request); }
+  try { input = await readInput(request, true); }
   catch (error) {
     dependencies.limiter.fail(key, now);
     return failure(request, "/register", "请检查邮箱和密码", error instanceof RequestBodyTooLargeError ? 413 : 400);

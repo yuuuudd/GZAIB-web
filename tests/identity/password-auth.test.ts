@@ -27,7 +27,7 @@ test("registration normalizes email, preserves password, creates a session, and 
   const registered: unknown[] = [];
   const request = new Request("https://site.test/api/auth/register", {
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ email: " Builder@Example.COM ", password: "correct horse battery", returnTo: "/me?tab=profile" }),
+    body: new URLSearchParams({ email: " Builder@Example.COM ", password: "secret12", confirmPassword: "secret12", returnTo: "/me?tab=profile" }),
   });
   const response = await handleRegistration(request, dependencies({
     register: async (email: string, password: string, now: number) => { registered.push({ email, password, now }); return "local:user-1"; },
@@ -35,7 +35,28 @@ test("registration normalizes email, preserves password, creates a session, and 
   assert.equal(response.status, 303);
   assert.equal(response.headers.get("location"), "/apply");
   assert.match(response.headers.get("set-cookie") ?? "", /^gzaib_session=/);
-  assert.deepEqual(registered, [{ email: "builder@example.com", password: "correct horse battery", now: 1_000 }]);
+  assert.deepEqual(registered, [{ email: "builder@example.com", password: "secret12", now: 1_000 }]);
+});
+
+test("registration rejects mismatched password confirmation before creating an account", async () => {
+  let registrations = 0;
+  const response = await handleRegistration(new Request("https://site.test/api/auth/register", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: "member@example.com", password: "secret12", confirmPassword: "secret13" }),
+  }), dependencies({ register: async () => { registrations += 1; return "local:user-1"; } }));
+  assert.equal(response.status, 400);
+  assert.equal(registrations, 0);
+});
+
+test("registration rejects passwords longer than eighteen characters", async () => {
+  let registrations = 0;
+  const password = "1234567890123456789";
+  const response = await handleRegistration(new Request("https://site.test/api/auth/register", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: "member@example.com", password, confirmPassword: password }),
+  }), dependencies({ register: async () => { registrations += 1; return "local:user-1"; } }));
+  assert.equal(response.status, 400);
+  assert.equal(registrations, 0);
 });
 
 test("registration rejects role claims, oversized bodies, and external return paths", async () => {
@@ -52,7 +73,7 @@ test("registration rejects role claims, oversized bodies, and external return pa
   assert.equal(oversized.status, 413);
   const external = await handleRegistration(new Request("https://site.test/api/auth/register", {
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ email: "member@example.com", password: "correct horse battery", returnTo: "//evil.test" }),
+    body: new URLSearchParams({ email: "member@example.com", password: "secret12", confirmPassword: "secret12", returnTo: "//evil.test" }),
   }), deps);
   assert.equal(external.headers.get("location"), "/apply");
   assert.equal(registrations, 1);
