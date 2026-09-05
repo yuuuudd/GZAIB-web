@@ -9,9 +9,9 @@ const homeChannels = [
 ] as const;
 
 const communityLoop = [
-  { label: "发现", description: "发现议题、活动与真实需求", href: "/events" },
-  { label: "连接", description: "在共建地图找到同行者", href: "/map" },
-  { label: "共创", description: "加入网络，发起双向连接", href: "/apply" },
+  { label: "发现", description: "发现议题、活动与真实需求" },
+  { label: "连接", description: "在共建地图找到同行者" },
+  { label: "共创", description: "加入网络，发起双向连接" },
   { label: "落地", description: "组队协作，把想法变成行动" },
   { label: "沉淀", description: "让作品、经验与贡献持续可见" },
 ] as const;
@@ -65,7 +65,7 @@ export default function Home() {
           </svg>
           {communityLoop.map((step, index) => <li className="community-loop-step" key={step.label}>
             <span className="sr-only">第 {index + 1} 步</span><i aria-hidden="true" />
-            <div>{"href" in step ? <a href={step.href}><strong>{step.label}</strong></a> : <strong>{step.label}</strong>}<p>{step.description}</p></div>
+            <div><strong>{step.label}</strong><p>{step.description}</p></div>
           </li>)}
         </ol>
       </section>

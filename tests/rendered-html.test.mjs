@@ -185,9 +185,7 @@ test("home page presents the five-stage community action loop as one closed path
     assert.ok(loop.querySelector("svg.community-loop-path path.community-loop-path-line"));
     assert.equal(loop.querySelector(".community-loop-return"), null);
     assert.doesNotMatch(loop.textContent ?? "", /进入下一轮发现/);
-    assert.equal(loop.querySelector('a[href="/events"]')?.textContent?.trim(), "发现");
-    assert.equal(loop.querySelector('a[href="/map"]')?.textContent?.trim(), "连接");
-    assert.equal(loop.querySelector('a[href="/apply"]')?.textContent?.trim(), "共创");
+    assert.equal(loop.querySelectorAll(".community-loop-step a").length, 0);
     assert.doesNotMatch(loop.textContent ?? "", /真实、本人选择、经过审核|一束光如何亮起/);
   } finally {
     dom.window.close();
@@ -264,10 +262,10 @@ test("home page ignores a syntactically valid hostile forwarded host and keeps d
   assert.doesNotMatch(html, /attacker\.test/);
 });
 
-test("anonymous connections inbox redirects to ChatGPT sign-in without exposing private data", async () => {
+test("anonymous connections inbox redirects to local sign-in without exposing private data", async () => {
   const response = await renderRoute("/me/connections?box=accepted", { host: "localhost" });
   assert.equal(response.status, 307);
-  assert.equal(response.headers.get("location"), "/signin-with-chatgpt?return_to=%2Fme%2Fconnections");
+  assert.equal(response.headers.get("location"), "/login?return_to=%2Fme%2Fconnections");
   const html = await response.text();
 
   assert.doesNotMatch(html, /member-a-v[12]|member-b@example\.test|CONTACT_ENCRYPTION_KEY|encryptedPayload/i);
