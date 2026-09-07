@@ -158,9 +158,9 @@ test("home hero exposes the approved brand and all four visual channels in the f
     }));
     assert.deepEqual(channels, [
       { href: "/map", title: "共建地图", artwork: "/brand/home-map.webp" },
-      { href: "/co-create", title: "共创广场", artwork: "/brand/home-co-create.png" },
-      { href: "/events", title: "活动赛事", artwork: "/brand/home-events-scene.png" },
-      { href: "/about#co-create-archive", title: "共创档案", artwork: "/brand/home-archive.png" },
+      { href: "/co-create", title: "共创广场", artwork: "/brand/home-co-create.webp" },
+      { href: "/events", title: "活动赛事", artwork: "/brand/home-events-scene.webp" },
+      { href: "/about#co-create-archive", title: "共创档案", artwork: "/brand/home-archive.webp" },
     ]);
   } finally {
     dom.window.close();

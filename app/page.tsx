@@ -3,9 +3,9 @@ import Image from "next/image";
 
 const homeChannels = [
   { href: "/map", title: "共建地图", subtitle: "看见彼此，连接行动", artwork: "/brand/home-map.webp", tone: "map" },
-  { href: "/co-create", title: "共创广场", subtitle: "提一个想法，找一群同行者", artwork: "/brand/home-co-create.png", tone: "co-create" },
-  { href: "/events", title: "活动赛事", subtitle: "在线下相遇，让共创发生", artwork: "/brand/home-events-scene.png", tone: "events" },
-  { href: "/about#co-create-archive", title: "共创档案", subtitle: "让每一次共创留下痕迹", artwork: "/brand/home-archive.png", tone: "archive" },
+  { href: "/co-create", title: "共创广场", subtitle: "提一个想法，找一群同行者", artwork: "/brand/home-co-create.webp", tone: "co-create" },
+  { href: "/events", title: "活动赛事", subtitle: "在线下相遇，让共创发生", artwork: "/brand/home-events-scene.webp", tone: "events" },
+  { href: "/about#co-create-archive", title: "共创档案", subtitle: "让每一次共创留下痕迹", artwork: "/brand/home-archive.webp", tone: "archive" },
 ] as const;
 
 const communityLoop = [
