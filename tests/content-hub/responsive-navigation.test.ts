@@ -103,3 +103,11 @@ test("mobile headers reserve separate rows for account actions and navigation", 
   assert.match(css, /\.member-center-shell\s*>\s*\.member-page-header[^}]*grid-template-areas:\s*"brand action"\s*"nav nav";/s);
   assert.match(css, /\.member-center-shell\s*>\s*\.member-page-header\s*>\s*form(?=[^{]*\{)[^{]*\{[^}]*grid-area:\s*action;/s);
 });
+
+test("mobile public navigation is one scrollable row with touch-sized links", async () => {
+  const css = await readFile(new URL("../../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(css, /@media\s*\(max-width:760px\)[^{]*\{[\s\S]*?\.brand-header\s+\.brand-nav\s*\{[^}]*flex-wrap:nowrap;[^}]*overflow-x:auto;[^}]*scrollbar-width:none;/);
+  assert.match(css, /\.brand-shell\s*>\s*\.brand-header\s+\.brand-nav\s*\{[^}]*display:flex;/);
+  assert.match(css, /@media\s*\(max-width:760px\)[^{]*\{[\s\S]*?\.brand-header\s+\.brand-nav\s+a\s*\{[^}]*min-height:44px;/);
+});
