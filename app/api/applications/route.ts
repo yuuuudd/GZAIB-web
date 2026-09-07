@@ -5,11 +5,13 @@ import {
   type ApplicationService,
 } from "../../../features/applications/service";
 import { resolveRequestUserId } from "../../../features/identity/request-user";
+import { ContactCardValidationError, createContactCardService } from "../../../features/connections/contact-card";
 
 type ApplicationRouteService = Pick<ApplicationService, "getApplicationStatus" | "submitApplication">;
 
 export type ApplicationRouteDependencies = {
   authenticate(request: Request): Promise<string | null>;
+  saveContactCard(userId: string, input: unknown, now: number): Promise<void>;
   service(): ApplicationRouteService | Promise<ApplicationRouteService>;
   now(): number;
 };
@@ -29,6 +31,13 @@ async function currentUserId(request: Request): Promise<string | null> {
  */
 export function runtimeApplicationRouteService(): ApplicationRouteService {
   return { getApplicationStatus, submitApplication };
+}
+
+async function saveRuntimeContactCard(userId: string, input: unknown, now: number): Promise<void> {
+  const [{ getDb }, { createContactCardRepository }] = await Promise.all([
+    import("../../../db"), import("../../../lib/db/repositories/contact-cards"),
+  ]);
+  await createContactCardService(createContactCardRepository(getDb())).saveOwnCard(userId, input, now);
 }
 
 export async function handleApplicationGet(request: Request, dependencies: ApplicationRouteDependencies) {
@@ -51,10 +60,18 @@ export async function handleApplicationPost(request: Request, dependencies: Appl
   } catch {
     return Response.json({ error: "申请资料格式不正确" }, { status: 400 });
   }
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return Response.json({ error: "申请资料格式不正确" }, { status: 400 });
+  }
+  const { contactCard, ...applicationInput } = input as Record<string, unknown>;
+  const now = dependencies.now();
   try {
-    const application = await (await dependencies.service()).submitApplication(userId, input, dependencies.now());
+    // ponytail: save the private card first; use a shared D1 transaction if these writes ever need strict atomicity.
+    await dependencies.saveContactCard(userId, contactCard, now);
+    const application = await (await dependencies.service()).submitApplication(userId, applicationInput, now);
     return Response.json({ application }, { status: 201 });
   } catch (error) {
+    if (error instanceof ContactCardValidationError) return Response.json({ error: "请填写至少一种有效联系方式" }, { status: 400 });
     if (error instanceof ApplicationServiceError) return Response.json({ error: error.message }, { status: 400 });
     console.error("Unable to submit application", error);
     return Response.json({ error: "暂时无法提交申请" }, { status: 500 });
@@ -63,6 +80,7 @@ export async function handleApplicationPost(request: Request, dependencies: Appl
 
 const runtimeDependencies: ApplicationRouteDependencies = {
   authenticate: currentUserId,
+  saveContactCard: saveRuntimeContactCard,
   service: runtimeApplicationRouteService,
   now: Date.now,
 };

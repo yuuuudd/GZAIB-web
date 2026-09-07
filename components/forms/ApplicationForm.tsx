@@ -8,6 +8,7 @@ import {
 } from "../../features/applications/validation";
 import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
+import type { ContactCard } from "../../features/connections/contact-card";
 
 export type SchoolOption = { id: string; name: string; campus: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
@@ -70,7 +71,7 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
   return <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。</p><div><input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="例如：华南理工大学五山校区" aria-label="搜索高德学校" /><button type="button" className="action-primary" disabled={pending} onClick={search}>搜索</button></div>{message ? <p role="status">{message}</p> : null}{preview ? <AmapLocationPreview amap={amap} location={preview} pending={pending} onBack={() => setPreview(undefined)} onConfirm={() => void confirm()} confirmLabel="确认选择这个学校" /> : <ul>{results.map((candidate) => <li key={`${candidate.name}-${candidate.longitude}`}><button type="button" disabled={pending} onClick={() => setPreview(candidate)}><strong>{candidate.name}</strong><span>{[candidate.city, candidate.district, candidate.address].filter(Boolean).join(" · ")}</span></button></li>)}</ul>}</section>;
 }
 
-export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
+export function ApplicationForm({ schools, initialContact = {} }: { schools: SchoolOption[]; initialContact?: ContactCard }) {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [nickname, setNickname] = useState("");
@@ -164,11 +165,24 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
       const value = String(form.get(name) ?? "").trim();
       return value || undefined;
     };
+    const wechat = optional("wechat");
+    const email = optional("email");
+    const otherContact = optional("otherContact");
+    const contactCard = {
+      ...(wechat ? { wechat } : {}),
+      ...(email ? { email } : {}),
+      ...(otherContact ? { otherLabel: optional("otherLabel") ?? "其他方式", otherValue: otherContact } : {}),
+    };
+    if (!contactCard.wechat && !contactCard.email && !contactCard.otherValue) {
+      setMessage("请填写至少一种有效联系方式。");
+      return;
+    }
     const payload = {
       nickname: optional("nickname"), realName: optional("realName"), avatarKey: optional("avatarKey"),
       schoolId: optional("schoolId"), intro: optional("intro"), skills, interests: [], roles: [], workLinks: [],
       visibility: DEFAULT_APPLICATION_VISIBILITY,
       consentAccepted: form.get("consentAccepted") === "on", consentVersion: CONSENT_VERSION,
+      contactCard,
     };
 
     setSubmitting(true);
@@ -199,7 +213,7 @@ export function ApplicationForm({ schools }: { schools: SchoolOption[] }) {
         <label>一句话介绍（10–50 字）<textarea name="intro" required minLength={10} maxLength={50} placeholder="正在探索 AI 如何帮助校园里的真实协作。" /></label>
         <fieldset><legend>技能点（选择 1–3 项）</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} checked={selectedSkills.includes(skill)} disabled={selectedSkills.length >= 3 && !selectedSkills.includes(skill)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedSkills((current) => checked ? [...current, skill] : current.filter((item) => item !== skill)); }} />{skill}</label>)}</div></fieldset>
       </section>
-      <section className="application-section application-submit-section"><h2>03 审核与提交</h2><div className="form-grid application-review-grid"><label>真实姓名（仅审核所需）<input name="realName" required maxLength={60} /></label></div><label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label></section>
+      <section className="application-section application-submit-section"><h2>03 审核与提交</h2><div className="form-grid application-review-grid"><label>真实姓名（仅审核所需）<input name="realName" required maxLength={60} /></label></div><fieldset className="application-contact-card"><legend>联系方式（至少填写一种）</legend><p>不会公开展示，仅在双方接受连接后交换。</p><div className="form-grid"><label>微信号<input name="wechat" minLength={2} maxLength={64} autoComplete="off" defaultValue={initialContact.wechat} /></label><label>联系邮箱<input name="email" type="email" maxLength={320} autoComplete="email" defaultValue={initialContact.email} /></label><label>其他联系方式<input name="otherContact" minLength={2} maxLength={100} placeholder="手机号、飞书或其他方式" defaultValue={initialContact.otherValue} /></label></div><input name="otherLabel" type="hidden" value={initialContact.otherLabel ?? ""} /></fieldset><label className="consent"><input name="consentAccepted" type="checkbox" required />我已阅读并同意社区规则与隐私说明（版本 {CONSENT_VERSION}）</label></section>
       {message ? <p className="form-error" role="alert">{message}</p> : null}
       <button className="application-submit" type="submit" disabled={submitting || uploadingAvatar}>{submitting ? "正在提交…" : uploadingAvatar ? "请等待头像处理完成…" : "保存并提交审核 →"}</button>
     </form>

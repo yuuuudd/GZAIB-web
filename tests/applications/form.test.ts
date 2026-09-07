@@ -42,6 +42,17 @@ test("member application uses the three compact sections and requires one of fou
   assert.doesNotMatch(html, /更多资料（全部选填）|专业|年级|我正在做什么|我能提供什么|我希望认识谁|感兴趣的方向|参与角色|作品链接/);
 });
 
+test("member application collects a private contact method before review", () => {
+  const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [], initialContact: { email: "member@example.com", wechat: "gzaib-member" } }));
+
+  assert.match(html, /联系方式（至少填写一种）/);
+  assert.match(html, /name="wechat"/);
+  assert.match(html, /name="email"[^>]*value="member@example.com"/);
+  assert.match(html, /name="wechat"[^>]*value="gzaib-member"/);
+  assert.match(html, /name="otherContact"/);
+  assert.match(html, /不会公开展示，仅在双方接受连接后交换/);
+});
+
 test("AMap results can select only a matching confirmed school", async () => {
   const module = await import("../../components/forms/ApplicationForm");
   const matchConfirmedSchool = (module as Record<string, unknown>).matchConfirmedSchool;
