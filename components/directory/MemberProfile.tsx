@@ -22,7 +22,7 @@ export function MemberProfile({ profile, connection = { state: "visitor", dailyR
           {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" width="132" height="132" /> : <span aria-hidden="true">{initial(profile.nickname)}</span>}
           {profile.verifiedBuilder ? <i aria-hidden="true">✓</i> : null}
         </div>
-        <div className="member-profile-identity">
+        <div className="member-profile-identity"><p className="section-kicker">共创伙伴 / BUILDER</p>
           <div className="member-profile-title"><h1>{profile.nickname ?? "共建者"}</h1>{profile.verifiedBuilder ? <span className="profile-verified"><b aria-hidden="true">♢</b> 认证共建者</span> : null}</div>
           <p className="member-profile-school">{[profile.school, profile.city].filter(Boolean).join(" · ")}</p>
           <div className="member-profile-tags">{profile.skills?.map((skill) => <span key={`skill-${skill}`}>{skill}</span>)}{profile.roles?.map((role) => <span className="orange" key={`role-${role}`}>{role}</span>)}</div>
@@ -34,7 +34,7 @@ export function MemberProfile({ profile, connection = { state: "visitor", dailyR
         {textSection("▣", "我能提供什么", profile.canOffer)}
         {textSection("●", "我希望认识", profile.wantsToMeet)}
         {profile.contributions?.length ? <section className="member-detail-row member-contributions"><span className="member-detail-icon" aria-hidden="true">▤</span><h2>共建记录</h2><ol>{profile.contributions.map((item) => <li key={item.id}><div><strong>{item.title}</strong><span>{item.role}</span></div><p>{item.publicSummary}</p><time dateTime={new Date(item.activityDate).toISOString()}>{new Date(item.activityDate).toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit" })}</time></li>)}</ol></section> : null}
-        {profile.workLinks?.length ? <section className="member-detail-row member-works"><span className="member-detail-icon" aria-hidden="true">↗</span><h2>公开作品</h2><div>{profile.workLinks.map((link) => <a href={link} key={link} target="_blank" rel="noreferrer">查看作品 <span aria-hidden="true">↗</span></a>)}</div></section> : null}
+        {profile.workLinks?.length ? <section className="member-detail-row member-works"><span className="member-detail-icon" aria-hidden="true">↗</span><h2>公开作品</h2><div>{profile.workLinks.map((link, index) => <a href={link} key={link} target="_blank" rel="noreferrer">作品 {String(index + 1).padStart(2, "0")} <span className="member-work-url">{link}</span><span aria-hidden="true">↗</span></a>)}</div></section> : null}
       </div>
     </div>
     <aside className="member-connect-card" aria-labelledby="connect-heading">

@@ -176,10 +176,8 @@ export function ProfileEditor({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {avatarUrl && !avatarFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarFailed(true)} /> : <span aria-hidden="true">{Array.from(profile.nickname ?? "光")[0]}</span>}
         </div>
-        <div className="member-summary-copy"><h1>{profile.nickname}</h1><p>{[profile.school, profile.city].filter(Boolean).join(" · ")}</p><span className={mapPublished ? "map-status is-visible" : "map-status"}>● {mapPublished ? "已在共建地图展示" : "未在共建地图展示"}</span>
-          <label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "添加 / 更换头像"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={uploadAvatar} /></label>
-          {avatarMessage ? <small role="status">{avatarMessage}</small> : null}
-          <div className="default-avatar-list profile-default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(profile.nickname ?? "")}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-label={`使用${avatar.label}头像`} aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt="" /></button>)}</div>
+        <div className="member-summary-copy"><p className="section-kicker">我的共创空间</p><h1>{profile.nickname}</h1><p>{[profile.school, profile.city].filter(Boolean).join(" · ")}</p><span className={mapPublished ? "map-status is-visible" : "map-status"}>● {mapPublished ? "已在共建地图展示" : "未在共建地图展示"}</span>
+
         </div>
       </div>
       <div className="profile-quick-actions" aria-label="资料快捷入口"><button type="button" onClick={() => setQuickPanel("connections")}>连接中心</button><button type="button" onClick={() => setQuickPanel("preview")}>预览公开主页</button></div>
@@ -191,18 +189,21 @@ export function ProfileEditor({
 
     <section id="settings-profile" className="settings-panel" role="tabpanel" hidden={activeTab !== "profile"}>
       <form onSubmit={saveProfile}>
+        <div className="settings-section profile-avatar-section"><div><h2>个人头像</h2><p className="settings-hint">让共创伙伴一眼认出你。</p></div><div className="profile-avatar-controls"><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "添加 / 更换头像"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={uploadAvatar} /></label>
+          {avatarMessage ? <small role="status">{avatarMessage}</small> : null}
+          <div className="default-avatar-list profile-default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(profile.nickname ?? "")}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-label={`使用${avatar.label}头像`} aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt="" /></button>)}</div></div></div>
         <div className="settings-section"><h2>基本信息</h2><div className="profile-form-grid">
           <label>昵称<input name="nickname" required minLength={2} maxLength={30} defaultValue={profile.nickname} /></label>
           <label>学校 / 校区<select name="schoolId" defaultValue={currentSchoolId}>{schools.map((school) => <option value={school.id} key={school.id}>{school.name} · {school.campus}</option>)}</select><small>更换学校会提交复审，原资料继续展示。</small></label>
-          <label>专业<input name="major" maxLength={100} defaultValue={profile.major} /></label>
-          <label>年级<input name="grade" maxLength={40} defaultValue={profile.grade} /></label>
+          <label>专业<input name="major" maxLength={100} placeholder="你的专业或研究方向" defaultValue={profile.major} /></label>
+          <label>年级<input name="grade" maxLength={40} placeholder="例如：2024 级" defaultValue={profile.grade} /></label>
           <label className="profile-field-half">所在城市<input value={profile.city ?? ""} readOnly /></label>
           <label className="profile-field-wide">一句话介绍<textarea className="profile-intro-input" name="intro" required minLength={10} maxLength={160} defaultValue={profile.intro} /></label>
         </div></div>
         <div className="settings-section"><h2>关于我</h2><div className="profile-about-fields">
-          <label>我正在做什么<textarea name="currentFocus" maxLength={500} defaultValue={profile.currentFocus} /></label>
-          <label>我能提供什么<textarea name="canOffer" maxLength={500} defaultValue={profile.canOffer} /></label>
-          <label>我希望认识谁<textarea name="wantsToMeet" maxLength={500} defaultValue={profile.wantsToMeet} /></label>
+          <label>我正在做什么<textarea name="currentFocus" placeholder="最近在探索的方向，或正在推进的项目…" maxLength={500} defaultValue={profile.currentFocus} /></label>
+          <label>我能提供什么<textarea name="canOffer" placeholder="分享你擅长的技能、经验或资源…" maxLength={500} defaultValue={profile.canOffer} /></label>
+          <label>我希望认识谁<textarea name="wantsToMeet" placeholder="你期待和什么样的伙伴一起共创？" maxLength={500} defaultValue={profile.wantsToMeet} /></label>
         </div></div>
         <div className="settings-section"><fieldset><legend>技能方向</legend><div className="choice-list">{SKILL_OPTIONS.map((skill) => <label key={skill}><input name="skills" type="checkbox" value={skill} defaultChecked={profile.skills?.includes(skill)} />{skill}</label>)}</div></fieldset></div>
         <div className="settings-section"><fieldset><legend>参与角色</legend><div className="choice-list">{ROLE_OPTIONS.map((role) => <label key={role}><input name="roles" type="checkbox" value={role} defaultChecked={profile.roles?.includes(role)} />{role}</label>)}</div></fieldset></div>
