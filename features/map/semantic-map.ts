@@ -1,4 +1,5 @@
 import type { DirectorySchool } from "../directory/service";
+import { normalizeProvince } from "../schools/location";
 
 export type MapLevel = "country" | "province" | "city";
 
@@ -8,6 +9,7 @@ export type MapPoint = {
 };
 
 export type MapCitySummary = {
+  province: string;
   city: string;
   memberCount: number;
   schoolCount: number;
@@ -15,7 +17,17 @@ export type MapCitySummary = {
   schools: DirectorySchool[];
 };
 
+export type MapProvinceSummary = {
+  province: string;
+  memberCount: number;
+  schoolCount: number;
+  cityCount: number;
+  center: MapPoint;
+  cities: MapCitySummary[];
+};
+
 export const DEFAULT_CITY = "广州";
+export const DEFAULT_PROVINCE = "广东";
 export const COUNTRY_CENTER: MapPoint = { lng: 104.1954, lat: 35.8617 };
 export const GUANGDONG_CENTER: MapPoint = { lng: 113.2665, lat: 23.1322 };
 export const CITY_ZOOM_THRESHOLD = 9.25;
@@ -67,17 +79,22 @@ function cityCenter(city: string, schools: DirectorySchool[]): MapPoint {
       lat: located.reduce((sum, school) => sum + school.lat * Math.max(1, school.memberCount), 0) / weight,
     };
   }
-  return CITY_CENTERS[city] ?? GUANGDONG_CENTER;
+  return CITY_CENTERS[city] ?? COUNTRY_CENTER;
 }
 
 export function groupSchoolsByCity(schools: DirectorySchool[]): MapCitySummary[] {
-  const grouped = new Map<string, DirectorySchool[]>();
+  const grouped = new Map<string, { province: string; city: string; schools: DirectorySchool[] }>();
   for (const school of schools) {
+    const province = normalizeProvince(school.province);
     const city = normalizeCity(school.city);
-    grouped.set(city, [...(grouped.get(city) ?? []), school]);
+    const key = `${province}\u0000${city}`;
+    const entry = grouped.get(key) ?? { province, city, schools: [] };
+    entry.schools.push(school);
+    grouped.set(key, entry);
   }
-  return [...grouped.entries()]
-    .map(([city, citySchools]) => ({
+  return [...grouped.values()]
+    .map(({ province, city, schools: citySchools }) => ({
+      province,
       city,
       memberCount: citySchools.reduce((sum, school) => sum + school.memberCount, 0),
       schoolCount: citySchools.length,
@@ -85,6 +102,36 @@ export function groupSchoolsByCity(schools: DirectorySchool[]): MapCitySummary[]
       schools: [...citySchools].sort((left, right) => right.memberCount - left.memberCount || left.name.localeCompare(right.name, "zh-CN")),
     }))
     .sort((left, right) => right.memberCount - left.memberCount || left.city.localeCompare(right.city, "zh-CN"));
+}
+
+export function groupSchoolsByProvince(schools: DirectorySchool[]): MapProvinceSummary[] {
+  const grouped = new Map<string, MapCitySummary[]>();
+  for (const city of groupSchoolsByCity(schools)) {
+    grouped.set(city.province, [...(grouped.get(city.province) ?? []), city]);
+  }
+  return [...grouped.entries()].map(([province, cities]) => {
+    const weight = cities.reduce((sum, city) => sum + Math.max(1, city.memberCount), 0);
+    return {
+      province,
+      memberCount: cities.reduce((sum, city) => sum + city.memberCount, 0),
+      schoolCount: cities.reduce((sum, city) => sum + city.schoolCount, 0),
+      cityCount: cities.length,
+      center: {
+        lng: cities.reduce((sum, city) => sum + city.center.lng * Math.max(1, city.memberCount), 0) / weight,
+        lat: cities.reduce((sum, city) => sum + city.center.lat * Math.max(1, city.memberCount), 0) / weight,
+      },
+      cities,
+    };
+  }).sort((left, right) => right.memberCount - left.memberCount || left.province.localeCompare(right.province, "zh-CN"));
+}
+
+export function citiesForProvince(summaries: MapProvinceSummary[], province: string): MapCitySummary[] {
+  return summaries.find((summary) => summary.province === normalizeProvince(province))?.cities ?? [];
+}
+
+export function centerForProvince(summaries: MapProvinceSummary[], province: string): MapPoint {
+  return summaries.find((summary) => summary.province === normalizeProvince(province))?.center
+    ?? (normalizeProvince(province) === DEFAULT_PROVINCE ? GUANGDONG_CENTER : COUNTRY_CENTER);
 }
 
 export function semanticLevelForZoom(zoom: number): MapLevel {

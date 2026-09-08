@@ -9,16 +9,18 @@ import type { MapCitySummary } from "../../features/map/semantic-map";
 
 const cities: MapCitySummary[] = [
   {
+    province: "广东",
     city: "广州",
     memberCount: 12,
     schoolCount: 2,
     center: { lng: 113.2644, lat: 23.1291 },
     schools: [
-      { id: "sysu", name: "中山大学", campus: "南校园", city: "广州", lng: 113.298, lat: 23.096, memberCount: 7, previewMembers: [] },
-      { id: "scut", name: "华南理工大学", campus: "五山校区", city: "广州", lng: 113.344, lat: 23.157, memberCount: 5, previewMembers: [] },
+      { id: "sysu", name: "中山大学", campus: "南校园", province: "广东", city: "广州", lng: 113.298, lat: 23.096, memberCount: 7, previewMembers: [] },
+      { id: "scut", name: "华南理工大学", campus: "五山校区", province: "广东", city: "广州", lng: 113.344, lat: 23.157, memberCount: 5, previewMembers: [] },
     ],
   },
   {
+    province: "广东",
     city: "深圳",
     memberCount: 5,
     schoolCount: 1,

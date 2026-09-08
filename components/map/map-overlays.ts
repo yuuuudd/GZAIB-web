@@ -1,5 +1,5 @@
 import type { DirectorySchool } from "../../features/directory/service";
-import { GUANGDONG_CENTER, type MapCitySummary, type MapLevel } from "../../features/map/semantic-map";
+import type { MapCitySummary, MapLevel, MapPoint, MapProvinceSummary } from "../../features/map/semantic-map";
 
 export type MarkerPresentation = {
   position: [number, number];
@@ -111,18 +111,19 @@ export function cityMarkerPresentation(city: MapCitySummary, active: boolean): M
   };
 }
 
-export function provinceMarkerPresentation({ memberCount, schoolCount, cityCount }: { memberCount: number; schoolCount: number; cityCount: number }): MarkerPresentation {
+export function provinceMarkerPresentation(summary: MapProvinceSummary): MarkerPresentation {
+  const name = escapeHtml(summary.province);
   return {
-    position: [GUANGDONG_CENTER.lng, GUANGDONG_CENTER.lat],
+    position: [summary.center.lng, summary.center.lat],
     anchor: "bottom-center",
-    title: `广东，${memberCount} 位共建者，${schoolCount} 所学校，${cityCount} 座城市`,
-    content: `<div class="semantic-school-marker semantic-city-pin is-selected"><span class="semantic-pin-visual"><img class="semantic-pin-art" src="/map-art/school-pin-orange-v1.png" alt="" /><span class="semantic-pin-count">${memberCount}位</span></span><span class="semantic-pin-label">广东 · ${cityCount}城</span></div>`,
+    title: `${summary.province}，${summary.memberCount} 位共建者，${summary.schoolCount} 所学校，${summary.cityCount} 座城市`,
+    content: `<div class="semantic-school-marker semantic-city-pin is-selected"><span class="semantic-pin-visual"><img class="semantic-pin-art" src="/map-art/school-pin-orange-v1.png" alt="" /><span class="semantic-pin-count">${summary.memberCount}位</span></span><span class="semantic-pin-label">${name} · ${summary.cityCount}城</span></div>`,
   };
 }
 
-export function collaborationRoutePresentations(level: MapLevel, cities: MapCitySummary[], activeCity: string): RoutePresentation[] {
+export function collaborationRoutePresentations(level: MapLevel, cities: MapCitySummary[], activeCity: string, provinceCenter?: MapPoint): RoutePresentation[] {
   const start = level === "province"
-    ? GUANGDONG_CENTER
+    ? provinceCenter
     : cities.find((city) => city.city === activeCity)?.center;
   if (!start) return [];
   const destinations = level === "province"

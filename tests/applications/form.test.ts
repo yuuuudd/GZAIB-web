@@ -21,7 +21,7 @@ test("member application keeps AMap school search available without expanding th
 
 test("school choices do not repeat a campus identical to the school name", () => {
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [{
-    id: "school-1", name: "中山大学(广州校区南校园)", campus: "中山大学(广州校区南校园)", city: "广州",
+    id: "school-1", name: "中山大学(广州校区南校园)", campus: "中山大学(广州校区南校园)", province: "广东", city: "广州",
   }] }));
 
   assert.match(html, /中山大学\(广州校区南校园\) · 广州/);
@@ -54,16 +54,20 @@ test("member application collects a private contact method before review", () =>
 });
 
 test("AMap results can select only a matching confirmed school", async () => {
-  const module = await import("../../components/forms/ApplicationForm");
-  const matchConfirmedSchool = (module as Record<string, unknown>).matchConfirmedSchool;
+  const importedForm = await import("../../components/forms/ApplicationForm");
+  const matchConfirmedSchool = (importedForm as Record<string, unknown>).matchConfirmedSchool;
   assert.equal(typeof matchConfirmedSchool, "function", "matchConfirmedSchool should be exported");
 
   const schools = [
-    { id: "scut-wushan", name: "华南理工大学", campus: "五山校区", city: "广州" },
-    { id: "scut-university-town", name: "华南理工大学", campus: "大学城校区", city: "广州" },
+    { id: "scut-wushan", name: "华南理工大学", campus: "五山校区", province: "广东", city: "广州" },
+    { id: "scut-university-town", name: "华南理工大学", campus: "大学城校区", province: "广东", city: "广州" },
+    { id: "whu-wrong-province", name: "武汉大学", campus: "主校区", province: "广东", city: "广州" },
+    { id: "sysu-guangzhou", name: "中山大学", campus: "广州南校园", province: "广东", city: "广州" },
   ];
-  const match = (matchConfirmedSchool as (name: string, options: typeof schools) => { id: string } | undefined)("华南理工大学(五山校区)", schools);
+  const match = (matchConfirmedSchool as (name: string, province: string, city: string, options: typeof schools) => { id: string } | undefined)("华南理工大学(五山校区)", "广东", "广州市", schools);
 
   assert.equal(match?.id, "scut-wushan");
-  assert.equal((matchConfirmedSchool as (name: string, options: typeof schools) => unknown)("未知学院", schools), undefined);
+  assert.equal((matchConfirmedSchool as (name: string, province: string, city: string, options: typeof schools) => unknown)("武汉大学主校区", "湖北", "武汉", schools), undefined);
+  assert.equal((matchConfirmedSchool as (name: string, province: string, city: string, options: typeof schools) => unknown)("中山大学珠海校区", "广东", "珠海", schools), undefined);
+  assert.equal((matchConfirmedSchool as (name: string, province: string, city: string, options: typeof schools) => unknown)("未知学院", "广东", "广州", schools), undefined);
 });

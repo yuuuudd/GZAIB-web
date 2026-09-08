@@ -19,6 +19,7 @@ const MIGRATIONS = [
   "drizzle/0003_activate_school_coordinates.sql",
   "drizzle/0004_ai_community_foundation.sql",
   "drizzle/0005_pending_community_claim_uniqueness.sql",
+  "drizzle/0012_school_provinces.sql",
 ] as const;
 
 type SqliteRunResult = { success: true; results: Record<string, unknown>[]; meta: { changes: number } };

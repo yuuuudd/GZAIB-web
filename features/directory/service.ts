@@ -25,6 +25,7 @@ export type DirectorySchool = {
   id: string;
   name: string;
   campus: string;
+  province: string;
   city: string;
   lng: number;
   lat: number;
@@ -40,6 +41,7 @@ export type DirectoryCandidate = {
     id: string;
     name: string;
     campus: string;
+    province: string;
     city: string;
     longitude: number;
     latitude: number;
@@ -106,7 +108,7 @@ function matchesQuery(candidate: PublicCandidate, query: DirectoryQuery): boolea
   if (query.verified !== undefined && projected.verifiedBuilder !== query.verified) return false;
   if (query.q) {
     const needle = normalizeSearch(query.q);
-    const searchable = [projected.nickname, source.school.name, source.school.city, ...projected.skills, ...projected.roles]
+    const searchable = [projected.nickname, source.school.name, source.school.province, source.school.city, ...projected.skills, ...projected.roles]
       .map(normalizeSearch);
     if (needle && !searchable.some((value) => value.includes(needle))) return false;
   }
@@ -151,6 +153,7 @@ export function createDirectoryService(repository: DirectoryRepository) {
           id: source.school.id,
           name: source.school.name,
           campus: source.school.campus,
+          province: source.school.province,
           city: source.school.city,
           lng: source.school.longitude / 1_000_000,
           lat: source.school.latitude / 1_000_000,

@@ -19,7 +19,7 @@ export default async function ApplyPage() {
   if (!userId) redirect(accountSignInPath("/apply"));
   const db = getDb();
   const [confirmedSchools, [account], savedContact] = await Promise.all([
-    db.select({ id: schools.id, name: schools.name, campus: schools.campus, city: schools.city }).from(schools).where(eq(schools.coordinateStatus, "confirmed")).orderBy(asc(schools.name)),
+    db.select({ id: schools.id, name: schools.name, campus: schools.campus, province: schools.province, city: schools.city }).from(schools).where(eq(schools.coordinateStatus, "confirmed")).orderBy(asc(schools.name)),
     db.select({ email: users.email }).from(users).where(eq(users.id, userId)),
     createContactCardService(createContactCardRepository(db)).getOwnCard(userId).catch(() => undefined),
   ]);

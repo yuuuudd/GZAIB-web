@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { isKnownProvince, normalizeProvince, provinceFromAdcode } from "../../features/schools/location";
 
 export type AmapLoadState = "idle" | "loading" | "ready" | "failed";
 
@@ -44,6 +45,7 @@ export type AmapDistrictSearch = {
 };
 export type AmapLocation = {
   name: string;
+  province: string;
   city: string;
   district: string;
   address: string;
@@ -61,16 +63,19 @@ const GUANGDONG_CITY_BY_ADCODE: Record<string, string> = {
 
 export function parseAmapLocation(value: unknown): AmapLocation | null {
   if (!value || typeof value !== "object") return null;
-  const item = value as { name?: unknown; adcode?: unknown; adname?: unknown; address?: unknown; cityname?: unknown; location?: unknown };
+  const item = value as { name?: unknown; pname?: unknown; adcode?: unknown; adname?: unknown; address?: unknown; cityname?: unknown; location?: unknown };
+  const province = typeof item.pname === "string" && item.pname.trim()
+    ? normalizeProvince(item.pname)
+    : provinceFromAdcode(item.adcode);
   const city = typeof item.cityname === "string" && item.cityname.trim()
     ? item.cityname.trim()
     : GUANGDONG_CITY_BY_ADCODE[String(item.adcode ?? "").slice(0, 4)];
-  if (typeof item.name !== "string" || !city || !item.location || typeof item.location !== "object") return null;
+  if (typeof item.name !== "string" || !province || !isKnownProvince(province) || !city || !item.location || typeof item.location !== "object") return null;
   const location = item.location as { lng?: unknown; lat?: unknown; getLng?: () => unknown; getLat?: () => unknown };
   const longitude = Number(typeof location.getLng === "function" ? location.getLng() : location.lng);
   const latitude = Number(typeof location.getLat === "function" ? location.getLat() : location.lat);
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
-  return { name: item.name, city, district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) };
+  return { name: item.name, province, city, district: typeof item.adname === "string" ? item.adname : "", address: typeof item.address === "string" ? item.address : "", longitude: Math.round(longitude * 1_000_000), latitude: Math.round(latitude * 1_000_000) };
 }
 
 declare global {
@@ -184,7 +189,7 @@ export function AmapLocationPreview({ amap, location, onConfirm, onBack, pending
     return () => map.destroy();
   }, [amap, location.latitude, location.longitude, location.name]);
 
-  const area = [location.city, location.district].filter(Boolean).join(" · ");
+  const area = [location.province, location.city, location.district].filter(Boolean).join(" · ");
   return <article className="school-place-preview">
     <div ref={mapContainer} className="school-place-preview-map" aria-label={`${location.name}周边地图`} />
     <div className="school-place-preview-copy">

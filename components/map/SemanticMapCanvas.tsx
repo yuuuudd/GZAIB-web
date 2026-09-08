@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import type { DirectorySchool } from "../../features/directory/service";
 import {
   centerForCity,
+  centerForProvince,
+  citiesForProvince,
   COUNTRY_CENTER,
-  GUANGDONG_CENTER,
   semanticLevelForZoom,
   schoolsForCity,
-  type MapCitySummary,
   type MapLevel,
+  type MapProvinceSummary,
 } from "../../features/map/semantic-map";
 import type { AmapDistrict, AmapMap, AmapNamespace, AmapOverlay } from "./AmapLoader";
 import {
@@ -30,7 +31,7 @@ function loadDistrict(amap: AmapNamespace, area: string, level: "city" | "provin
   if (cached) return cached;
   const request = new Promise<AmapDistrict | undefined>((resolve) => {
     const search = new amap.DistrictSearch({ level, subdistrict: 0, extensions: "all" });
-    search.search(`${area}${level === "province" ? "省" : "市"}`, (status, result) => {
+    search.search(area, (status, result) => {
       resolve(status === "complete" && typeof result !== "string" ? result.districtList?.[0] : undefined);
     });
   }).catch((error) => {
@@ -49,22 +50,26 @@ function polygonsForDistrict(amap: AmapNamespace, district: AmapDistrict | undef
   }));
 }
 
-export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId, onLevelChange, onSelectCity, onSelectSchool, onFailure }: {
+export function SemanticMapCanvas({ amap, provinces, level, activeProvince, activeCity, selectedId, onLevelChange, onSelectProvince, onSelectCity, onSelectSchool, onFailure }: {
   amap: AmapNamespace;
-  cities: MapCitySummary[];
+  provinces: MapProvinceSummary[];
   level: MapLevel;
+  activeProvince: string;
   activeCity: string;
   selectedId?: string;
   onLevelChange: (level: MapLevel) => void;
+  onSelectProvince: (province: string) => void;
   onSelectCity: (city: string) => void;
   onSelectSchool: (school: DirectorySchool) => void;
   onFailure: () => void;
 }) {
+  const cities = citiesForProvince(provinces, activeProvince);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<AmapMap | undefined>(undefined);
   const overlaysRef = useRef<AmapOverlay[]>([]);
   const generationRef = useRef(0);
   const viewRef = useRef("");
+  const handleFailure = useEffectEvent(onFailure);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -88,25 +93,26 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
         mapRef.current = undefined;
       };
     } catch {
-      onFailure();
+      handleFailure();
     }
-  }, [amap, onFailure, onLevelChange]);
+  }, [amap, onLevelChange]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const viewKey = `${level}:${activeCity}`;
+    const viewKey = `${level}:${activeProvince}:${activeCity}`;
     if (viewRef.current === viewKey) return;
     viewRef.current = viewKey;
     if (level === "country") {
       map.setZoomAndCenter(4.3, [COUNTRY_CENTER.lng, COUNTRY_CENTER.lat]);
     } else if (level === "province") {
-      map.setZoomAndCenter(7.35, [GUANGDONG_CENTER.lng, GUANGDONG_CENTER.lat]);
+      const center = centerForProvince(provinces, activeProvince);
+      map.setZoomAndCenter(7.35, [center.lng, center.lat]);
     } else {
       const center = centerForCity(cities, activeCity);
       map.setZoomAndCenter(10.5, [center.lng, center.lat]);
     }
-  }, [activeCity, cities, level]);
+  }, [activeCity, activeProvince, cities, level, provinces]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -117,15 +123,12 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
 
     const render = async () => {
       const immediate: AmapOverlay[] = [];
-      if (level === "country" && cities.length) {
-        // ponytail: the public directory is Guangdong-only until school records gain a province field.
-        const marker = new amap.Marker(provinceMarkerPresentation({
-          memberCount: cities.reduce((sum, city) => sum + city.memberCount, 0),
-          schoolCount: cities.reduce((sum, city) => sum + city.schoolCount, 0),
-          cityCount: cities.length,
-        }));
-        marker.on("click", () => onLevelChange("province"));
-        immediate.push(marker);
+      if (level === "country") {
+        for (const province of provinces) {
+          const marker = new amap.Marker(provinceMarkerPresentation(province));
+          marker.on("click", () => onSelectProvince(province.province));
+          immediate.push(marker);
+        }
       } else if (level === "province") {
         for (const city of cities) {
           const presentation = cityMarkerPresentation(city, true);
@@ -142,18 +145,20 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
           immediate.push(marker);
         }
       }
-      const routes = level === "country" ? [] : collaborationRoutePresentations(level, cities, activeCity)
+      const routes = level === "country" ? [] : collaborationRoutePresentations(level, cities, activeCity, centerForProvince(provinces, activeProvince))
         .map((presentation) => new amap.Polyline(presentation));
       immediate.unshift(...routes);
       if (generation !== generationRef.current) return;
       overlaysRef.current = immediate;
       if (immediate.length) map.add(immediate);
 
-      if (level === "country" && cities.length) {
-        const outlines = polygonsForDistrict(amap, await loadDistrict(amap, "广东", "province"), true, true);
-        if (generation !== generationRef.current || !outlines.length) return;
-        overlaysRef.current.push(...outlines);
-        map.add(outlines);
+      if (level === "country") {
+        await Promise.all(provinces.map(async ({ province }) => {
+          const outlines = polygonsForDistrict(amap, await loadDistrict(amap, province, "province"), true, true);
+          if (generation !== generationRef.current || !outlines.length) return;
+          overlaysRef.current.push(...outlines);
+          map.add(outlines);
+        }));
       } else if (level === "province") {
         await Promise.all(cities.map(async ({ city }) => {
           const outlines = polygonsForDistrict(amap, await loadDistrict(amap, city), true, true);
@@ -173,13 +178,13 @@ export function SemanticMapCanvas({ amap, cities, level, activeCity, selectedId,
       if (generation === generationRef.current) overlaysRef.current = [];
     });
     return () => { generationRef.current += 1; };
-  }, [activeCity, amap, cities, level, onLevelChange, onSelectCity, onSelectSchool, selectedId]);
+  }, [activeCity, activeProvince, amap, cities, level, onSelectCity, onSelectProvince, onSelectSchool, provinces, selectedId]);
 
   return <div className="semantic-map-shell">
-    <div ref={containerRef} className="amap-canvas" aria-label={level === "country" ? "全国省份共建概览" : level === "province" ? "广东城市共建概览" : `${activeCity}高校共建地图`} />
+    <div ref={containerRef} className="amap-canvas" aria-label={level === "country" ? "全国省份共建概览" : level === "province" ? `${activeProvince}城市共建概览` : `${activeCity}高校共建地图`} />
     <div className="map-live-label">
-      <span>{level === "country" ? "CN" : level === "province" ? "GD" : activeCity.slice(0, 1)}</span>
-      <strong>{level === "country" ? "全国" : level === "province" ? "广东" : activeCity}</strong>
+      <span>{level === "country" ? "CN" : level === "province" ? activeProvince.slice(0, 1) : activeCity.slice(0, 1)}</span>
+      <strong>{level === "country" ? "全国" : level === "province" ? activeProvince : activeCity}</strong>
       <small>{level === "country" ? "点击省份进入城市网络" : level === "province" ? "缩放或点击城市进入学校网络" : "图钉内为成员数，点击查看学校"}</small>
     </div>
   </div>;

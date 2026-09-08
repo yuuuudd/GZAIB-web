@@ -14,13 +14,14 @@ export const schools = sqliteTable("schools", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   campus: text("campus").notNull().default("主校区"),
+  province: text("province").notNull(),
   city: text("city").notNull(),
   longitude: integer("longitude_e6").notNull(),
   latitude: integer("latitude_e6").notNull(),
   coordinateStatus: text("coordinate_status", { enum: ["suggested", "confirmed"] }).notNull().default("confirmed"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
-}, (t) => [uniqueIndex("ux_schools_name_campus").on(t.name, t.campus), index("idx_schools_city").on(t.city)]);
+}, (t) => [uniqueIndex("ux_schools_name_campus").on(t.name, t.campus), index("idx_schools_city").on(t.city), index("idx_schools_province_city").on(t.province, t.city)]);
 
 export const magicLinkTokens = sqliteTable("magic_link_tokens", {
   id: text("id").primaryKey(),

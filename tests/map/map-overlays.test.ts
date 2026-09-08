@@ -15,6 +15,7 @@ const school: DirectorySchool = {
   id: "sysu",
   name: "中山大学 <南校园>",
   campus: "广州校区南校园",
+  province: "广东",
   city: "广州",
   lng: 113.298,
   lat: 23.096,
@@ -52,6 +53,7 @@ test("school highlight is centered on the exact campus point", () => {
 
 test("city marker uses the map pin visual and summarizes the lit city", () => {
   const city: MapCitySummary = {
+    province: "广东",
     city: "广州",
     memberCount: 18,
     schoolCount: 4,
@@ -73,6 +75,7 @@ test("city exploration routes connect the live city center to each school coordi
   const routes = collaborationRoutePresentations(
     "city",
     [{
+      province: "广东",
       city: "广州",
       memberCount: 12,
       schoolCount: 2,

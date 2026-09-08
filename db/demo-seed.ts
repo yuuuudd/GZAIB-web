@@ -79,6 +79,7 @@ const demoSchools: DemoSeed["schools"] = [
   id: id as string,
   name: name as string,
   campus: campus as string,
+  province: "广东",
   city: city as string,
   longitude: longitude as number,
   latitude: latitude as number,

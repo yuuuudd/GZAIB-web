@@ -13,7 +13,7 @@ function candidate(overrides: Partial<DirectoryCandidate> = {}): DirectoryCandid
     accountStatus: "active",
     publishStatus: "published",
     school: {
-      id: "sysu", name: "中山大学", campus: "广州校区南校园", city: "广州",
+      id: "sysu", name: "中山大学", campus: "广州校区南校园", province: "广东", city: "广州",
       longitude: 113295120, latitude: 23102140, coordinateStatus: "confirmed",
     },
     profile: {
@@ -43,6 +43,7 @@ test("excludes unapproved, inactive, unpublished, private and unconfirmed candid
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.memberCount, 1);
+  assert.equal(result[0]?.province, "广东");
   assert.equal(result[0]?.previewMembers[0]?.slug, "lin");
 });
 

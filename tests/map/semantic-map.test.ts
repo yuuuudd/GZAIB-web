@@ -3,7 +3,9 @@ import test from "node:test";
 import type { DirectorySchool } from "../../features/directory/service";
 import {
   DEFAULT_CITY,
+  citiesForProvince,
   groupSchoolsByCity,
+  groupSchoolsByProvince,
   resolveActiveCity,
   semanticLevelForZoom,
   schoolsForCity,
@@ -12,6 +14,7 @@ import {
 function school(overrides: Partial<DirectorySchool> & Pick<DirectorySchool, "id" | "name" | "city">): DirectorySchool {
   return {
     campus: "",
+    province: "广东",
     lng: 113.2644,
     lat: 23.1291,
     memberCount: 1,
@@ -49,6 +52,19 @@ test("keeps valid school coordinates across China for national city pins", () =>
   ]);
 
   assert.deepEqual(summary?.center, { lng: 116.3109, lat: 39.9928 });
+});
+
+test("groups Wuhan University under Hubei instead of Guangdong", () => {
+  const provinces = groupSchoolsByProvince([
+    school({ id: "sysu", name: "中山大学", province: "广东", city: "广州", memberCount: 3 }),
+    school({ id: "whu", name: "武汉大学", province: "湖北省", city: "武汉市", memberCount: 2, lng: 114.365, lat: 30.536 }),
+  ]);
+
+  assert.deepEqual(provinces.map(({ province, memberCount, schoolCount, cityCount }) => ({ province, memberCount, schoolCount, cityCount })), [
+    { province: "广东", memberCount: 3, schoolCount: 1, cityCount: 1 },
+    { province: "湖北", memberCount: 2, schoolCount: 1, cityCount: 1 },
+  ]);
+  assert.deepEqual(citiesForProvince(provinces, "湖北省").map(({ city }) => city), ["武汉"]);
 });
 
 test("keeps Guangzhou as the default and preserves an explicitly selected empty city", () => {

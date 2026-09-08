@@ -30,6 +30,31 @@ test("password credential migration stores only a salted irreversible digest", (
   }
 });
 
+test("school province migration backfills Wuhan University into Hubei", () => {
+  const migrationPath = "drizzle/0012_school_provinces.sql";
+  const database = new DatabaseSync(":memory:");
+  try {
+    database.exec("CREATE TABLE schools (id text PRIMARY KEY, name text NOT NULL, city text NOT NULL)");
+    database.exec("INSERT INTO schools VALUES ('whu', '武汉大学', '武汉市'), ('sysu', '中山大学', '广州')");
+    for (const statement of readFileSync(migrationPath, "utf8").split("--> statement-breakpoint")) {
+      if (statement.trim()) database.exec(statement);
+    }
+    const rows = database.prepare("SELECT id, province FROM schools ORDER BY id").all().map((row) => ({ ...row }));
+    assert.deepEqual(rows, [
+      { id: "sysu", province: "广东" },
+      { id: "whu", province: "湖北" },
+    ]);
+  } finally {
+    database.close();
+  }
+});
+
+test("school schema keeps city and province-city lookup indexes", () => {
+  const indexes = getTableConfig(schema.schools).indexes.map((candidate) => candidate.config.name);
+  assert.ok(indexes.includes("idx_schools_city"));
+  assert.ok(indexes.includes("idx_schools_province_city"));
+});
+
 test("community foundation schema exports every required table", () => {
   for (const name of [
     "communities", "communityProfileSubmissions", "communityClaims",

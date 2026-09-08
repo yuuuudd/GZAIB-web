@@ -42,6 +42,12 @@ test("school search accepts AMap results from anywhere in China", async () => {
   assert.deepEqual(options, { extensions: "all" });
   assert.equal(typeof parse, "function");
   if (typeof parse !== "function") return;
+  assert.deepEqual(
+    parse({ name: "武汉大学", pname: "湖北省", cityname: "武汉市", adcode: "420106", location: { lng: 114.365, lat: 30.536 } }),
+    { name: "武汉大学", province: "湖北", city: "武汉市", district: "", address: "", longitude: 114_365_000, latitude: 30_536_000 },
+  );
+  assert.equal(parse({ name: "韩山师范学院", adcode: 445102, adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).province, "广东");
   assert.equal(parse({ name: "韩山师范学院", adcode: 445102, adname: "湘桥区", location: { lng: 116.61, lat: 23.65 } }).city, "潮州");
-  assert.equal(parse({ name: "北京大学", cityname: "北京市", adcode: "110108", location: { lng: 116.31, lat: 39.9928 } }).city, "北京市");
+  assert.equal(parse({ name: "北京大学", cityname: "北京市", adcode: "110108", location: { lng: 116.31, lat: 39.9928 } }).province, "北京");
+  assert.equal(parse({ name: "未知地点", pname: "未知省", cityname: "未知市", location: { lng: 116.31, lat: 39.99 } }), null);
 });

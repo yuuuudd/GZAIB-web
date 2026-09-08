@@ -1,7 +1,7 @@
 import { createRuntimeSchoolAdminService, parseSchoolAdminAction } from "../../../features/admin/schools";
 import { resolveRequestUserId } from "../../../features/identity/request-user";
 
-type SelectedSchoolInput = { name: string; campus: string; city: string; longitude: number; latitude: number };
+type SelectedSchoolInput = { name: string; campus: string; province: string; city: string; longitude: number; latitude: number };
 type SchoolSelectionService = { selectAmapSchool(actorId: string, input: SelectedSchoolInput, now: number): Promise<unknown> };
 
 export type SchoolSelectionRouteDependencies = {

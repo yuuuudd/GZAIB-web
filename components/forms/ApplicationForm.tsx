@@ -9,19 +9,22 @@ import {
 import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
 import type { ContactCard } from "../../features/connections/contact-card";
+import { normalizeProvince } from "../../features/schools/location";
+import { normalizeCity } from "../../features/map/semantic-map";
 
-export type SchoolOption = { id: string; name: string; campus: string; city: string };
+export type SchoolOption = { id: string; name: string; campus: string; province: string; city: string };
 const maxAvatarSourceBytes = 5 * 1024 * 1024;
 
 function normalizedSchoolName(value: string): string {
   return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
 }
 
-export function matchConfirmedSchool(candidateName: string, schools: SchoolOption[]): SchoolOption | undefined {
+export function matchConfirmedSchool(candidateName: string, candidateProvince: string, candidateCity: string, schools: SchoolOption[]): SchoolOption | undefined {
   const candidate = normalizedSchoolName(candidateName);
-  const campusMatch = schools.find((school) => candidate.includes(normalizedSchoolName(school.name)) && candidate.includes(normalizedSchoolName(school.campus)));
+  const localSchools = schools.filter((school) => normalizeProvince(school.province) === normalizeProvince(candidateProvince) && normalizeCity(school.city) === normalizeCity(candidateCity));
+  const campusMatch = localSchools.find((school) => candidate.includes(normalizedSchoolName(school.name)) && candidate.includes(normalizedSchoolName(school.campus)));
   if (campusMatch) return campusMatch;
-  const nameMatches = schools.filter((school) => candidate.includes(normalizedSchoolName(school.name)));
+  const nameMatches = localSchools.filter((school) => candidate.includes(normalizedSchoolName(school.name)));
   return nameMatches.length === 1 ? nameMatches[0] : undefined;
 }
 
@@ -31,7 +34,7 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
   const [preview, setPreview] = useState<AmapLocation>();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
-  const matchedSchool = preview ? matchConfirmedSchool(preview.name, schools) : undefined;
+  const matchedSchool = preview ? matchConfirmedSchool(preview.name, preview.province, preview.city, schools) : undefined;
 
   function search() {
     const keyword = query.trim();
@@ -52,7 +55,7 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
     try {
       let school = matchedSchool;
       if (!school) {
-        const response = await fetch("/api/schools", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "select_amap", name: preview.name, campus: preview.name, city: preview.city, longitude: preview.longitude, latitude: preview.latitude }) });
+        const response = await fetch("/api/schools", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "select_amap", name: preview.name, campus: preview.name, province: preview.province, city: preview.city, longitude: preview.longitude, latitude: preview.latitude }) });
         const saved = await response.json() as SchoolOption & { error?: string };
         if (!response.ok) throw new Error(saved.error ?? "学校保存失败");
         school = saved;
@@ -68,7 +71,7 @@ function ApplicationSchoolSearch({ amap, schools, onSelect }: { amap: AmapNamesp
     }
   }
 
-  return <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。</p><div><input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="例如：华南理工大学五山校区" aria-label="搜索高德学校" /><button type="button" className="action-primary" disabled={pending} onClick={search}>搜索</button></div>{message ? <p role="status">{message}</p> : null}{preview ? <AmapLocationPreview amap={amap} location={preview} pending={pending} onBack={() => setPreview(undefined)} onConfirm={() => void confirm()} confirmLabel="确认选择这个学校" /> : <ul>{results.map((candidate) => <li key={`${candidate.name}-${candidate.longitude}`}><button type="button" disabled={pending} onClick={() => setPreview(candidate)}><strong>{candidate.name}</strong><span>{[candidate.city, candidate.district, candidate.address].filter(Boolean).join(" · ")}</span></button></li>)}</ul>}</section>;
+  return <section className="school-search application-school-search"><h3>搜索高德学校</h3><p>先查看地点和周边地图，确认后会自动选入申请表。</p><div><input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="例如：华南理工大学五山校区" aria-label="搜索高德学校" /><button type="button" className="action-primary" disabled={pending} onClick={search}>搜索</button></div>{message ? <p role="status">{message}</p> : null}{preview ? <AmapLocationPreview amap={amap} location={preview} pending={pending} onBack={() => setPreview(undefined)} onConfirm={() => void confirm()} confirmLabel="确认选择这个学校" /> : <ul>{results.map((candidate) => <li key={`${candidate.name}-${candidate.longitude}`}><button type="button" disabled={pending} onClick={() => setPreview(candidate)}><strong>{candidate.name}</strong><span>{[candidate.province, candidate.city, candidate.district, candidate.address].filter(Boolean).join(" · ")}</span></button></li>)}</ul>}</section>;
 }
 
 export function ApplicationForm({ schools, initialContact = {} }: { schools: SchoolOption[]; initialContact?: ContactCard }) {

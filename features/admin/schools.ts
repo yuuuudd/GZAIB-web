@@ -1,10 +1,12 @@
 import type { AuditRecord } from "./authorization";
 import { isAuthorizedAdminId } from "./identity";
+import { isKnownProvince, normalizeProvince } from "../schools/location";
 
 export type SchoolCoordinateRecord = {
   id: string;
   name: string;
   campus: string;
+  province: string;
   city: string;
   longitude: number;
   latitude: number;
@@ -19,8 +21,8 @@ export type SchoolAdminRepository = {
 };
 
 export type SchoolAdminAction =
-  | { action: "propose"; name: string; campus: string; city: string }
-  | { action: "select_amap"; name: string; campus: string; city: string; longitude: number; latitude: number }
+  | { action: "propose"; name: string; campus: string; province: string; city: string }
+  | { action: "select_amap"; name: string; campus: string; province: string; city: string; longitude: number; latitude: number }
   | { action: "confirm"; schoolId: string };
 
 function validText(value: unknown, min: number, max: number): value is string {
@@ -33,15 +35,18 @@ export function parseSchoolAdminAction(value: unknown): SchoolAdminAction {
   if (record.action === "confirm" && Object.keys(record).length === 2 && validText(record.schoolId, 1, 160)) {
     return { action: "confirm", schoolId: record.schoolId.trim() };
   }
-  if (record.action === "propose" && Object.keys(record).length === 4
-    && validText(record.name, 2, 120) && validText(record.campus, 2, 120) && validText(record.city, 2, 80)) {
-    return { action: "propose", name: record.name.trim(), campus: record.campus.trim(), city: record.city.trim() };
+  if (record.action === "propose" && Object.keys(record).length === 5
+    && validText(record.name, 2, 120) && validText(record.campus, 2, 120)
+    && validText(record.province, 2, 40) && isKnownProvince(record.province) && validText(record.city, 2, 80)) {
+    return { action: "propose", name: record.name.trim(), campus: record.campus.trim(), province: normalizeProvince(record.province), city: record.city.trim() };
   }
-  if (record.action === "select_amap" && Object.keys(record).length === 6
-    && validText(record.name, 2, 120) && validText(record.campus, 2, 120) && validText(record.city, 2, 80)
+  if (record.action === "select_amap" && Object.keys(record).length === 7
+    && validText(record.name, 2, 120) && validText(record.campus, 2, 120)
+    && validText(record.province, 2, 40) && isKnownProvince(record.province) && validText(record.city, 2, 80)
+    && typeof record.longitude === "number" && typeof record.latitude === "number"
     && Number.isSafeInteger(record.longitude) && Number.isSafeInteger(record.latitude)
     && Math.abs(record.longitude) <= 180_000_000 && Math.abs(record.latitude) <= 90_000_000) {
-    return { action: "select_amap", name: record.name.trim(), campus: record.campus.trim(), city: record.city.trim(), longitude: record.longitude, latitude: record.latitude };
+    return { action: "select_amap", name: record.name.trim(), campus: record.campus.trim(), province: normalizeProvince(record.province), city: record.city.trim(), longitude: record.longitude, latitude: record.latitude };
   }
   throw new Error("Invalid school action");
 }
@@ -56,7 +61,7 @@ export function createSchoolAdminService(
     if (!validText(actorId, 1, 160)) throw new Error("Forbidden");
     const parsed = parseSchoolAdminAction({ action: "select_amap", ...input });
     if (parsed.action !== "select_amap") throw new Error("Invalid school action");
-    const school = { id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city, longitude: parsed.longitude, latitude: parsed.latitude, coordinateStatus: "confirmed" as const, createdAt: now, updatedAt: now };
+    const school = { id: createSchoolId(), name: parsed.name, campus: parsed.campus, province: parsed.province, city: parsed.city, longitude: parsed.longitude, latitude: parsed.latitude, coordinateStatus: "confirmed" as const, createdAt: now, updatedAt: now };
     return repository.saveSuggestedAtomic({
       school,
       audit: { id: createAuditId(), actorUserId: actorId, targetType: "school", targetId: school.id, action: "school.coordinate_confirmed", diffJson: JSON.stringify({ coordinateStatus: "confirmed", source: "amap_place_search", automatic: true }), createdAt: now },
@@ -79,7 +84,7 @@ export function createSchoolAdminService(
         throw new Error("Invalid geocoded coordinate");
       }
       const school = {
-        id: createSchoolId(), name: parsed.name, campus: parsed.campus, city: parsed.city,
+        id: createSchoolId(), name: parsed.name, campus: parsed.campus, province: parsed.province, city: parsed.city,
         ...coordinate, coordinateStatus: "confirmed" as const, createdAt: now, updatedAt: now,
       };
       return repository.saveSuggestedAtomic({
@@ -136,7 +141,7 @@ export async function createRuntimeSchoolAdminService() {
       const save = db.insert(schema.schools).values(input.school).onConflictDoUpdate({
         target: [schema.schools.name, schema.schools.campus],
         set: {
-          city: input.school.city, longitude: input.school.longitude, latitude: input.school.latitude,
+          province: input.school.province, city: input.school.city, longitude: input.school.longitude, latitude: input.school.latitude,
           coordinateStatus: input.school.coordinateStatus, updatedAt: input.school.updatedAt,
         },
       });
