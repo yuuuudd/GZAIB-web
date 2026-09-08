@@ -184,6 +184,8 @@ test("member center groups profile controls into four focused settings tabs", ()
 
 test("previewing the public profile stays in a member-center dialog", async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/me" });
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Node: dom.window.Node, Event: dom.window.Event, MouseEvent: dom.window.MouseEvent, IS_REACT_ACT_ENVIRONMENT: true });
   const root = createRoot(document.querySelector("#root")!);
   await act(async () => root.render(createElement(ProfileEditor, {

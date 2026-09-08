@@ -38,6 +38,8 @@ test("CTA follows an eligibility result loaded after the card mounts", async () 
 
 test("a project connection request keeps the project title in its dialog", async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test" });
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   const root = createRoot(document.querySelector("#root")!);
   await act(async () => root.render(createElement(ConnectButton, { state: "eligible", recipientSlug: "peer", recipientName: "发起人", dailyRemaining: 5, label: "申请加入", topic: "校园知识库 AI 原型小组" })));

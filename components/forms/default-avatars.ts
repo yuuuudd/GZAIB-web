@@ -1,8 +1,8 @@
 export const DEFAULT_AVATARS = [
-  { id: "yellow", src: "/brand/avatar-yellow.png", label: "黄色小伙伴" },
-  { id: "cow", src: "/brand/avatar-cow.png", label: "橙色小牛" },
-  { id: "cat", src: "/brand/avatar-cat.png", label: "小猫" },
-  { id: "kangaroo", src: "/brand/avatar-kangaroo.png", label: "黄色袋鼠" },
+  { id: "yellow", src: "/brand/avatar-yellow.webp", label: "黄色小伙伴" },
+  { id: "cow", src: "/brand/avatar-cow.webp", label: "橙色小牛" },
+  { id: "cat", src: "/brand/avatar-cat.webp", label: "小猫" },
+  { id: "kangaroo", src: "/brand/avatar-kangaroo.webp", label: "黄色袋鼠" },
 ] as const;
 
 export function nicknameInitial(nickname: string): string {

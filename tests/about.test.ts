@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { DEFAULT_AVATARS } from "../components/forms/default-avatars";
 import test from "node:test";
+
+test("About artwork and default avatars stay within their download budgets", async () => {
+  for (const avatar of DEFAULT_AVATARS) {
+    assert.ok(avatar.src.endsWith(".webp"));
+    assert.ok((await stat(new URL(`../public${avatar.src}`, import.meta.url))).size < 10_000);
+  }
+  for (const image of ["01-about-gzaib", "02-position-background", "04-co-creation-loop-background"]) {
+    assert.ok((await stat(new URL(`../public/about/${image}.webp`, import.meta.url))).size < 100_000);
+  }
+});
 
 test("about hero layers the connection-and-action copy beside each icon over its supplied artwork", async () => {
   const page = await readFile(new URL("../app/about/page.tsx", import.meta.url), "utf8");
@@ -42,7 +53,7 @@ test("about position screen layers its copy over the supplied background", async
   assert.doesNotMatch(page, /技术是起点|好奇、探索|开放协作/);
   assert.match(page, /className="about-position-heading"/);
   assert.match(page, /className="about-position-overlay"/);
-  assert.match(page, /\/about\/02-position-background\.png/);
+  assert.match(page, /\/about\/02-position-background\.webp/);
   assert.match(css, /\.about-position-overlay\s*\{/);
   assert.match(css, /\.about-position-pillars\s*\{/);
   assert.match(css, /\.about-position-overlay\s*\{\s*inset:11\.7% 0 0;/);
@@ -57,7 +68,7 @@ test("about co-creation archive layers its copy over the supplied background", a
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   for (const copy of ["CO-CREATION ARCHIVE", "让每一次行动", "共创的痕迹", "让人被看见", "让组织被发现", "让想法找到人", "让行动真的发生", "让每次行动留下东西", "共建地图", "AI 社群", "共创广场", "活动赛事", "共创档案"]) assert.match(page, new RegExp(copy));
-  assert.match(page, /\/about\/04-co-creation-loop-background\.png/);
+  assert.match(page, /\/about\/04-co-creation-loop-background\.webp/);
   assert.match(page, /className="about-loop-overlay"/);
   assert.match(css, /\.about-loop-overlay\s*\{/);
   assert.match(css, /\.about-loop-card\s*\{/);

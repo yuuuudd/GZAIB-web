@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
+import { Modal } from "../Modal";
 import { MAP_REQUIRED_VISIBILITY_FIELDS, OPTIONAL_VISIBILITY_FIELDS, ROLE_OPTIONS, SKILL_OPTIONS } from "../../features/applications/validation";
 import type { ContactCard } from "../../features/connections/contact-card";
 import type { ProjectedProfile, Visibility, VisibilityRules } from "../../features/directory/types";
@@ -37,7 +38,7 @@ export function simplifyVisibility(visibility: VisibilityRules): VisibilityRules
 }
 
 export function ProfileEditor({
-  profile, visibility: initialVisibility, schools, currentSchoolId, published, contactCard,
+  profile: initialProfile, visibility: initialVisibility, schools, currentSchoolId, published, contactCard,
 }: {
   profile: ProjectedProfile;
   visibility: VisibilityRules;
@@ -46,6 +47,8 @@ export function ProfileEditor({
   published: boolean;
   contactCard?: ContactCard;
 }) {
+  const [profile, setProfile] = useState(initialProfile);
+  const [savedVisibility, setSavedVisibility] = useState(initialVisibility);
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [visibility, setVisibility] = useState(() => simplifyVisibility(initialVisibility));
   const [mapPublished, setMapPublished] = useState(published);
@@ -61,13 +64,10 @@ export function ProfileEditor({
   const [contactDraft, setContactDraft] = useState<ContactCard>(contactCard ?? {});
   const [savedContact, setSavedContact] = useState<ContactCard>(contactCard ?? {});
   const [quickPanel, setQuickPanel] = useState<QuickPanel>();
-
-  useEffect(() => {
-    if (!quickPanel) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setQuickPanel(undefined); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [quickPanel]);
+  const publicPreview = { ...profile };
+  for (const field of OPTIONAL_VISIBILITY_FIELDS) {
+    if (savedVisibility[field] !== "public") delete publicPreview[field];
+  }
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -125,12 +125,18 @@ export function ProfileEditor({
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const optional = (name: string) => String(form.get(name) ?? "").trim() || null;
-    await request("/api/me/profile", "PATCH", {
+    const changes = {
       nickname: String(form.get("nickname") ?? "").trim(), schoolId: String(form.get("schoolId") ?? ""),
       major: optional("major"), grade: optional("grade"), intro: String(form.get("intro") ?? "").trim(),
       currentFocus: optional("currentFocus"), canOffer: optional("canOffer"), wantsToMeet: optional("wantsToMeet"),
-      skills: form.getAll("skills"), roles: form.getAll("roles"), ...(avatarKey ? { avatarKey } : {}),
-    }, "个人资料已保存。");
+      skills: form.getAll("skills").map(String), roles: form.getAll("roles").map(String), ...(avatarKey ? { avatarKey } : {}),
+    };
+    if (await request("/api/me/profile", "PATCH", changes, "个人资料已保存。")) {
+      // A school change needs review; keep the currently approved school in the preview.
+      setProfile((current) => ({ ...current, nickname: changes.nickname, intro: changes.intro, skills: changes.skills, roles: changes.roles,
+        major: changes.major ?? undefined, grade: changes.grade ?? undefined, currentFocus: changes.currentFocus ?? undefined,
+        canOffer: changes.canOffer ?? undefined, wantsToMeet: changes.wantsToMeet ?? undefined, ...(avatarKey ? { avatarUrl } : {}) }));
+    }
   }
 
   async function saveContactAndLinks(event: FormEvent<HTMLFormElement>) {
@@ -148,9 +154,11 @@ export function ProfileEditor({
         if (!response.ok) throw new Error(result.error ?? "暂时无法保存联系方式，请稍后重试。");
         setSavedContact(contactDraft);
       }
-      const response = await fetch("/api/me/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ workLinks: String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean) }) });
+      const workLinks = String(form.get("workLinks") ?? "").split(/\n/).map((item) => item.trim()).filter(Boolean);
+      const response = await fetch("/api/me/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ workLinks }) });
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error ?? "操作失败，请稍后重试。");
+      setProfile((current) => ({ ...current, workLinks }));
       setMessage("联系方式与链接已保存。");
     } catch (error) { setMessage(error instanceof Error ? error.message : "操作失败，请稍后重试。"); }
     finally { setBusy(false); }
@@ -158,7 +166,7 @@ export function ProfileEditor({
 
   async function savePrivacy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await request("/api/me/profile", "PATCH", { visibility }, "展示与隐私设置已保存。");
+    if (await request("/api/me/profile", "PATCH", { visibility }, "展示与隐私设置已保存。")) setSavedVisibility({ ...visibility });
   }
 
   async function toggleMap(next: boolean) {
@@ -231,7 +239,7 @@ export function ProfileEditor({
       <div className="settings-section profile-related-links settings-list"><h2>其他管理</h2><div><a href="/me/blocked">已屏蔽成员</a></div></div>
     </section>
 
-    {quickPanel ? <div className="profile-quick-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setQuickPanel(undefined); }}><section className="profile-quick-panel" role="dialog" aria-modal="true" aria-labelledby="profile-quick-panel-title"><header><div><p className="section-kicker">我的资料</p><h2 id="profile-quick-panel-title">{quickPanel === "connections" ? "连接中心" : "预览公开主页"}</h2></div><button type="button" aria-label="关闭" onClick={() => setQuickPanel(undefined)}>×</button></header><div className="profile-quick-tabs" role="tablist" aria-label="资料快捷面板"><button type="button" role="tab" aria-selected={quickPanel === "connections"} onClick={() => setQuickPanel("connections")}>连接中心</button><button type="button" role="tab" aria-selected={quickPanel === "preview"} onClick={() => setQuickPanel("preview")}>公开主页</button></div><div className="profile-quick-panel-content">{quickPanel === "connections" ? <ConnectionInbox /> : <MemberProfile profile={profile} connection={{ state: "own", dailyRemaining: 0 }} />}</div></section></div> : null}
+    {quickPanel ? <Modal className="profile-quick-overlay" labelledBy="profile-quick-panel-title" onDismiss={() => setQuickPanel(undefined)}><section className="profile-quick-panel"><header><div><p className="section-kicker">我的资料</p><h2 id="profile-quick-panel-title">{quickPanel === "connections" ? "连接中心" : "预览公开主页"}</h2></div><button type="button" aria-label="关闭" onClick={() => setQuickPanel(undefined)}>×</button></header><div className="profile-quick-tabs" role="tablist" aria-label="资料快捷面板"><button type="button" role="tab" aria-selected={quickPanel === "connections"} onClick={() => setQuickPanel("connections")}>连接中心</button><button type="button" role="tab" aria-selected={quickPanel === "preview"} onClick={() => setQuickPanel("preview")}>公开主页</button></div><div className="profile-quick-panel-content">{quickPanel === "connections" ? <ConnectionInbox /> : <MemberProfile profile={publicPreview} connection={{ state: "own", dailyRemaining: 0 }} />}</div></section></Modal> : null}
     {message ? <p className="profile-editor-message" role="status">{message}</p> : null}
   </div>;
 }

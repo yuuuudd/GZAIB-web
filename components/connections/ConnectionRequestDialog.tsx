@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { nextDialogFocusIndex, shouldCloseConnectionDialog } from "./dialog-focus";
+import { FormEvent, useState } from "react";
+import { Modal } from "../Modal";
 
 export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRemaining, topic = "校园 AI 共建交流", onClose, onCreated }: {
   recipientSlug: string;
@@ -11,24 +11,9 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
   onClose(): void;
   onCreated(): void;
 }) {
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const dialogRef = useRef<HTMLElement>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  useEffect(() => { titleRef.current?.focus(); }, []);
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (shouldCloseConnectionDialog(event.key)) { event.preventDefault(); onClose(); return; }
-      if (event.key !== "Tab") return;
-      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])
-        .filter((element) => element.offsetParent !== null);
-      const target = nextDialogFocusIndex(focusable.indexOf(document.activeElement as HTMLElement), focusable.length, event.shiftKey);
-      if (target >= 0) { event.preventDefault(); focusable[target]?.focus(); }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setNotice("");
@@ -42,10 +27,10 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
     } catch { setNotice("网络暂时不可用，请稍后再试。"); }
     finally { setBusy(false); }
   }
-  return <div className="connection-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className="connection-dialog" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="connection-dialog-title" aria-describedby="connection-dialog-description">
+  return <Modal labelledBy="connection-dialog-title" describedBy="connection-dialog-description" onDismiss={onClose}>
+    <section className="connection-dialog">
       <button type="button" className="connection-dialog-close" onClick={onClose} aria-label="关闭连接请求对话框">×</button>
-      <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title" tabIndex={-1} ref={titleRef}>向 {recipientName} 发起连接申请？</h2>
+      <p className="section-kicker">发起连接</p><h2 id="connection-dialog-title">向 {recipientName} 发起连接申请？</h2>
       <p id="connection-dialog-description">对方会收到你的连接申请，待对方同意后，双方可交换联系方式。</p>
       <p className="connection-request-topic">申请事项：{topic}</p>
       <form onSubmit={submit}>
@@ -55,5 +40,5 @@ export function ConnectionRequestDialog({ recipientSlug, recipientName, dailyRem
         <div className="connection-dialog-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" disabled={busy}>{busy ? "正在发送…" : "发送申请"}</button></div>
       </form>
     </section>
-  </div>;
+  </Modal>;
 }

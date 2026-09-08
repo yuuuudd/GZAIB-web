@@ -1,11 +1,10 @@
-import Image from "next/image";
 import { BrandHomeLink } from "../../components/navigation/BrandHomeLink";
 import { PrimaryNavigation } from "../../components/navigation/PrimaryNavigation";
 
 const screens = [
-  { src: "/about/01-about-gzaib.png", alt: "广州 AI 共创社：让愿意行动的人彼此看见" },
-  { src: "/about/02-position-background.png", alt: "AI 是共同议题，不是我们的边界" },
-  { src: "/about/04-co-creation-loop-background.png", alt: "广州 AI 共创社的共创飞轮" },
+  { src: "/about/01-about-gzaib.webp", alt: "广州 AI 共创社：让愿意行动的人彼此看见" },
+  { src: "/about/02-position-background.webp", alt: "AI 是共同议题，不是我们的边界" },
+  { src: "/about/04-co-creation-loop-background.webp", alt: "广州 AI 共创社的共创飞轮" },
 ] as const;
 
 const orbitCards = [
@@ -31,7 +30,7 @@ export default function AboutPage() {
   return <main className="about-shell">
     <header className="brand-header about-header"><BrandHomeLink /><PrimaryNavigation active="about" /><a className="brand-header-action" href="/me">我的</a></header>
     {screens.map((screen, index) => <section className={`about-screen${index === 0 ? " about-hero" : index === 1 ? " about-position" : index === 2 ? " about-loop" : ""}`} key={screen.src}>
-      <Image src={screen.src} alt={screen.alt} fill sizes="100vw" priority={index === 0} unoptimized />
+      <picture className="about-artwork"><source media="(min-width: 721px)" srcSet={screen.src} />{/* Desktop artwork is decorative; mobile uses the live text layout. */}<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" width={1672} height={941} loading={index === 0 ? "eager" : "lazy"} decoding="async" /></picture>
       {index === 0 ? <>
         <div className="about-hero-overlay">
           <p className="about-kicker"><span />ABOUT GZAIB · 关于我们</p>

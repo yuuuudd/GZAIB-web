@@ -14,6 +14,8 @@ const accepted = { request: { id: "accepted", topic: "项目交流", message: "�
 
 async function mountInbox() {
   const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/me/connections" });
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string; body?: string }> = [];

@@ -3,6 +3,7 @@
 node_modules/
 .next/
 .vinext/
+.codex-mobile-qa/
 dist/
 .wrangler/
 .env
