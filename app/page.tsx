@@ -5,7 +5,7 @@ const homeChannels = [
   { href: "/map", title: "共建地图", subtitle: "看见彼此，连接行动", artwork: "/brand/home-map.webp", tone: "map" },
   { href: "/co-create", title: "共创广场", subtitle: "提一个想法，找一群同行者", artwork: "/brand/home-co-create.webp", tone: "co-create" },
   { href: "/events", title: "活动赛事", subtitle: "在线下相遇，让共创发生", artwork: "/brand/home-events-scene.webp", tone: "events" },
-  { href: "/about#co-create-archive", title: "共创档案", subtitle: "让每一次共创留下痕迹", artwork: "/brand/home-archive.webp", tone: "archive" },
+  { href: null, title: "共创档案", subtitle: "让每一次共创留下痕迹", artwork: "/brand/home-archive.webp", tone: "archive" },
 ] as const;
 
 const communityLoop = [
@@ -40,8 +40,8 @@ export default function Home() {
           </div>
         </div>
         <div className="hero-channel-grid" aria-label="探索广州 AI 共创社">
-          {homeChannels.map((channel, index) => (
-            <a className={`hero-channel-card hero-channel-${channel.tone}`} href={channel.href} key={channel.title} style={{ "--card-index": index } as React.CSSProperties}>
+          {homeChannels.map((channel, index) => {
+            const content = <>
               <Image src={channel.artwork} alt="" fill sizes="(max-width: 720px) 45vw, (max-width: 1100px) 28vw, 22vw" unoptimized />
               <span className="hero-channel-sheen" aria-hidden="true" />
               <span className="hero-channel-copy">
@@ -50,8 +50,15 @@ export default function Home() {
                 <span>{channel.subtitle}</span>
               </span>
               <span className="hero-channel-arrow" aria-hidden="true">↗</span>
-            </a>
-          ))}
+            </>;
+
+            return channel.href
+              ? <a className={`hero-channel-card hero-channel-${channel.tone}`} href={channel.href} key={channel.title} style={{ "--card-index": index } as React.CSSProperties}>{content}</a>
+              : <details className="hero-channel-card hero-channel-archive" key={channel.title} style={{ "--card-index": index } as React.CSSProperties}>
+                  <summary>{content}</summary>
+                  <span className="hero-channel-unavailable">暂未开放</span>
+                </details>;
+          })}
         </div>
       </section>
       <section className="community-loop" id="how-it-works" aria-labelledby="community-loop-title">

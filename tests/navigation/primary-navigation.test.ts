@@ -23,8 +23,12 @@ test("primary navigation leaves the account entry to the header action", () => {
     { href: "/map", text: "共建地图" },
     { href: "/co-create", text: "共创广场" },
     { href: "/events", text: "活动赛事" },
-    { href: "/about", text: "关于我们" },
+    { href: "https://tcnr0pxctqhc.feishu.cn/wiki/OAnBwUQeAiSbpEkUGzfccX6Gndg", text: "加入我们" },
   ]);
+
+  const joinLink = document.querySelector('a[href^="https://tcnr0pxctqhc.feishu.cn/"]');
+  assert.equal(joinLink?.getAttribute("target"), "_blank");
+  assert.equal(joinLink?.getAttribute("rel"), "noreferrer");
 });
 
 test("co-create page keeps the account entry in its header", () => {
@@ -53,5 +57,5 @@ test("primary navigation marks only the active channel with the correct current 
   assert.equal(meDocument.querySelector('a[href="/me/connections"]'), null);
 
   const aboutDocument = renderNavigation("about");
-  assert.equal(aboutDocument.querySelector('a[href="/about"]')?.getAttribute("aria-current"), "page");
+  assert.equal(aboutDocument.querySelector('[aria-current="page"]'), null);
 });
