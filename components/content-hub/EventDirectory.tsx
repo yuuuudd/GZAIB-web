@@ -27,7 +27,7 @@ export function EventDirectory({ items, signedIn = false, loginHref = "/login" }
         })}
         {filtered.length === 0 ? <p className="content-hub-empty">暂时没有匹配的活动，试试其他类型或地区。</p> : null}
       </div>
-      <aside className="event-sidebar"><section aria-labelledby="schedule-title"><h2 id="schedule-title">近期日程</h2><ul>{filtered.slice(0, 5).map((item) => <li key={item.id}><time>{item.dateLabel}</time><span>{item.title}</span></li>)}</ul>{filtered.length === 0 ? <p>当前筛选暂无日程。</p> : null}</section><p className="event-responsibility-note"><strong>报名提示</strong>本站只提供信息索引；报名及结果通知由主办方负责，资格审核与赛程变化也请以主办方最新通知为准。</p></aside>
+      <aside className="event-sidebar"><section aria-labelledby="schedule-title"><h2 id="schedule-title">近期日程</h2><ul>{filtered.slice(0, 5).map((item) => <li key={item.id}><time>{item.dateLabel}</time><span>{item.title}</span></li>)}</ul>{filtered.length === 0 ? <p>当前筛选暂无日程。</p> : null}</section><p className="event-responsibility-note"><strong>报名提示</strong>本站只提供信息索引；报名及结果通知由主办方负责，资格审核与赛程变化也请以主办方最新通知为准。<small>赛事信息核验于 2026-09-08</small></p></aside>
     </div>
   </section>;
 }

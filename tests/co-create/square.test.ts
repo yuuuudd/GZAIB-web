@@ -62,6 +62,20 @@ test("co-create keeps the hero focused on its message without CTA buttons", () =
   assert.equal(hero.querySelectorAll(".co-create-aside a").length, 3);
 });
 
+test("co-create metrics are calculated from the published projects", () => {
+  const document = new JSDOM(renderToStaticMarkup(createElement(CoCreateSquare, {
+    items: [project, { ...project, id: "online", status: "招募中", participationMode: "线上" }],
+    signedIn: false,
+    loginHref: "/login",
+  }))).window.document;
+  const metrics = document.querySelector(".co-create-metrics");
+  assert.equal(metrics?.getAttribute("aria-label"), "共创实时数据");
+  assert.match(metrics?.textContent ?? "", /2 个公开共创/);
+  assert.match(metrics?.textContent ?? "", /1 个招募中/);
+  assert.match(metrics?.textContent ?? "", /1 个线下开展/);
+  assert.match(metrics?.textContent ?? "", /1 个线上或混合/);
+});
+
 test("co-create does not render the deprecated action-flow strip", () => {
   const document = new JSDOM(renderToStaticMarkup(square())).window.document;
   assert.equal(document.querySelector(".co-create-flow"), null);
@@ -88,7 +102,7 @@ test("co-create uses the same public square naming and four-category vocabulary 
   assert.match(document.querySelector(".co-create-hero-copy > p:not(.community-kicker)")?.textContent ?? "", /^发现真实需求、开放项目与协作机会，在这里找到可以一起开始的人。$/);
   assert.equal(project.type, "项目共创");
   assert.equal(document.querySelector(".co-create-flow p"), null);
-  assert.match(document.querySelector(".co-create-metrics")?.textContent ?? "", /参与高校/);
+  assert.match(document.querySelector(".co-create-metrics")?.textContent ?? "", /公开共创/);
 });
 
 test("co-create uses fixed desktop geometry instead of stretching components across spare grid space", () => {
