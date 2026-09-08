@@ -30,17 +30,19 @@ test("password credential migration stores only a salted irreversible digest", (
   }
 });
 
-test("school province migration backfills Wuhan University into Hubei", () => {
-  const migrationPath = "drizzle/0012_school_provinces.sql";
+test("school province migrations backfill legacy Wuhan and Shanghai schools", () => {
   const database = new DatabaseSync(":memory:");
   try {
     database.exec("CREATE TABLE schools (id text PRIMARY KEY, name text NOT NULL, city text NOT NULL)");
-    database.exec("INSERT INTO schools VALUES ('whu', '武汉大学', '武汉市'), ('sysu', '中山大学', '广州')");
-    for (const statement of readFileSync(migrationPath, "utf8").split("--> statement-breakpoint")) {
-      if (statement.trim()) database.exec(statement);
+    database.exec("INSERT INTO schools VALUES ('sjtu', '上海交通大学(闵行本部校区)', '上海市'), ('whu', '武汉大学', '武汉市'), ('sysu', '中山大学', '广州')");
+    for (const migrationPath of ["drizzle/0012_school_provinces.sql", "drizzle/0013_repair_legacy_school_provinces.sql"]) {
+      for (const statement of readFileSync(migrationPath, "utf8").split("--> statement-breakpoint")) {
+        if (statement.trim()) database.exec(statement);
+      }
     }
     const rows = database.prepare("SELECT id, province FROM schools ORDER BY id").all().map((row) => ({ ...row }));
     assert.deepEqual(rows, [
+      { id: "sjtu", province: "上海" },
       { id: "sysu", province: "广东" },
       { id: "whu", province: "湖北" },
     ]);
