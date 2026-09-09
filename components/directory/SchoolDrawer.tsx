@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { schoolMembersUrl } from "../../features/directory/client-query";
 import type { DirectoryMemberPreview, DirectoryQuery, DirectorySchool } from "../../features/directory/service";
 import { MemberPreviewCard } from "./MemberPreviewCard";
+import { SchoolEmblem } from "../map/SchoolEmblem";
 
 type MemberPage = { items?: DirectoryMemberPreview[]; nextCursor?: string };
 
@@ -40,7 +41,7 @@ export function SchoolDrawer({ school, query, selectedMemberSlug, onMemberSelect
   return (
     <aside className="school-drawer" aria-labelledby="school-drawer-title">
       <button className="drawer-close" type="button" aria-label="关闭学校成员面板" onClick={onClose}>×</button>
-      <header className="drawer-header"><span className="drawer-school-mark" aria-hidden="true">{school.name.slice(0, 1)}</span><div><h2 id="school-drawer-title">{school.name}</h2><p>{school.city} · {school.campus} · {school.memberCount} 位成员</p><span>{verified} 位认证共建者</span></div></header>
+      <header className="drawer-header"><SchoolEmblem name={school.name} className="drawer-school-mark" /><div><h2 id="school-drawer-title">{school.name}</h2><p>{school.city} · {school.campus} · {school.memberCount} 位成员</p><span>{verified} 位认证共建者</span></div></header>
       <div className="drawer-members" aria-live="polite">
         {displayed.map((member) => <MemberPreviewCard key={member.slug} member={member} schoolId={school.id} selected={selectedMemberSlug === member.slug} onOpen={() => onMemberSelect(member)} />)}
       </div>

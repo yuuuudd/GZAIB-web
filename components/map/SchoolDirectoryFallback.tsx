@@ -1,6 +1,7 @@
 "use client";
 
 import type { DirectorySchool } from "../../features/directory/service";
+import { SchoolEmblem } from "./SchoolEmblem";
 
 export function SchoolDirectoryFallback({ schools, selectedId, onSelect, prominent = false, heading = "按学校浏览" }: {
   schools: DirectorySchool[];
@@ -29,7 +30,7 @@ export function SchoolDirectoryFallback({ schools, selectedId, onSelect, promine
                 className="school-list-item"
                 onClick={() => onSelect(school)}
               >
-                <span className="school-list-badge" aria-hidden="true">{school.name.slice(0, 1)}</span>
+                <SchoolEmblem name={school.name} className="school-list-badge" />
                 <span className="school-list-copy"><strong>{school.name}</strong><small>{[school.campus, school.city].filter(Boolean).join(" · ")}</small></span>
                 <span className="school-list-count"><strong>{school.memberCount}</strong><small>位共建者</small></span>
               </button>
