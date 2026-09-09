@@ -5,7 +5,7 @@ let refreshing: Promise<void> | undefined;
 
 async function refreshCatalogue() {
   try {
-    const response = await fetch(catalogueUrl, { signal: AbortSignal.timeout(8000), redirect: "error" });
+    const response = await fetch(catalogueUrl, { signal: AbortSignal.timeout(8000), redirect: "manual" });
     if (!response.ok) throw new Error("School catalogue unavailable");
     const { data } = await response.json();
     if (!Array.isArray(data)) throw new Error("Invalid school catalogue");
