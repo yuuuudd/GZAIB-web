@@ -207,7 +207,7 @@ test("application form lets applicants choose a nickname-initial default avatar"
   assert.equal(getNicknameInitial(""), "你");
   const html = renderToStaticMarkup(createElement(ApplicationForm, { schools: [] }));
   assert.match(html, /type="file"/);
-  assert.match(html, /accept="image\/jpeg,image\/png,image\/webp"/);
+  assert.match(html, /accept="image\/\*"/);
   assert.match(html, /aria-label="当前头像：你"/);
   assert.match(html, /aria-label="使用昵称首字头像"/);
   assert.doesNotMatch(html, /name="avatarKey"[^>]*type="text"/);

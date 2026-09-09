@@ -10,6 +10,7 @@ import { ConnectionInbox } from "../connections/ConnectionInbox";
 import { MemberProfile } from "../directory/MemberProfile";
 import { VisibilityField } from "./VisibilityField";
 import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
+import { prepareAvatar } from "./prepare-avatar";
 
 type SchoolOption = { id: string; name: string; campus: string; city: string };
 type PrivacyField = (typeof OPTIONAL_VISIBILITY_FIELDS)[number];
@@ -73,16 +74,15 @@ export function ProfileEditor({
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setAvatarMessage("头像文件须小于或等于 5 MB。"); input.value = ""; return; }
     setSelectedDefaultAvatar(null);
     await saveAvatar(file, "头像已上传，保存资料后生效。");
     input.value = "";
   }
 
   async function saveAvatar(file: Blob, success: string) {
-    const form = new FormData(); form.set("avatar", file);
     setUploadingAvatar(true); setAvatarMessage("");
     try {
+      const form = new FormData(); form.set("avatar", await prepareAvatar(file));
       const response = await fetch("/api/uploads/avatar", { method: "POST", body: form });
       const result = await response.json() as { error?: string; objectKey?: string; publicUrl?: string };
       if (!response.ok || !result.objectKey || !result.publicUrl) throw new Error(result.error ?? "头像上传失败");
@@ -197,7 +197,7 @@ export function ProfileEditor({
 
     <section id="settings-profile" className="settings-panel" role="tabpanel" hidden={activeTab !== "profile"}>
       <form onSubmit={saveProfile}>
-        <div className="settings-section profile-avatar-section"><div><h2>个人头像</h2><p className="settings-hint">让共创伙伴一眼认出你。</p></div><div className="profile-avatar-controls"><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "添加 / 更换头像"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={uploadAvatar} /></label>
+        <div className="settings-section profile-avatar-section"><div><h2>个人头像</h2><p className="settings-hint">从图库选图后自动压缩，原图不超过 10 MB。</p></div><div className="profile-avatar-controls"><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "添加 / 更换头像"}<input type="file" accept="image/*" disabled={uploadingAvatar} onChange={uploadAvatar} /></label>
           {avatarMessage ? <small role="status">{avatarMessage}</small> : null}
           <div className="default-avatar-list profile-default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(profile.nickname ?? "")}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-label={`使用${avatar.label}头像`} aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt="" /></button>)}</div></div></div>
         <div className="settings-section"><h2>基本信息</h2><div className="profile-form-grid">

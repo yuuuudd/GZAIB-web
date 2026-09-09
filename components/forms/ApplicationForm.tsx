@@ -8,12 +8,12 @@ import {
 } from "../../features/applications/validation";
 import { AmapLoader, AmapLocationPreview, NATIONWIDE_PLACE_SEARCH_OPTIONS, parseAmapLocation, type AmapLocation, type AmapNamespace } from "../map/AmapLoader";
 import { createNicknameAvatar, DEFAULT_AVATARS, nicknameInitial } from "./default-avatars";
+import { prepareAvatar } from "./prepare-avatar";
 import type { ContactCard } from "../../features/connections/contact-card";
 import { normalizeProvince } from "../../features/schools/location";
 import { normalizeCity } from "../../features/map/semantic-map";
 
 export type SchoolOption = { id: string; name: string; campus: string; province: string; city: string };
-const maxAvatarSourceBytes = 5 * 1024 * 1024;
 
 function normalizedSchoolName(value: string): string {
   return value.toLocaleLowerCase("zh-CN").replace(/校区/g, "").replace(/[\s·•（）()\-—_]/g, "");
@@ -94,15 +94,11 @@ export function ApplicationForm({ schools, initialContact = {} }: { schools: Sch
   }
 
   async function saveAvatar(file: Blob, message = "头像已安全处理并保存。") {
-    if (file.size > maxAvatarSourceBytes) {
-      setAvatarMessage("头像文件须小于或等于 5 MB。");
-      return;
-    }
-    const form = new FormData();
-    form.set("avatar", file);
     setUploadingAvatar(true);
     setAvatarMessage(null);
     try {
+      const form = new FormData();
+      form.set("avatar", await prepareAvatar(file));
       const response = await fetch("/api/uploads/avatar", { method: "POST", body: form });
       const data = await response.json() as { error?: string; objectKey?: string; publicUrl?: string };
       if (!response.ok || !data.objectKey || !data.publicUrl) throw new Error(data.error ?? "头像上传失败，请稍后重试。");
@@ -207,7 +203,7 @@ export function ApplicationForm({ schools, initialContact = {} }: { schools: Sch
       <section className="application-section">
         <p className="section-kicker">统一极简申请</p><h1>申请点亮我的头像</h1><p className="section-intro">先用最少的信息生成你的基础公开名片。通过审核后，随时可以在「我的」继续完善。</p>
         <h2>01 基本身份</h2>
-        <div className="application-avatar-choice"><div className="avatar-upload-card"><div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>{avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}</div><div className="avatar-upload-copy"><strong>头像（必填）</strong><small>上传图片，或从下方选择默认头像。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "上传头像"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div><input name="avatarKey" type="hidden" value={avatarKey} /></div><div className="default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(nickname)}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt={avatar.label} /></button>)}</div></div>
+        <div className="application-avatar-choice"><div className="avatar-upload-card"><div className="avatar-upload-preview" role="img" aria-label={`当前头像：${avatarUrl && !avatarImageFailed ? nickname.trim() || "你的头像" : nicknameInitial(nickname)}`}>{avatarUrl && !avatarImageFailed ? <img src={avatarUrl} alt="" onError={() => setAvatarImageFailed(true)} /> : <span aria-hidden="true">{nicknameInitial(nickname)}</span>}</div><div className="avatar-upload-copy"><strong>头像（必填）</strong><small>从图库选图后自动压缩（原图不超过 10 MB），也可选择默认头像。</small><label className="avatar-upload-action">{uploadingAvatar ? "正在处理…" : "上传头像"}<input type="file" accept="image/*" onChange={uploadAvatar} disabled={uploadingAvatar} /></label>{avatarMessage ? <span className={avatarKey ? "avatar-upload-success" : "avatar-upload-error"} role="status">{avatarMessage}</span> : null}</div><input name="avatarKey" type="hidden" value={avatarKey} /></div><div className="default-avatar-list" aria-label="选择默认头像"><button className="default-avatar-initial" type="button" aria-label="使用昵称首字头像" aria-pressed={selectedDefaultAvatar === "initial"} disabled={uploadingAvatar} onClick={() => void selectNicknameAvatar()}>{nicknameInitial(nickname)}</button>{DEFAULT_AVATARS.map((avatar) => <button key={avatar.id} type="button" aria-pressed={selectedDefaultAvatar === avatar.id} disabled={uploadingAvatar} onClick={() => void selectDefaultAvatar(avatar)}><img src={avatar.src} alt={avatar.label} /></button>)}</div></div>
         <div className="form-grid application-identity-grid"><label>昵称<input name="nickname" required minLength={2} maxLength={30} placeholder="例如：林同学" value={nickname} onChange={(event) => setNickname(event.currentTarget.value)} /></label><label>学校 / 校区<select name="schoolId" required value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.currentTarget.value)}><option value="" disabled>请选择学校或校区</option>{schoolOptions.map((school) => <option key={school.id} value={school.id}>{[school.name, school.campus === school.name ? undefined : school.campus, school.city].filter(Boolean).join(" · ")}</option>)}</select></label></div>
         <details className="application-school-more"><summary>找不到学校 / 校区？搜索地图</summary><AmapLoader>{(state, amap) => state === "ready" && amap ? <ApplicationSchoolSearch amap={amap} schools={schoolOptions} onSelect={selectSchool} /> : <section className="school-search application-school-search"><p>{state === "failed" ? "高德搜索暂不可用，请从上方列表选择。" : "正在加载学校搜索…"}</p></section>}</AmapLoader></details>
       </section>
