@@ -15,10 +15,9 @@ test("school list matches campus names to their own emblems without borrowing a 
   const schools: DirectorySchool[] = names.map((name, i) => ({ id: String(i), name, campus: "主校区", province: "广东", city: "广州", lng: 113, lat: 23, memberCount: 1, previewMembers: [] }));
   const html = renderToStaticMarkup(createElement(SchoolDirectoryFallback, { schools, onSelect() {} }));
   const images = [...html.matchAll(/<img\b[^>]*src="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(images, ["sysu.png", "scut.png", "hit.png", "hanshan.png", "lingnan.jpg", "sustech.png", "sjtu.png", "whu.png"].map((file) => `/school-emblems/${file}`));
-  for (const src of images) assert.ok(existsSync(`public${src}`), `Missing emblem asset: ${src}`);
-  assert.match(html, /school-list-badge[^>]*>中<\/span>/);
-  assert.match(html, /school-list-badge[^>]*>新<\/span>/);
+  assert.deepEqual(images.slice(0, 8), ["sysu.png", "scut.png", "hit.png", "hanshan.png", "lingnan.jpg", "sustech.png", "sjtu.png", "whu.png"].map((file) => `/school-emblems/${file}`));
+  for (const src of images.slice(0, 8)) assert.ok(existsSync(`public${src}`), `Missing emblem asset: ${src}`);
+  assert.deepEqual(images.slice(8), ["中山大学新华学院", "新学校"].map(name => `/api/school-emblem?name=${encodeURIComponent(name)}`));
 });
 
 test("a failed emblem falls back to the school initial and another school can still display its emblem", async () => {
@@ -32,6 +31,11 @@ test("a failed emblem falls back to the school initial and another school can st
     assert.equal(document.querySelector(".school-list-badge")?.textContent, "中");
     await act(async () => root.render(createElement(SchoolEmblem, { name: "华南理工大学", className: "school-list-badge" })));
     assert.equal(document.querySelector("img")?.getAttribute("src"), "/school-emblems/scut.png");
+    await act(async () => root.render(createElement(SchoolEmblem, { name: "广州大学", className: "school-list-badge" })));
+    assert.equal(document.querySelector("img")?.getAttribute("src"), `/api/school-emblem?name=${encodeURIComponent("广州大学")}`);
+    await act(async () => document.querySelector("img")!.dispatchEvent(new dom.window.Event("error")));
+    assert.equal(document.querySelector("img"), null);
+    assert.equal(document.querySelector(".school-list-badge")?.textContent, "广");
   } finally {
     await act(async () => root.unmount());
     dom.window.close();

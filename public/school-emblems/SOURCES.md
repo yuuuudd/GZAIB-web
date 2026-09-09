@@ -14,3 +14,7 @@ Unmodified public emblem images, retrieved 2026-09-09 for identification in the 
 | hanshan.png | 韩山师范学院 | https://www.chinaschool.com.cn/i_region/i_19_guangdong/a_14/2024/zixun-2024.html | https://www.chinaschool.com.cn/i_region/i_19_guangdong/a_14/a_1_2.png |
 
 The Wuhan image has wide blank side margins; the square image viewport crops only those margins. The Hanshan source is a public university directory mirror because the official homepage required browser verification.
+
+## Automatic matching for other schools
+
+Other schools are matched against the public Gaokao.cn catalogue at https://static-data.gaokao.cn/www/2.0/school/name.json (2,991 entries verified on 2026-09-09). Logos use its fixed CDN path `https://static-data.gaokao.cn/upload/logo/{school_id}.jpg`. The server refreshes the catalogue on the next request after 24 hours and retains its last successful catalogue during outages. Exact names take priority; a trailing campus designation may match the parent university. Similar names and historical aliases are not guessed. Missing entries and failed images fall back to the school's initial. The eight verified local assets above remain preferred.
